@@ -10,7 +10,7 @@ Per box in the field of view and range:
      face, since the marker is on the face, plus a per-robot range-scale bias and noise growing with d)
      + error across it (per-robot bearing offset + noise)
 Then a Poisson number of lone false detections is added at raw distances and bearings drawn as measured.
-All values are returned as RAW distance / bearing, i.e. before the correction of calibrate.py.
+All values are returned as RAW distance / bearing, i.e. before the correction of pipeline/calibrate.py.
 """
 
 import math

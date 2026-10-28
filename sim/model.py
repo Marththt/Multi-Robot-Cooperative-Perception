@@ -1,9 +1,9 @@
 """The sensor model of the simulator. Every value is either a property of the setup or fitted on real runs
-by sim_calibrate.py, which writes it as JSON (sensor_model.json).
+by sim/calibrate.py, which writes it as JSON (sensor_model.json).
 
-Positions are modelled in the CALIBRATED domain, i.e. after the range / bearing correction of calibrate.py,
+Positions are modelled in the CALIBRATED domain, i.e. after the range / bearing correction of pipeline/calibrate.py,
 which is what the fusion methods see. The writer converts them back to raw distance / bearing with the
-same correction, so evaluate_runs.py --sensor-calib and gnn_train.py --sensor-calib read simulated runs
+same correction, so pipeline/evaluate_runs.py --sensor-calib and gnn/train.py --sensor-calib read simulated runs
 exactly as real ones.
 """
 
@@ -19,7 +19,7 @@ class SensorModel:
     r_min_m: float = 0.15                   # closer boxes are not detected
     r_max_m: float = 3.0                    # farther boxes are not detected
 
-    # --- calibration of the real pipeline (calibrate.py), used to write raw values
+    # --- calibration of the real pipeline (pipeline/calibrate.py), used to write raw values
     range_fit: List[float] = field(default_factory=lambda: [1.0, 0.0])      # d_raw = A * d + B
     bearing_fit: List[float] = field(default_factory=lambda: [1.0, 0.0])    # b_raw = k * b + b0
     camera_offset_m: float = 0.0            # camera ahead of the body pivot

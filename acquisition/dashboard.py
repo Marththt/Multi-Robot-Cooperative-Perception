@@ -15,19 +15,19 @@ identical, no duplicate code to keep in sync by hand.
 Usage (three terminals)
 -----------------------
 Terminal 1 (camera P0 + live state):
-    python static_trial.py --robot-id P0 --live --state-out live/P0.json \\
+    python -m acquisition.static_trial --robot-id P0 --live --state-out live/P0.json \\
         --regions config/optitrack_regions.json --localization optitrack \\
         --optitrack-rb-id 8 --detector aruco --aruco-marker-size 0.08 \\
         --camera-calib config/checkerboard_calib_P0.json
 
 Terminal 2 (camera P1 + live state):
-    python static_trial.py --robot-id P1 --live --state-out live/P1.json \\
+    python -m acquisition.static_trial --robot-id P1 --live --state-out live/P1.json \\
         --regions config/optitrack_regions.json --localization optitrack \\
         --optitrack-rb-id 7 --detector aruco --aruco-marker-size 0.08
 
 Terminal 3 (dashboard, NO robot -- can also run on another machine that
 only sees the live/ folder):
-    python dashboard.py --state-dir live/
+    python -m acquisition.dashboard --state-dir live/
 
 Multi-object localization (--localize): additionally shows, for every
 class, how many objects and WHERE according to the methods of Section 3.2
@@ -35,7 +35,7 @@ of the document (zone_class, union, mht, phd, cphd --
 vf/fusion/localization_methods.py), computed on the current live frame.
 Sensor model WITHOUT faults by default (p_D=1 inside the field of view, no
 false alarms), see --p-d/--clutter:
-    python dashboard.py --state-dir live/ --regions config/optitrack_regions.json --localize
+    python -m acquisition.dashboard --state-dir live/ --regions config/optitrack_regions.json --localize
 
 Terminal 3 refreshes by itself (default ~3 times per second). 'q' + enter,
 or Ctrl+C, to quit. The two video windows (terminals 1 and 2, the usual
@@ -61,7 +61,7 @@ import os
 import threading
 import time
 
-from merge_static_trials import (
+from acquisition.merge_static_trials import (
     split_instances, BASELINE)
 from vf.fusion.multi_robot_simulation import Observation
 from vf.fusion.localization_methods import METHODS, localize_live

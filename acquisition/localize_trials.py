@@ -7,14 +7,14 @@ and every class, how many objects and WHERE according to each method.
 
 Usage (from the project root)
 -----------------------------
-    python localize_trials.py --trial-dir trials/ --regions config/optitrack_regions.json
+    python -m acquisition.localize_trials --trial-dir trials/ --regions config/optitrack_regions.json
 
     # with the ground truth (true object positions) -> OSPA and count
-    python localize_trials.py --trial-dir trials/ --regions config/optitrack_regions.json \\
+    python -m acquisition.localize_trials --trial-dir trials/ --regions config/optitrack_regions.json \\
         --ground-truth config/ground_truth_positions.json
 
     # only some methods, one plot per trial
-    python localize_trials.py --trial-dir trials/ --regions config/optitrack_regions.json \\
+    python -m acquisition.localize_trials --trial-dir trials/ --regions config/optitrack_regions.json \\
         --methods mht,cphd --plots trial_plots/
 
 ground_truth_positions.json:
@@ -38,7 +38,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from merge_static_trials import load_trials, group_by_trial
+from acquisition.merge_static_trials import load_trials, group_by_trial
 from vf.fusion.localization_methods import METHODS, measurements_by_class, run_method, ospa
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_data,
                                     arena_from_regions, sensor_from_arguments,

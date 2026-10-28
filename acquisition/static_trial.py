@@ -41,12 +41,12 @@ ends up in the log is ONE, not N.
 Usage (one process per robot, like patrol.py -- see there for why YOLO
 needs separate processes)
 --------------------------------------------------------------------------
-    python static_trial.py --robot-id T0 --trial-id trial001 \\
+    python -m acquisition.static_trial --robot-id T0 --trial-id trial001 \\
         --out trials/ --regions config/optitrack_regions.json \\
         --localization optitrack --optitrack-rb-id 0 \\
         --detector aruco --aruco-marker-size 0.08
 
-    python static_trial.py --robot-id T1 --trial-id trial001 \\
+    python -m acquisition.static_trial --robot-id T1 --trial-id trial001 \\
         --out trials/ --regions config/optitrack_regions.json \\
         --localization optitrack --optitrack-rb-id 1 \\
         --detector aruco --aruco-marker-size 0.08
@@ -65,7 +65,7 @@ the camera failed to start or the marker simply was not well framed.
 drawn on top in real time (green outline + class/distance), instead of
 capturing a trial:
 
-    python static_trial.py --robot-id P0 --detector aruco \\
+    python -m acquisition.static_trial --robot-id P0 --detector aruco \\
         --aruco-marker-size 0.08 --live
 
 With --live, --trial-id/--out/--regions/--localization are not needed
@@ -76,7 +76,7 @@ would use for a real trial: just add/remove --live, --trial-id/--out.
 Adding --state-out (plus --regions and the localization flags) also
 writes this robot's live state continuously, for dashboard.py:
 
-    python static_trial.py --robot-id P0 --live --state-out live/P0.json \\
+    python -m acquisition.static_trial --robot-id P0 --live --state-out live/P0.json \\
         --regions config/optitrack_regions.json \\
         --localization optitrack --optitrack-rb-id 8 \\
         --detector aruco --aruco-marker-size 0.08 \\

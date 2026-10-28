@@ -30,7 +30,7 @@ file instead.
 Every launch is a NEW RUN, saved in its own folder <out>/<layout>_<date-time>/
 (captures, raw readings, frames, path preview, live figures): nothing is
 skipped because an earlier run was already at the same position.
-analyze_rounds.py / build_scans.py read one run folder or the whole
+pipeline/analyze_rounds.py / pipeline/build_scans.py read one run folder or the whole
 <out>/ folder (every run is kept separate).
 
 The robots are connected ONE AT A TIME (the DJI SDK looks for the robot
@@ -38,7 +38,7 @@ through a UDP port that only one process at a time can use); the first
 round starts when all of them are connected. Ctrl+C stops all of them:
 each robot stops its motion, closes camera and connection, then exits.
 
-    python launch_all.py --robot P0:8 --robot P1:7 --robot P2:9 --robot P3:10 \\
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P2:9 --robot P3:10 \\
         --layout-id L2 --ground-truth config/ground_truth_positions.json \\
         --regions config/optitrack_regions.json --out survey_rounds/ \\
         --aruco-marker-size 0.077 --radius 1.3 --step-deg 15
@@ -238,7 +238,7 @@ def boxes_for_this_run(a, rest, layout_id, run_id, gt_out):
 def show_plan(robots, rest):
     """--plan-only: reads where the robots are NOW (OptiTrack) and shows the
     arc every robot would travel from there; nothing moves."""
-    import survey
+    from acquisition import survey
     sp = argparse.ArgumentParser()
     survey.add_survey_arguments(sp)
     a, _unknown = sp.parse_known_args(rest)
@@ -272,7 +272,7 @@ def plan_lines(starts, team, boxes, center, arena, a, n_stations):
     position of round 0 cannot be used. n_stations: the robots of the WHOLE
     team (also one that is not running), so the fixed positions never
     depend on which robots are up."""
-    import survey
+    from acquisition import survey
     face, r0, arcs = survey.team_plan(starts, team, boxes, center, arena, a, n_stations=n_stations)
     lines, problems = [], []
     if a.radius is not None:
@@ -340,7 +340,7 @@ class LiveRounds:
     """Analyses every round as soon as the whole team has finished it."""
 
     def __init__(self, la, rest, team, sync_dir, show):
-        import survey
+        from acquisition import survey
         from vf.fusion.sensor_model import arena_from_regions, sensor_from_arguments, zones_from_arguments
         from vf.fusion.localization_methods import METHODS
         sp = argparse.ArgumentParser()
@@ -370,7 +370,7 @@ class LiveRounds:
                 self.show = False
 
     def _points(self):
-        from build_scans import load_points, load_truth
+        from pipeline.build_scans import load_points, load_truth
         pts = load_points(self.out, self.range_fit)
         pts = {k: v for k, v in pts.items() if v["round"] is not None}    # round-mode captures only
         truth = load_truth(self.gt).get(self.layout, [])
@@ -380,7 +380,7 @@ class LiveRounds:
         """Draws the path every robot is going to travel (from where it was
         placed), shows it and, with wait_enter, waits for Enter before the
         robots start. Returns False if the start is cancelled."""
-        import survey
+        from acquisition import survey
         boxes, center, arena, _plan = survey.load_plan(self.sa, 0.0, quiet=True, need_plan=False)
         team = [r for r in self.team if r in starts]
         lines, problems, groups, paths, track = plan_lines(starts, team, boxes, center, arena, self.sa,
@@ -415,7 +415,7 @@ class LiveRounds:
         return wait_for_enter(self, self.stop_req)
 
     def _scene(self, name, title, members, pts, truth, rnd, off, keep_open):
-        from analyze_rounds import draw_scene, fuse, scene_rows
+        from pipeline.analyze_rounds import draw_scene, fuse, scene_rows
         poses, per_class, results = fuse(members, pts, self.sensor, self.zones, self.methods)
         rows = scene_rows(name, self.layout, rnd, off, members, pts, truth, results, self.methods)
         fig = draw_scene(os.path.join(self.folder, name + ".png"), title, members, pts, truth, poses,
@@ -444,7 +444,7 @@ class LiveRounds:
             k += 1
 
     def analyse_round(self, k):
-        from analyze_rounds import METHOD_LABELS, round_line
+        from pipeline.analyze_rounds import METHOD_LABELS, round_line
         try:
             pts, truth = self._points()
             if not truth:
@@ -469,7 +469,7 @@ class LiveRounds:
             print(f"LIVE | round {k}: analysis failed ({e})", flush=True)
 
     def overall(self):
-        from analyze_rounds import round_line
+        from pipeline.analyze_rounds import round_line
         try:
             pts, truth = self._points()
             if not pts or not truth:
@@ -517,7 +517,7 @@ def main():
         return
 
     # every launch is a new run in its own folder: <out>/<layout>_<date-time>/
-    out = "survey/"
+    out = "data/survey/"
     if "--out" in rest:
         i = rest.index("--out")
         out = rest[i + 1]
@@ -552,7 +552,7 @@ def main():
         if stop_req.is_set():
             break
         others = [str(o["rb"]) for o in robots if o is not r]
-        cmd = [sys.executable, "-u", "survey.py", "--robot-id", r["robot_id"],
+        cmd = [sys.executable, "-u", "-m", "acquisition.survey", "--robot-id", r["robot_id"],
                "--optitrack-rb-id", str(r["rb"]), "--team"] + team + ["--sync-dir", sync_dir,
                "--ignore-ctrl-c", "--wait-go"]
         if others:

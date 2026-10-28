@@ -1,16 +1,16 @@
-"""Fidelity check of the simulator: real layouts against their simulated replays (sim_generate.py replay).
+"""Fidelity check of the simulator: real layouts against their simulated replays (sim/generate.py replay).
 
 1. Detection level, per layout (real vs simulated, same loader and same calibration):
      detections per capture, share of boxes in view that are reported, error along / across the line
      of sight per distance band, false detections per capture (all, and those inside 3 m), two-face rate
-2. Fusion level, per layout and method, from the scenes.csv of evaluate_runs.py on both sets:
+2. Fusion level, per layout and method, from the scenes.csv of pipeline/evaluate_runs.py on both sets:
      the real exact-count rate (7 scenes) must lie inside the 5-95% range of the rate of 7 simulated
      scenes (one per round, drawn at random from the replays), and the count errors must have the
      same sign (too many / too few boxes)
 
-    python sim_fidelity.py --real-survey-dir survey_rounds/ --real-ground-truth config/ground_truth_positions.json \\
-        --sim-dir sim_replay/ --sensor-calib config/sensor_calib.json --layouts L4,L6,L8,L9,L11 \\
-        --real-scenes evaluation_calib/scenes.csv --sim-scenes evaluation_sim/scenes.csv --out fidelity/
+    python -m sim.fidelity --real-survey-dir data/survey_rounds/ --real-ground-truth config/ground_truth_positions.json \\
+        --sim-dir data/sim_replay/ --sensor-calib config/sensor_calib.json --layouts L4,L6,L8,L9,L11 \\
+        --real-scenes results/evaluation_calib/scenes.csv --sim-scenes results/evaluation_sim/scenes.csv --out results/fidelity/
 """
 
 import argparse
@@ -21,7 +21,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from gnn_dataset import build_scenes
+from gnn.dataset import build_scenes
 
 MATCH_M = 0.30              # a box in view counts as reported if a detection lies this close
 OWN_M = 0.25                # a detection within this distance belongs to the box (else: false detection)
@@ -105,8 +105,8 @@ def main():
     ap.add_argument("--sim-dir", required=True)
     ap.add_argument("--sensor-calib", required=True)
     ap.add_argument("--layouts", required=True)
-    ap.add_argument("--real-scenes", default=None, help="evaluate_runs.py scenes.csv of the real runs")
-    ap.add_argument("--sim-scenes", default=None, help="evaluate_runs.py scenes.csv of the simulated runs")
+    ap.add_argument("--real-scenes", default=None, help="pipeline/evaluate_runs.py scenes.csv of the real runs")
+    ap.add_argument("--sim-scenes", default=None, help="pipeline/evaluate_runs.py scenes.csv of the simulated runs")
     ap.add_argument("--out", default="fidelity/")
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()

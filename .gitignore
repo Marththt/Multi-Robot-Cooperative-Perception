@@ -4,19 +4,16 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
- 
+
 # Editors and operating systems
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 desktop.ini
- 
+
 # Archives (the runs they contain are already in the folders)
 *.zip
- 
-# Simulated runs (regenerated from sim_specs/ and the seeds with sim_generate.py)
-sim_replay/
-sim_train/
-sim_T*/
- 
+
+# Simulated runs (regenerated from sim/specs/ and the seeds with python -m sim.generate)
+data/sim_*/

@@ -22,9 +22,9 @@ groups. Each group is then an independent fusion -- printed as
 
 Usage
 -----
-    python merge_static_trials.py --trial-dir trials/
-    python merge_static_trials.py --trial-dir trials/ --baseline majority
-    python merge_static_trials.py --trial-dir trials/ --baseline majority \\
+    python -m acquisition.merge_static_trials --trial-dir trials/
+    python -m acquisition.merge_static_trials --trial-dir trials/ --baseline majority
+    python -m acquisition.merge_static_trials --trial-dir trials/ --baseline majority \\
         --ground-truth ground_truth_trials.json
 
 ground_truth_trials.json (optional): {"trial001": "box", "trial002": null, ...}

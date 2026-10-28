@@ -18,9 +18,9 @@ Objects are placed uniformly in the region that at least one robot can
 see (an object nobody can see cannot be found by any method), at least
 40 cm apart.
 
-    python simulate_localization.py
-    python simulate_localization.py --trials 200 --max-objects 8
-    python simulate_localization.py --robots 7
+    python -m acquisition.simulate_localization
+    python -m acquisition.simulate_localization --trials 200 --max-objects 8
+    python -m acquisition.simulate_localization --robots 7
 """
 import argparse
 import json

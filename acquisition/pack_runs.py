@@ -3,8 +3,8 @@
 Keeps, for every run folder: P*.jsonl, ground_truth.json, obstacles.json (if any), raw/*.jsonl and raw/meta_*.json.
 Leaves out frames/ (the big part), sync/ and rounds_live/.
 
-    python pack_runs.py survey_rounds/ runs_light.zip
-    python pack_runs.py survey_rounds/ runs_light.zip --only L4_ L5_ L6_     # only the runs whose folder starts with ...
+    python -m acquisition.pack_runs survey_rounds/ runs_light.zip
+    python -m acquisition.pack_runs survey_rounds/ runs_light.zip --only L4_ L5_ L6_     # only the runs whose folder starts with ...
 """
 import argparse
 import os

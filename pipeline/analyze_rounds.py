@@ -14,12 +14,12 @@ were looking at the scene together:
   - finally ONE OVERALL scene with all the captures of all the rounds
     together (every capture as a separate "robot"), with its figure.
 
-    python analyze_rounds.py --survey-dir survey/ --ground-truth config/ground_truth_positions.json \\
-        --regions config/optitrack_regions.json --out rounds/
+    python -m pipeline.analyze_rounds --survey-dir data/survey/ --ground-truth config/ground_truth_positions.json \\
+        --regions config/optitrack_regions.json --out results/rounds/
 
-    # only the captures facing the centre, distances and bearings corrected (see build_scans.py,
-    # calibrate.py)
-    python analyze_rounds.py ... --yaw-offsets 0 --camera-offset 0.12 --range-fit 1.064 -0.080
+    # only the captures facing the centre, distances and bearings corrected (see pipeline/build_scans.py,
+    # pipeline/calibrate.py)
+    python -m pipeline.analyze_rounds ... --yaw-offsets 0 --camera-offset 0.12 --range-fit 1.064 -0.080
 
 Data recorded without rounds (survey.py alone): the round of a capture is
 its position in the robot's own sequence of stops.
@@ -34,7 +34,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from build_scans import ARENA_DEFAULT, bind_run_truth, load_points, load_truth
+from pipeline.build_scans import ARENA_DEFAULT, bind_run_truth, load_points, load_truth
 from vf.fusion.localization_methods import METHODS, measurement_from_observation, ospa, run_method
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions, sensor_from_arguments,
                                     zones_from_arguments)
@@ -42,8 +42,8 @@ from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions, se
 METHOD_LABELS = dict(zone_class="zone + class", union="union", mht="MHT", phd="PHD", cphd="CPHD")
 
 # Bearing correction (k, b0): measured = k * true + b0. Set by --bearing-fit (here or by
-# evaluate_runs.py); None = bearings used as measured. The distance correction (--range-fit)
-# is applied by load_points() in build_scans.py.
+# pipeline/evaluate_runs.py); None = bearings used as measured. The distance correction (--range-fit)
+# is applied by load_points() in pipeline/build_scans.py.
 BEARING_FIT = None
 
 # Camera ahead of the robot body pivot [m], set by --camera-offset. Use it for runs recorded with
@@ -244,17 +244,17 @@ def main():
     p.add_argument("--survey-dir", required=True)
     p.add_argument("--ground-truth", required=True)
     p.add_argument("--regions", default=None)
-    p.add_argument("--out", default="rounds/")
+    p.add_argument("--out", default="results/rounds/")
     p.add_argument("--layouts", nargs="*", default=None)
     p.add_argument("--yaw-offsets", type=float, nargs="*", default=None,
                    help="analyse only these yaw offsets (default: all, each one a separate scene)")
     p.add_argument("--methods", default=",".join(METHODS))
     p.add_argument("--range-fit", type=float, nargs=2, default=None, metavar=("A", "B"),
-                   help="distance correction measured = A * true + B (see build_scans.py)")
+                   help="distance correction measured = A * true + B (see pipeline/build_scans.py)")
     p.add_argument("--bearing-fit", type=float, nargs=2, default=None, metavar=("K", "B0"),
-                   help="bearing correction measured = K * true + B0 (see calibrate.py)")
+                   help="bearing correction measured = K * true + B0 (see pipeline/calibrate.py)")
     p.add_argument("--camera-offset", type=float, default=0.0, metavar="M",
-                   help="camera ahead of the body pivot [m] (see calibrate.py); only for runs saved with "
+                   help="camera ahead of the body pivot [m] (see pipeline/calibrate.py); only for runs saved with "
                         "survey.py --camera-offset-forward-m 0")
     p.add_argument("--no-overall", action="store_true", help="skip the overall scene with all the rounds")
     p.add_argument("--no-figures", action="store_true")

@@ -1,7 +1,7 @@
-"""Scenes for the GNN, built from the same round-mode runs used by evaluate_runs.py.
+"""Scenes for the GNN, built from the same round-mode runs used by pipeline/evaluate_runs.py.
 
 A SCENE is one round of one run: the feature vectors of all the robots standing at their positions of
-that round (same definition as evaluate_runs.py). For every scene this module returns
+that round (same definition as pipeline/evaluate_runs.py). For every scene this module returns
 
   robots     robot ids, in a fixed order
   poses      camera pose (x, y, yaw) of every robot                                  (R, 3)
@@ -14,14 +14,14 @@ that round (same definition as evaluate_runs.py). For every scene this module re
   truth      true box positions (OptiTrack)                                           (M, 2)
 
 The distance / bearing correction and the camera offset come from the calibration file written by
-calibrate.py (--sensor-calib), exactly as evaluate_runs.py applies them, so the GNN and the classical
+pipeline/calibrate.py (--sensor-calib), exactly as pipeline/evaluate_runs.py applies them, so the GNN and the classical
 methods see the same detections at the same positions.
 
 A detection is labelled with the nearest true box when it lies within LABEL_RADIUS_M of it, otherwise it
 is a false detection (-1). The labels are used for training only; the evaluation compares the estimated
-boxes with the true boxes as evaluate_runs.py does.
+boxes with the true boxes as pipeline/evaluate_runs.py does.
 
-    python gnn_dataset.py --survey-dir survey_rounds/ --ground-truth config/ground_truth_positions.json \\
+    python -m gnn.dataset --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
         --sensor-calib config/sensor_calib.json
 prints a summary of the scenes (detections, false detections, boxes seen twice by one robot).
 """
@@ -39,7 +39,7 @@ LABEL_RADIUS_M = 0.4
 
 
 def load_calibration(path):
-    """Range fit, bearing fit and camera offset from calibrate.py --out (identity without a file)."""
+    """Range fit, bearing fit and camera offset from pipeline/calibrate.py --out (identity without a file)."""
     if not path:
         return dict(range_fit=None, bearing_fit=None, camera_offset=0.0)
     with open(path) as f:

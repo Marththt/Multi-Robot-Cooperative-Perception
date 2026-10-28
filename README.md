@@ -14,24 +14,22 @@ this folder (the project root).
 
 ## Folder structure
 
+Run every command from the repository root, with the scripts as modules:
+`python -m <package>.<script> ...` (all the commands are collected in `docs/commands.md`).
+
 | Path | Content |
 |---|---|
-| `static_trial.py` | One process per robot: live camera preview + live state for the dashboards (`--live`), or capture of one static trial |
-| `dashboard.py` | Terminal dashboard: reads the live state of all robots and shows the per-instance fusion and the multi-object localization |
-| `map_server.py` + `map.html` | Same information as a live top-down map in the browser |
-| `merge_static_trials.py` | Fuses saved static trials (class-vote baselines per instance) |
-| `localize_trials.py` | Runs every localization method on saved static trials, optional ground truth (OSPA) and plots |
-| `simulate_localization.py` | Compares all localization methods in simulation |
-| `survey.py` | Autonomous survey: one process per robot, the robot drives by itself to stops around a fixed box layout and captures what it sees |
-| `build_scans.py` | Offline analysis of the survey: sanity checks against the ground truth, scans composed from the observation points, the five methods, breakdown of the failures |
-| `vf/control/` | Closed-loop motion to a pose with OptiTrack (`goto.py`, from `goto_point.py`) |
-| `vf/perception/` | ArUco detector, detection data, object position from robot pose, YOLO client |
-| `vf/localization/` | Robot pose providers: OptiTrack, odometry, camera offset, frame correction |
-| `vf/fusion/` | Class-vote baselines, sensor model, MHT, PHD/CPHD, common interface of the localization methods |
+| `acquisition/` | Everything that runs with the robots: `launch_all` (move and capture with all robots), `survey` (one robot driving to its stops), `static_trial` (one robot: live preview / static trial), `record_obstacle`, `dashboard` and `map_server` + `map.html` (live views), `merge_static_trials`, `localize_trials`, `regroup_captures`, `pack_runs`, `simulate_localization` |
+| `pipeline/` | Processing of the recorded runs: `build_scans` (scans, sanity checks), `analyze_rounds` (per-round fusion), `calibrate` (sensor calibration), `evaluate_runs` (the five classical methods, metrics and figures) |
+| `gnn/` | GNN for the association: `dataset`, `model`, `train` (leave-one-layout-out training and comparison with the classical methods) |
+| `sim/` | Measurement-level simulator: library (`geometry`, `model`, `scene`, `sensor`, `writer`) and scripts `calibrate` (fit on real runs), `generate` (replays of real layouts, random scenes), `fidelity` (real vs simulated); scenario files in `sim/specs/` |
+| `vf/` | Shared library: motion (`control/`), perception (`perception/`), robot pose (`localization/`), fusion methods (`fusion/`: class votes, sensor model, MHT, PHD/CPHD) |
 | `tools/` | Camera calibration, OptiTrack frame calibration, ground truth recorder, yaw reader, data converter |
 | `robomaster_sdk/` | Robot SDK (connection, camera, arm). `arm.py`, `arm_safety.py`, `teleop.py`, `recorder.py` belong to the older pick & throw project and are unchanged |
-| `config/` | Arena regions, camera calibrations, ArUco ID -> class map |
-| `trials/`, `live/` | Saved trials (one `.jsonl` per robot) and live state files (one `.json` per robot) |
+| `config/` | Arena regions, camera calibrations, ArUco ID -> class map, ground truth of the layouts, sensor calibration, sensor model of the simulator |
+| `data/` | Recorded runs: `survey_rounds/` (L4-L11), `survey_rounds_t02/` (L1-L3), `trials/` (static trials), `live/` (live state files); simulated runs go to `data/sim_*/` (not versioned) |
+| `results/` | Outputs: `evaluation*/` (classical methods), `evaluation_gnn/`, `analysis/` |
+| `docs/` | `commands.md`: the commands used in the lab and for the analysis |
 
 ## Requirements
 
@@ -69,7 +67,7 @@ Check the yaw sign of a rigid body:
 ## Live: N robots + dashboards
 
 The system works with any number of robots N: every robot runs its own
-process (one terminal each) and writes its own state file in `live/`; the
+process (one terminal each) and writes its own state file in `data/live/`; the
 dashboards and the fusion take all the robots they find there. The lab
 setup uses three robots (P0, P1, P2); to add one, start one more process
 with its own `--robot-id`, `--state-out`, OptiTrack rigid body and camera
@@ -77,21 +75,21 @@ calibration.
 
 One terminal per robot (here the three robots of the lab):
 
-    python static_trial.py --robot-id P0 --live --state-out live/P0.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 8 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P0.json
+    python -m acquisition.static_trial --robot-id P0 --live --state-out data/live/P0.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 8 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P0.json
 
-    python static_trial.py --robot-id P1 --live --state-out live/P1.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 7 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
+    python -m acquisition.static_trial --robot-id P1 --live --state-out data/live/P1.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 7 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
 
-    python static_trial.py --robot-id P2 --live --state-out live/P2.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 9 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
+    python -m acquisition.static_trial --robot-id P2 --live --state-out data/live/P2.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 9 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
 
 (P2 has no calibration of its own yet: it uses P1's, same camera model.)
 
 Then either the terminal dashboard:
 
-    python dashboard.py --state-dir live/ --regions config/optitrack_regions.json --localize
+    python -m acquisition.dashboard --state-dir data/live/ --regions config/optitrack_regions.json --localize
 
 or the map in the browser:
 
-    python map_server.py --state-dir live/ --regions config/optitrack_regions.json --localize
+    python -m acquisition.map_server --state-dir data/live/ --regions config/optitrack_regions.json --localize
 
 and open http://localhost:8765/map.html. In the "Localization" panel click a
 method to draw its estimates on the map.
@@ -107,7 +105,7 @@ Useful options:
 
 Capture one trial (static scene) per robot, same `--trial-id` for all robots:
 
-    python static_trial.py --robot-id P0 --trial-id trial001 --out trials/ --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 8 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P0.json
+    python -m acquisition.static_trial --robot-id P0 --trial-id trial001 --out data/trials/ --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 8 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P0.json
 
 Each row stores the robot's observation of one marker: class, distance,
 bearing (`bearing_rad`) and the camera pose of the frame (`robot_pose`).
@@ -119,11 +117,11 @@ field of view. Rows saved before the bearing was recorded use their stored
 
 Fuse the trials (class-vote baselines per instance):
 
-    python merge_static_trials.py --trial-dir trials/
+    python -m acquisition.merge_static_trials --trial-dir data/trials/
 
 Localize with every method, optionally against ground truth and with plots:
 
-    python localize_trials.py --trial-dir trials/ --regions config/optitrack_regions.json --ground-truth config/ground_truth_positions.json --plots trial_plots/
+    python -m acquisition.localize_trials --trial-dir data/trials/ --regions config/optitrack_regions.json --ground-truth config/ground_truth_positions.json --plots trial_plots/
 
 Ground truth format (written by `tools/record_ground_truth.py`, see below):
 
@@ -149,7 +147,7 @@ with any number K of "virtual robots".
 2. Check the plan (no robot moves; the PNG is a top view with boxes,
    stops and paths, to compare with Motive):
 
-        python survey.py --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --plan-only --plan-png plan_L1.png
+        python -m acquisition.survey --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --plan-only --plan-png plan_L1.png
 
    Once per robot, check that OptiTrack rigid body, yaw and command signs
    agree (six short moves, about 0.2 m; it says what is wrong and the
@@ -179,17 +177,17 @@ with any number K of "virtual robots".
    option goes to `survey.py`. Optional check before starting (reads where
    the robots are now, nothing moves):
 
-        python launch_all.py --robot P0:8 --robot P1:7 --robot P2:9:config/checkerboard_calib_P1.json --robot P3:10:config/checkerboard_calib_P1.json --layout-id L2 --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --radius 1.3 --step-deg 15 --plan-only --plan-png plan_L2.png
+        python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P2:9:config/checkerboard_calib_P1.json --robot P3:10:config/checkerboard_calib_P1.json --layout-id L2 --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --radius 1.3 --step-deg 15 --plan-only --plan-png plan_L2.png
 
    then the survey:
 
-        python launch_all.py --robot P0:8 --robot P1:7 --robot P2:9:config/checkerboard_calib_P1.json --robot P3:10:config/checkerboard_calib_P1.json --layout-id L2 --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out survey_rounds/ --aruco-marker-size 0.077 --range-fit 1.102 -0.208 --radius 1.3 --step-deg 15
+        python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P2:9:config/checkerboard_calib_P1.json --robot P3:10:config/checkerboard_calib_P1.json --layout-id L2 --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_rounds/ --aruco-marker-size 0.077 --range-fit 1.102 -0.208 --radius 1.3 --step-deg 15
 
    Every launch is a NEW RUN in its own folder
-   `survey_rounds/<layout>_<date-time>/` (captures, raw readings, frames,
+   `data/survey_rounds/<layout>_<date-time>/` (captures, raw readings, frames,
    path preview, live figures): every round is driven and captured again,
-   nothing is skipped because an earlier run was there. `analyze_rounds.py`
-   and `build_scans.py` take one run folder or the whole `survey_rounds/`
+   nothing is skipped because an earlier run was there. `pipeline/analyze_rounds.py`
+   and `pipeline/build_scans.py` take one run folder or the whole `data/survey_rounds/`
    (every run analysed separately, `run` column in the CSV).
 
    Ctrl+C stops all the robots cleanly (each one stops, closes camera and
@@ -227,12 +225,12 @@ with any number K of "virtual robots".
    of every method with count and OSPA), `rounds.csv`, a summary, and one
    overall scene with all the rounds together:
 
-        python analyze_rounds.py --survey-dir survey/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out rounds/
+        python -m pipeline.analyze_rounds --survey-dir data/survey/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out results/rounds/
 
 5. Random combinations of observation points (any K), sanity checks of
    the single measurements:
 
-        python build_scans.py --survey-dir survey/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out analysis/ --plots analysis/
+        python -m pipeline.build_scans --survey-dir data/survey/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out results/analysis/ --plots results/analysis/
 
    Step 1 checks the single measurements against the ground truth (bias,
    RMS, range and bearing error, missed detections, false measurements,
@@ -240,14 +238,14 @@ with any number K of "virtual robots".
    wrong). Step 2 composes `--scans-per-k` random scans for every K in
    `--k` (default 1 2 3 4 6), runs the five methods and breaks exact
    count and OSPA down by K, layout, coverage of the boxes, missed
-   detections and distance. Results in `analysis/measurements.csv` and
-   `analysis/scans.csv`.
+   detections and distance. Results in `results/analysis/measurements.csv` and
+   `results/analysis/scans.csv`.
 
 ## Simulation
 
-    python simulate_localization.py
-    python simulate_localization.py --trials 200 --max-objects 8
-    python simulate_localization.py --robots 7
+    python -m acquisition.simulate_localization
+    python -m acquisition.simulate_localization --trials 200 --max-objects 8
+    python -m acquisition.simulate_localization --robots 7
 
 Compares all the localization methods in ideal conditions: every robot
 reports every object in its field of view, at its exact position, with

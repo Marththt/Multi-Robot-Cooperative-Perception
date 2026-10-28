@@ -24,15 +24,15 @@ Outputs (in --out):
                           (all - 1) robots
   layouts.png             the box layouts of the runs
 
-    python evaluate_runs.py --survey-dir survey_rounds/ --ground-truth config/ground_truth_positions.json \\
+    python -m pipeline.evaluate_runs --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
         --regions config/optitrack_regions.json --camera-offset 0.12 --range-fit 1.064 -0.080 \\
-        --out evaluation/ --names L1=Line L2=Square L3=Pairs
+        --out results/evaluation/ --names L1=Line L2=Square L3=Pairs
 
 --camera-offset M moves the saved body pose forward to the camera pose. --range-fit A B and --bearing-fit K B0 undo the systematic part of the measurements
-(measured = A * true + B, measured = K * true + B0); calibrate.py estimates them.
+(measured = A * true + B, measured = K * true + B0); pipeline/calibrate.py estimates them.
 
 Sensor calibration (recommended): --sensor-calib config/sensor_calib.json, written by
-    python calibrate.py survey_rounds/ --camera-offset 0 --out config/sensor_calib.json
+    python -m pipeline.calibrate survey_rounds/ --camera-offset 0 --out config/sensor_calib.json
 sets, for ALL methods at once, the measured characteristics of the sensor:
   range_fit, bearing_fit   distance and bearing correction (unless --range-fit / --bearing-fit are given)
   sigma_pos                position error assumed by MHT, PHD, CPHD (unless --sigma-pos is given)
@@ -43,8 +43,8 @@ sets, for ALL methods at once, the measured characteristics of the sensor:
 Without --sensor-calib every value keeps the code default (sigma 0.10 m, p_d 1, union 0.5 m).
 The settings actually used are printed at the start.
 
-    python evaluate_runs.py --survey-dir survey_rounds/ --ground-truth config/ground_truth_positions.json \\
-        --regions config/optitrack_regions.json --sensor-calib config/sensor_calib.json --out evaluation/
+    python -m pipeline.evaluate_runs --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
+        --regions config/optitrack_regions.json --sensor-calib config/sensor_calib.json --out results/evaluation/
 """
 
 import argparse
@@ -59,9 +59,9 @@ from itertools import combinations, permutations
 
 import numpy as np
 
-import analyze_rounds
-from analyze_rounds import METHOD_LABELS, fuse
-from build_scans import ARENA_DEFAULT, bind_run_truth, load_points, load_truth
+from pipeline import analyze_rounds
+from pipeline.analyze_rounds import METHOD_LABELS, fuse
+from pipeline.build_scans import ARENA_DEFAULT, bind_run_truth, load_points, load_truth
 from vf.fusion.localization_methods import METHODS
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions, sensor_from_arguments,
                                     zones_from_arguments)
@@ -420,13 +420,13 @@ def main():
     ap.add_argument("--survey-dir", required=True)
     ap.add_argument("--ground-truth", required=True)
     ap.add_argument("--regions", default=None)
-    ap.add_argument("--out", default="evaluation/")
+    ap.add_argument("--out", default="results/evaluation/")
     ap.add_argument("--range-fit", type=float, nargs=2, default=None, metavar=("A", "B"),
                     help="distance correction measured = A * true + B")
     ap.add_argument("--bearing-fit", type=float, nargs=2, default=None, metavar=("K", "B0"),
-                    help="bearing correction measured = K * true + B0 (see calibrate.py)")
+                    help="bearing correction measured = K * true + B0 (see pipeline/calibrate.py)")
     ap.add_argument("--camera-offset", type=float, default=0.0, metavar="M",
-                    help="camera ahead of the body pivot [m] (see calibrate.py); only for runs saved with "
+                    help="camera ahead of the body pivot [m] (see pipeline/calibrate.py); only for runs saved with "
                          "survey.py --camera-offset-forward-m 0")
     ap.add_argument("--methods", default=",".join(METHODS))
     ap.add_argument("--cutoff", type=float, default=0.5, help="matching / OSPA cut-off c [m]")
@@ -438,7 +438,7 @@ def main():
     ap.add_argument("--names", nargs="*", default=[], metavar="LAYOUT=NAME",
                     help="names of the layouts in the figures, e.g. L1=Line L2=Square")
     ap.add_argument("--sensor-calib", default=None, metavar="JSON",
-                    help="sensor calibration written by calibrate.py --out (range and bearing fit, "
+                    help="sensor calibration written by pipeline/calibrate.py --out (range and bearing fit, "
                          "sigma_pos, p_d); explicit command-line values win")
     ap.add_argument("--union-threshold", type=float, default=None, metavar="M",
                     help="clustering distance of union [m] (default: 3 * sigma_pos with --sensor-calib, "

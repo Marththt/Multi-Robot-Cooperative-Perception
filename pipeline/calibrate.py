@@ -2,7 +2,7 @@
 
 Input : processed captures (<survey_dir>/L*_*/P*.jsonl + ground_truth.json, one feature vector per box).
 Output: the measured characteristics of the sensor, printed and (with --out) written to a JSON file
-        that evaluate_runs.py reads with --sensor-calib:
+        that pipeline/evaluate_runs.py reads with --sensor-calib:
 
         range_fit    d_meas = A * d_true + B            (systematic part of the distance)
         bearing_fit  b_meas = k * b_true + b0           (systematic part of the bearing)
@@ -10,7 +10,7 @@ Output: the measured characteristics of the sensor, printed and (with --out) wri
                      lateral residual, i.e. the isotropic error the fusion algorithms should assume
         p_d          share of the boxes inside a robot's field of view that produce a feature vector
 
-Usage : python calibrate.py <survey_dir> [--camera-offset 0.12] [--out config/sensor_calib.json]
+Usage : python -m pipeline.calibrate <survey_dir> [--camera-offset 0.12] [--out config/sensor_calib.json]
 
 The camera offset is the distance of the camera ahead of the body pivot. Runs saved with
 survey.py --camera-offset-forward-m 0.12 already store the camera pose: use --camera-offset 0 (default

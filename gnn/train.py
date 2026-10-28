@@ -4,17 +4,29 @@ For every layout L (L4 ... L11) a model is trained on the scenes of all the othe
 the 7 scenes of L, with all robots fused. The test scenes are never seen in training, and nothing is
 tuned on them: the settings below are fixed before the run.
 
+--folds tests several layouts together, e.g. a whole kind of arrangement that is then absent from
+training:  --folds "L4,L5,L6;L7,L8;L9,L10,L11"  (2x2 blocks / lines / pairs and scattered).
+
+--test-survey-dir tests on runs that are never used in training: the model is trained once on every
+scene of --survey-dir and evaluated only on the test runs (e.g. another recording session). Runs of a
+different session can need their own sensor calibration (--test-sensor-calib, from pipeline/calibrate.py on
+those runs), which pipeline/evaluate_runs.py must then use as well for the classical baseline (--baseline):
+    python -m gnn.train --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
+        --sensor-calib config/sensor_calib.json --test-survey-dir data/survey_old/ \\
+        --test-ground-truth config/ground_truth_old.json --test-sensor-calib config/sensor_calib_old.json \\
+        --baseline results/evaluation_old/scenes.csv --out results/evaluation_gnn_old/
+
 Training data augmentation (training scenes only):
   rotation        the whole scene is rotated by a random angle about the ring centre
   robot dropout   with probability --robot-dropout one robot is removed from the scene
   det dropout     every detection is removed with probability --det-dropout (at least one is kept)
 
-The metrics are those of evaluate_runs.py (same matching, RMSE, count error, OSPA, cut-off 0.5 m), so
+The metrics are those of pipeline/evaluate_runs.py (same matching, RMSE, count error, OSPA, cut-off 0.5 m), so
 the GNN rows can be compared directly with the classical methods. With --baseline the scenes.csv written
-by evaluate_runs.py is read and the classical methods are printed next to the GNN.
+by pipeline/evaluate_runs.py is read and the classical methods are printed next to the GNN.
 
-    python gnn_train.py --survey-dir survey_rounds/ --ground-truth config/ground_truth_positions.json \\
-        --sensor-calib config/sensor_calib.json --baseline evaluation_calib/scenes.csv --out evaluation_gnn/
+    python -m gnn.train --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
+        --sensor-calib config/sensor_calib.json --baseline results/evaluation_calib/scenes.csv --out results/evaluation_gnn/
 
 Outputs (in --out): gnn_scenes.csv (one row per test scene), gnn_summary.csv (overall and per layout),
 comparison.csv (GNN and classical methods per layout, with --baseline), model_<layout>_<seed>.pt.
@@ -30,9 +42,9 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from evaluate_runs import scene_metrics, summarize, write_csv
-from gnn_dataset import build_scenes, subset_robots
-from gnn_model import RobotGNN, collate, decode, encode_scene, loss_fn
+from pipeline.evaluate_runs import scene_metrics, summarize, write_csv
+from gnn.dataset import build_scenes, subset_robots
+from gnn.model import RobotGNN, collate, decode, encode_scene, loss_fn
 
 METHOD_ORDER = ["zone_class", "union", "phd", "cphd", "mht", "gnn"]
 LABELS = dict(zone_class="Zone+class", union="Union", phd="PHD", cphd="CPHD", mht="MHT", gnn="GNN")
@@ -119,14 +131,15 @@ def pair_accuracy(scene, pairs, p_same, p_false):
 
 
 def read_baseline(path):
-    """All-robot rows of evaluate_runs.py scenes.csv."""
+    """All-robot rows of pipeline/evaluate_runs.py scenes.csv."""
     rows = []
     with open(path) as f:
         for r in csv.DictReader(f):
             if int(r["k"]) != int(r["n_robots"]):
                 continue
             rows.append(dict(layout=r["layout"], method=r["method"], round=int(r["round"]),
-                             dn=int(r["dn"]), rmse=float(r["rmse"]) if r["rmse"] not in ("", "nan") else math.nan))
+                             dn=int(r["dn"]), rmse=float(r["rmse"]) if r["rmse"] not in ("", "nan") else math.nan,
+                             n_matched=int(r["n_matched"]), n_true=int(r["n_true"])))
     return rows
 
 
@@ -134,10 +147,18 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--survey-dir", required=True)
     ap.add_argument("--ground-truth", required=True)
-    ap.add_argument("--sensor-calib", default=None, help="calibrate.py --out (range / bearing fit)")
-    ap.add_argument("--baseline", default=None, help="scenes.csv of evaluate_runs.py, for the comparison")
-    ap.add_argument("--out", default="evaluation_gnn/")
+    ap.add_argument("--sensor-calib", default=None, help="pipeline/calibrate.py --out (range / bearing fit)")
+    ap.add_argument("--baseline", default=None, help="scenes.csv of pipeline/evaluate_runs.py, for the comparison")
+    ap.add_argument("--out", default="results/evaluation_gnn/")
+    ap.add_argument("--test-survey-dir", default=None,
+                    help="separate test set: train on all of --survey-dir, test on these runs only")
+    ap.add_argument("--test-ground-truth", default=None, help="ground truth of the test runs")
+    ap.add_argument("--test-sensor-calib", default=None,
+                    help="sensor calibration of the test runs (default: --sensor-calib)")
     ap.add_argument("--layouts", default=None, help="comma-separated test layouts (default: all)")
+    ap.add_argument("--folds", default=None,
+                    help="groups of layouts tested together, ';' between groups, ',' inside a group "
+                         "(default: one layout per fold)")
     ap.add_argument("--epochs", type=int, default=200)
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--lr", type=float, default=1e-3)
@@ -155,23 +176,41 @@ def main():
     torch.set_num_threads(max(1, os.cpu_count() or 1))
 
     scenes = build_scenes(a.survey_dir, a.ground_truth, a.sensor_calib)
-    layouts = sorted({s["layout"] for s in scenes}, key=layout_key)
-    if a.layouts:
-        layouts = [l for l in layouts if l in a.layouts.split(",")]
-    print(f"{len(scenes)} scenes, layouts {', '.join(layouts)}; "
-          f"{a.epochs} epochs, hidden {a.hidden}, hops {a.hops}, {a.seeds} seed(s) per fold")
+    if a.test_survey_dir:
+        # separate test set: train once on every scene of --survey-dir, test on --test-survey-dir only
+        test_scenes = build_scenes(a.test_survey_dir, a.test_ground_truth or a.ground_truth,
+                                   a.test_sensor_calib or a.sensor_calib)
+        layouts = sorted({s["layout"] for s in test_scenes}, key=layout_key)
+        folds = [("test-set", scenes, test_scenes, layouts)]
+        print(f"train: {len(scenes)} scenes of {a.survey_dir}; test: {len(test_scenes)} scenes of "
+              f"{a.test_survey_dir} ({', '.join(layouts)}); "
+              f"{a.epochs} epochs, hidden {a.hidden}, hops {a.hops}, {a.seeds} seed(s)")
+    else:
+        layouts = sorted({s["layout"] for s in scenes}, key=layout_key)
+        if a.layouts:
+            layouts = [l for l in layouts if l in a.layouts.split(",")]
+        if a.folds:
+            groups = [[l.strip() for l in g.split(",") if l.strip() in layouts] for g in a.folds.split(";")]
+            groups = [g for g in groups if g]
+            layouts = [l for l in layouts if any(l in g for g in groups)]
+        else:
+            groups = [[l] for l in layouts]
+        folds = [("+".join(g), [s for s in scenes if s["layout"] not in g],
+                  [s for s in scenes if s["layout"] in g], g) for g in groups]
+        print(f"{len(scenes)} scenes, test folds {' | '.join(','.join(g) for g in groups)}; "
+              f"{a.epochs} epochs, hidden {a.hidden}, hops {a.hops}, {a.seeds} seed(s) per fold")
 
     rows, pair_ok, false_ok = [], [], []
-    for test in layouts:
+    for name, train_set, test_set, fold_layouts in folds:
         t0 = time.time()
-        train_set = [s for s in scenes if s["layout"] != test]
-        test_set = [s for s in scenes if s["layout"] == test]
+        print(f"  fold {name}: train on {', '.join(sorted({s['layout'] for s in train_set}, key=layout_key))}",
+              flush=True)
         models = []
         for seed in range(a.seeds):
             model = train(train_set, a, seed)
-            torch.save(model.state_dict(), os.path.join(a.out, f"model_{test}_{seed}.pt"))
+            torch.save(model.state_dict(), os.path.join(a.out, f"model_{name}_{seed}.pt"))
             models.append(model)
-        for s in sorted(test_set, key=lambda q: q["round"]):
+        for s in sorted(test_set, key=lambda q: (layout_key(q["layout"]), q["round"])):
             pairs, p_same, p_false = predict(models, s)
             est, _ = decode(s["pos"], pairs, p_same, p_false)
             r = scene_metrics(est, list(s["truth"]), a.cutoff, a.ospa_p)
@@ -181,10 +220,12 @@ def main():
             ok, okf = pair_accuracy(s, pairs, p_same, p_false)
             pair_ok += ok
             false_ok += okf
-        fold = [r for r in rows if r["layout"] == test]
-        dns = " ".join("%+d" % r["dn"] for r in fold)
-        print(f"  {test}: exact {100 * np.mean([r['dn'] == 0 for r in fold]):.0f}%  dn {dns}  "
-              f"RMSE {100 * np.nanmean([r['rmse'] for r in fold]):.1f} cm  ({time.time() - t0:.0f} s)", flush=True)
+        for test in fold_layouts:
+            fold = [r for r in rows if r["layout"] == test]
+            dns = " ".join("%+d" % r["dn"] for r in fold)
+            print(f"    {test}: exact {100 * np.mean([r['dn'] == 0 for r in fold]):.0f}%  dn {dns}  "
+                  f"RMSE {100 * np.nanmean([r['rmse'] for r in fold]):.1f} cm", flush=True)
+        print(f"    ({time.time() - t0:.0f} s)", flush=True)
 
     write_csv(os.path.join(a.out, "gnn_scenes.csv"), rows)
     summ = summarize(rows, ["gnn"], None) + summarize(rows, ["gnn"], "layout")
@@ -192,35 +233,40 @@ def main():
     print(f"\npair decisions correct: {100 * np.mean(pair_ok):.1f}% of {len(pair_ok)}, "
           f"false-detection decisions correct: {100 * np.mean(false_ok):.1f}% of {len(false_ok)}")
 
-    # comparison table: exact count % / mean RMSE cm, per layout and overall
+    # comparison table per layout and overall. "correct" = right count AND every true box matched
+    # (a scene with one box missed and one invented has the right count but is not correct)
     table = defaultdict(dict)
     for r in rows:
-        table[(r["layout"], "gnn")].setdefault("rows", []).append((r["dn"], r["rmse"]))
+        table[(r["layout"], "gnn")].setdefault("rows", []).append(
+            (r["dn"], r["rmse"], r["dn"] == 0 and r["n_matched"] == r["n_true"]))
     methods = ["gnn"]
     if a.baseline:
         for r in read_baseline(a.baseline):
             if r["layout"] in layouts:
-                table[(r["layout"], r["method"])].setdefault("rows", []).append((r["dn"], r["rmse"]))
+                table[(r["layout"], r["method"])].setdefault("rows", []).append(
+                    (r["dn"], r["rmse"], r["dn"] == 0 and r["n_matched"] == r["n_true"]))
         methods = [m for m in METHOD_ORDER if any((l, m) in table for l in layouts)]
 
     def cell(entries):
         if not entries:
-            return "-", math.nan, math.nan
-        exact = 100 * np.mean([dn == 0 for dn, _ in entries])
-        rmse = 100 * np.nanmean([e for _, e in entries])
-        return f"{exact:.0f} / {rmse:.1f}", exact, rmse
+            return "-", math.nan, math.nan, math.nan
+        exact = 100 * np.mean([dn == 0 for dn, _, _ in entries])
+        correct = 100 * np.mean([ok for _, _, ok in entries])
+        rmse = 100 * np.nanmean([e for _, e, _ in entries])
+        return f"{exact:.0f}/{correct:.0f}/{rmse:.1f}", exact, correct, rmse
 
-    print("\nexact count % / mean RMSE cm (all robots fused)")
-    print("  " + f"{'layout':<8}" + "".join(f"{LABELS.get(m, m):>14}" for m in methods))
+    print("\nexact count % / correct % (count right and every box matched) / mean RMSE cm (all robots fused)")
+    print("  " + f"{'layout':<8}" + "".join(f"{LABELS.get(m, m):>16}" for m in methods))
     comp = []
     for l in layouts + ["all"]:
         line = f"  {l:<8}"
         for m in methods:
             entries = ([e for ll in layouts for e in table[(ll, m)].get("rows", [])] if l == "all"
                        else table[(l, m)].get("rows", []))
-            text, exact, rmse = cell(entries)
-            line += f"{text:>14}"
-            comp.append(dict(layout=l, method=m, scenes=len(entries), exact_pct=exact, rmse_mean_cm=rmse))
+            text, exact, correct, rmse = cell(entries)
+            line += f"{text:>16}"
+            comp.append(dict(layout=l, method=m, scenes=len(entries), exact_pct=exact, correct_pct=correct,
+                             rmse_mean_cm=rmse))
         print(line)
     write_csv(os.path.join(a.out, "comparison.csv"), comp)
     print(f"\nwritten in {a.out}: gnn_scenes.csv, gnn_summary.csv, comparison.csv, model_*.pt")

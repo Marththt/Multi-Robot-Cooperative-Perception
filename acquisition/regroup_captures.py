@@ -8,9 +8,9 @@ static_trial.capture_trial does during the survey. During the survey the
 threshold is --instance-threshold-m (default 0.5 m): two boxes closer than
 that, seen by the same robot, become ONE object. This script redoes the
 grouping with another threshold and writes a new survey folder that
-analyze_rounds.py / build_scans.py / evaluate_runs.py read as usual.
+pipeline/analyze_rounds.py / pipeline/build_scans.py / pipeline/evaluate_runs.py read as usual.
 
-    python regroup_captures.py --survey-dir survey_rounds/ --out survey_rounds_t015/ --threshold 0.15
+    python -m acquisition.regroup_captures --survey-dir data/survey_rounds/ --out survey_rounds_t015/ --threshold 0.15
 
 Input: <run>/raw/<robot>.jsonl (one row per frame, written by survey.py)
 and <run>/<robot>.jsonl (for the capture metadata). Output: the same run

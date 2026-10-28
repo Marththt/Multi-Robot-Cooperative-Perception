@@ -1,7 +1,7 @@
 """Fits the sensor model of the simulator on real runs and writes it as JSON.
 
 Only the layouts given with --layouts are used (default L5, L7, L10: one 2x2 block, one line, one
-scattered layout), so the other layouts stay free for the fidelity check (sim_fidelity.py).
+scattered layout), so the other layouts stay free for the fidelity check (sim/fidelity.py).
 
 What is fitted, from the real detections and the OptiTrack ground truth:
   box orientation    per box, from the viewing angles reported by the robots (scene state, not noise)
@@ -18,7 +18,7 @@ What is fitted, from the real detections and the OptiTrack ground truth:
 False detections and two-face reports are rare (a few per layout). --rare-events all fits them on every
 layout instead; the output records which choice was made.
 
-    python sim_calibrate.py --survey-dir survey_rounds/ --ground-truth config/ground_truth_positions.json \\
+    python -m sim.calibrate --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
         --sensor-calib config/sensor_calib.json --layouts L5,L7,L10 --out config/sensor_model.json
 """
 
@@ -28,7 +28,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from gnn_dataset import build_scenes, load_calibration
+from gnn.dataset import build_scenes, load_calibration
 from sim.geometry import blocked, box_polygon, faces_seen, marker_point, viewing_angle, wrap
 from sim.model import SensorModel
 from sim.scene import estimate_orientations
@@ -80,7 +80,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--survey-dir", required=True)
     ap.add_argument("--ground-truth", required=True)
-    ap.add_argument("--sensor-calib", required=True, help="calibrate.py --out of the same runs")
+    ap.add_argument("--sensor-calib", required=True, help="pipeline/calibrate.py --out of the same runs")
     ap.add_argument("--layouts", default="L5,L7,L10")
     ap.add_argument("--rare-events", choices=["calibration", "all"], default="calibration",
                     help="layouts used for false detections and two-face reports")

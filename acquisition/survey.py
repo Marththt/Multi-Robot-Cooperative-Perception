@@ -10,7 +10,7 @@ Why the robots do not need to be synchronised
 The boxes do not move, so what robot i sees from stop k is valid at any
 time. Every stop is an independent OBSERVATION POINT (observations +
 camera pose). The scans that the localization methods are tested on are
-composed afterwards, offline, by build_scans.py, choosing which
+composed afterwards, offline, by pipeline/build_scans.py, choosing which
 observation points to put together (also more "virtual robots" than the
 real ones).
 
@@ -61,14 +61,14 @@ model: every reading of every capture (--n-readings frames) is kept.
 --no-frames skips the images (the raw rows are still written).
 
     # dry run: print the plan, no robot
-    python survey.py --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json --plan-only
+    python -m acquisition.survey --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json --plan-only
 
     # simulation: fake robot and synthetic observations from the ground truth
     # (field of view, range, occlusions between boxes, Gaussian noise on d and beta)
-    python survey.py --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json --sim --out survey/
+    python -m acquisition.survey --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json --sim --out survey/
 
     # real robot
-    python survey.py --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json \\
+    python -m acquisition.survey --robot-id P0 --layout-id L1 --ground-truth config/ground_truth_positions.json \\
         --out survey/ --regions config/optitrack_regions.json --optitrack-rb-id 8 --others 7 9 \\
         --start-deg 0 --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P0.json
 """
@@ -767,7 +767,7 @@ class RobotHandle:
                 r["robot_pose"] = list(pose)
             return rows or [dict(class_name=None, confidence=0.0, distance=None, bearing_rad=None,
                                  viewing_angle_rad=None, robot_pose=list(pose))], ""
-        from static_trial import capture_trial
+        from acquisition.static_trial import capture_trial
         rec = RecordingDetector(self.detector, self.cam_rec)
         phase(f"capturing {trial_id} (camera + marker detection)")
         t0 = time.time()
@@ -889,7 +889,7 @@ def add_survey_arguments(p):
     """Arguments shared by survey.py and survey_team.py."""
     p.add_argument("--layout-id", required=True, help="box layout, key of --ground-truth")
     p.add_argument("--ground-truth", required=True, help="tools/record_ground_truth.py output")
-    p.add_argument("--out", default="survey/")
+    p.add_argument("--out", default="data/survey/")
     p.add_argument("--radii", type=float, nargs="+", default=[1.0, 1.4, 1.8],
                    help="ring radii around the layout centre [m]")
     p.add_argument("--step-deg", type=float, default=30.0, help="angle between stops on a ring")

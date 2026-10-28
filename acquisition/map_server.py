@@ -15,16 +15,16 @@ a browser, e.g. over SSH): it is a visual alternative/addition that reads
 the SAME --state-dir folder, in a separate process.
 
 Usage (in one more terminal besides the static_trial.py ones, e.g.
-    python static_trial.py --robot-id P0 --live --state-out live/P0.json \\
+    python -m acquisition.static_trial --robot-id P0 --live --state-out live/P0.json \\
         --regions config/optitrack_regions.json --localization optitrack \\
         --optitrack-rb-id 8 --detector aruco --aruco-marker-size 0.08 \\
         --camera-calib config/checkerboard_calib_P0.json
 for each robot):
-    python map_server.py --state-dir live/ --regions config/optitrack_regions.json
+    python -m acquisition.map_server --state-dir live/ --regions config/optitrack_regions.json
 
 With multi-object localization (all the methods of Section 3.2 of the
 document, without faults by default -- see dashboard.py --localize):
-    python map_server.py --state-dir live/ --regions config/optitrack_regions.json --localize
+    python -m acquisition.map_server --state-dir live/ --regions config/optitrack_regions.json --localize
 
 then open in the browser:
     http://localhost:8765/map.html
@@ -45,14 +45,14 @@ import threading
 import time
 from urllib.parse import urlparse
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repository root
 
-from dashboard import (read_state, rows_from_state, methods_from_argument,
+from acquisition.dashboard import (read_state, rows_from_state, methods_from_argument,
                        robots_for_localization)
 from vf.fusion.localization_methods import METHODS, localize_live
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions,
                                     sensor_from_arguments, zones_from_arguments)
-from merge_static_trials import (
+from acquisition.merge_static_trials import (
     split_instances, BASELINE)
 from vf.fusion.multi_robot_simulation import Observation
 
@@ -250,7 +250,7 @@ def main():
 
     # SimpleHTTPRequestHandler serves files from the CURRENT working
     # directory -- we move here into the script's folder so map.html is
-    # always found, regardless of where you launch "python map_server.py".
+    # always found, regardless of where you launch "python -m acquisition.map_server".
     os.chdir(SCRIPT_DIR)
 
     httpd = socketserver.ThreadingTCPServer(("127.0.0.1", args.port), Handler)

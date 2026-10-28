@@ -54,10 +54,10 @@ Output
 and a summary on screen: per method, per K, per layout, per minimum
 coverage, with/without missed detections, per distance band.
 
-    python build_scans.py --survey-dir survey/ --ground-truth config/ground_truth_positions.json \\
-        --regions config/optitrack_regions.json --out analysis/
+    python -m pipeline.build_scans --survey-dir data/survey/ --ground-truth config/ground_truth_positions.json \\
+        --regions config/optitrack_regions.json --out results/analysis/
 
-    python build_scans.py --survey-dir survey/ --ground-truth config/ground_truth_positions.json \\
+    python -m pipeline.build_scans --survey-dir data/survey/ --ground-truth config/ground_truth_positions.json \\
         --k 1 2 3 4 6 --scans-per-k 300 --methods zone_class,union,mht --plots analysis/
 """
 
@@ -475,7 +475,7 @@ def main():
     p.add_argument("--survey-dir", required=True, help="folder of the survey.py files")
     p.add_argument("--ground-truth", required=True)
     p.add_argument("--regions", default=None, help="regions JSON, for the arena bounds")
-    p.add_argument("--out", default="analysis/")
+    p.add_argument("--out", default="results/analysis/")
     p.add_argument("--layouts", nargs="*", default=None, help="only these layouts (default: all)")
     p.add_argument("--k", type=int, nargs="+", default=[1, 2, 3, 4, 6],
                    help="observation points per scan")
