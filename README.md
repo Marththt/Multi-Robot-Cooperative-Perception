@@ -19,13 +19,13 @@ Run every command from the repository root, with the scripts as modules:
 
 | Path | Content |
 |---|---|
-| `acquisition/` | Everything that runs with the robots: `launch_all` (move and capture with all robots), `survey` (one robot driving to its stops), `static_trial` (one robot: live preview / static trial), `record_obstacle`, `dashboard` and `map_server` + `map.html` (live views), `merge_static_trials`, `localize_trials`, `regroup_captures`, `pack_runs`, `simulate_localization` |
+| `acquisition/` | Everything that runs with the robots: `launch_all` (move and capture with all robots), `survey` (one robot driving to its stops), `static_trial` (one robot: live preview / static trial), `record_obstacle`, `dashboard` and `map_server` + `map.html` (live views), `merge_static_trials`, `localize_trials`, `regroup_captures`, `pack_runs` |
 | `pipeline/` | Processing of the recorded runs: `build_scans` (scans, sanity checks), `analyze_rounds` (per-round fusion), `calibrate` (sensor calibration), `evaluate_runs` (the five classical methods, metrics and figures) |
 | `gnn/` | GNN for the association: `dataset`, `model`, `train` (leave-one-layout-out training and comparison with the classical methods) |
 | `sim/` | Measurement-level simulator: library (`geometry`, `model`, `scene`, `sensor`, `writer`) and scripts `calibrate` (fit on real runs), `generate` (replays of real layouts, random scenes), `fidelity` (real vs simulated); scenario files in `sim/specs/` |
 | `vf/` | Shared library: motion (`control/`), perception (`perception/`), robot pose (`localization/`), fusion methods (`fusion/`: class votes, sensor model, MHT, PHD/CPHD) |
-| `tools/` | Camera calibration, OptiTrack frame calibration, ground truth recorder, yaw reader, data converter |
-| `robomaster_sdk/` | Robot SDK (connection, camera, arm). `arm.py`, `arm_safety.py`, `teleop.py`, `recorder.py` belong to the older pick & throw project and are unchanged |
+| `tools/` | Camera calibration, OptiTrack frame calibration, motion check, ground truth recorder, yaw reader |
+| `robomaster_sdk/` | Robot SDK used for the data collection: connection (`robot`), camera (`camera`), robot registry (`config`) |
 | `config/` | Arena regions, camera calibrations, ArUco ID -> class map, ground truth of the layouts, sensor calibration, sensor model of the simulator |
 | `data/` | Recorded runs: `survey_rounds/` (L4-L11), `survey_rounds_t02/` (L1-L3), `trials/` (static trials), `live/` (live state files); simulated runs go to `data/sim_*/` (not versioned) |
 | `results/` | Outputs: `evaluation*/` (classical methods), `evaluation_gnn/`, `analysis/` |
@@ -36,21 +36,6 @@ Run every command from the repository root, with the scripts as modules:
 - the `robomaster` SDK and OpenCV with the ArUco module (`opencv-contrib-python`), numpy, matplotlib
 - the `natnet` package for OptiTrack (Motive streaming)
 - Motive running, with every robot defined as a rigid body (note its ID)
-
-## Coming from the Italian version
-
-The code, the file names, the command-line options and the keys of the
-data files are now in English. Convert your existing data once
-(the old folder is only read, never modified):
-
-    python -m tools.convert_data_to_english --old ../statico --new .
-
-It converts `trials/`, `live/` and `config/` (for example
-`config/regioni_optitrack.json` -> `config/optitrack_regions.json`,
-`calib_scacchiera_P0.json` -> `checkerboard_calib_P0.json`, the key
-`"classe"` -> `"class_name"`, the class `"scatola"` -> `"box"`). Files that
-already exist are not overwritten (the English config files shipped here
-are kept).
 
 ## Calibration (once)
 
@@ -213,9 +198,8 @@ with any number K of "virtual robots".
    first. If a survey is interrupted, the same command resumes it. Move the boxes, record the
    next layout (L2, ...), repeat.
 
-   The motion controller (`vf/control/goto.py`) is `goto_point.py`: same
-   gains and limits; command signs checked with `tools/check_motion.py`
-   (SIGN_Y = -1).
+   The motion controller is `vf/control/goto.py`; command signs checked
+   with `tools/check_motion.py` (SIGN_Y = -1).
    Without hardware: `--sim` (fake robot, synthetic observations from the
    ground truth with field of view, occlusions and noise).
 
@@ -243,12 +227,9 @@ with any number K of "virtual robots".
 
 ## Simulation
 
-    python -m acquisition.simulate_localization
-    python -m acquisition.simulate_localization --trials 200 --max-objects 8
-    python -m acquisition.simulate_localization --robots 7
-
-Compares all the localization methods in ideal conditions: every robot
-reports every object in its field of view, at its exact position, with
-no false alarms. The only difficulty left is deciding which reports are
-the same object (several objects of the same class, overlapping fields
-of view). `--robots N` sets the number of robots (default 3, the lab poses).
+The measurement-level simulator is in `sim/`: it is fitted on the real runs
+(`python -m sim.calibrate`), recreates real layouts or generates new ones from the
+scenario files in `sim/specs/` (`python -m sim.generate`), and is checked against
+the real data with `python -m sim.fidelity`. The simulated runs have the format of
+the real ones and go through `pipeline.evaluate_runs` and `gnn.train` unchanged.
+The full commands are in `docs/commands.md`.

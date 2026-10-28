@@ -1,8 +1,7 @@
 """Closed-loop motion of a RoboMaster EP to a planar pose, with OptiTrack.
 
-English port of goto_point.py (the controller tested on the robots):
-same proportional law, same limits, same sign conventions, same safety
-stops. Added for the autonomous survey (survey.py):
+Proportional controller tested on the robots, with its limits and safety
+stops. For the autonomous survey (acquisition/survey.py):
 
   - go_to() takes the pose as a callable and returns whether the goal was
     reached, so a caller can chain many goals;
@@ -13,8 +12,8 @@ stops. Added for the autonomous survey (survey.py):
   - FakeRobot integrates the commands, to test everything without robot
     and without OptiTrack.
 
-Command signs (SIGN_X, SIGN_Y, SIGN_Z): SIGN_X and SIGN_Z as found with
-`goto_point.py --jog`; SIGN_Y = -1 measured with tools/check_motion.py
+Command signs (SIGN_X, SIGN_Y, SIGN_Z): SIGN_X and SIGN_Z measured on the
+robots; SIGN_Y = -1 measured with tools/check_motion.py
 (with +1 a "move left" command moved the robot to the right).
 """
 

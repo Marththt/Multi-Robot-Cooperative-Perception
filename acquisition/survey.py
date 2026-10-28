@@ -886,7 +886,7 @@ def visit_stop(a, rh, captures, done, out_path, center, boxes, arena, robots=(),
 
 
 def add_survey_arguments(p):
-    """Arguments shared by survey.py and survey_team.py."""
+    """Arguments shared by survey.py and launch_all.py."""
     p.add_argument("--layout-id", required=True, help="box layout, key of --ground-truth")
     p.add_argument("--ground-truth", required=True, help="tools/record_ground_truth.py output")
     p.add_argument("--out", default="data/survey/")
@@ -986,58 +986,6 @@ def sim_start(first, center):
 # ====================================================================
 # Rounds: all the robots move together, one formation at a time
 # ====================================================================
-
-def split_by_starts(plan, starts, center):
-    """Sectors from where the robots ACTUALLY are at the start.
-
-    starts: {robot_id: (x, y)}. Seen from the layout centre, every robot
-    owns the stops NEAREST to it in angle: its sector goes from halfway to
-    the previous robot to halfway to the next one, so every robot starts
-    inside its own sector and no side is left to a robot that cannot use
-    it. Order inside a sector (the same pattern for every robot, so that in
-    each round they all turn the same way and do not run into each other):
-    first ring from the start counter-clockwise to the end of the sector,
-    the next ring back clockwise over the whole sector, and so on; the part
-    of the first ring on the other side of the start comes last. A stop
-    where the robot already stands (within 0.15 m) is left out: round 0
-    covers it. Returns {robot_id: [captures in order]}."""
-    cx, cy = center
-    ang = {r: math.degrees(math.atan2(p[1] - cy, p[0] - cx)) % 360.0 for r, p in starts.items()}
-    order = sorted(ang, key=lambda r: ang[r])
-    n = len(order)
-    by_stop = {}
-    for c in plan:
-        by_stop.setdefault(c["stop"], []).append(c)
-    radii = sorted({by_stop[k][0]["radius_m"] for k in by_stop})
-    out = {}
-    for i, r in enumerate(order):
-        if n > 1:
-            to_next = (ang[order[(i + 1) % n]] - ang[r]) % 360.0 or 360.0
-            from_prev = (ang[r] - ang[order[(i - 1) % n]]) % 360.0 or 360.0
-            hi, lo = to_next / 2.0, -from_prev / 2.0
-        else:
-            hi, lo = 180.0, -180.0
-        sx, sy = starts[r]
-        d = {}
-        for k, caps in by_stop.items():
-            dk = (caps[0]["angle_deg"] - ang[r] + 180.0) % 360.0 - 180.0
-            if lo <= dk < hi and math.hypot(caps[0]["x"] - sx, caps[0]["y"] - sy) > 0.15:
-                d[k] = dk
-
-        def ring(rad, cond, reverse):
-            ks = [k for k in d if by_stop[k][0]["radius_m"] == rad and cond(d[k])]
-            return sorted(ks, key=lambda k: d[k], reverse=reverse)
-
-        seq = ring(radii[0], lambda v: v >= 0, False) if radii else []     # ccw, away from the start
-        ccw = True
-        for rad in radii[1:]:                                              # whole sector, alternating
-            ccw = not ccw
-            seq += ring(rad, lambda v: True, not ccw)
-        if radii:                                                          # first ring, other side
-            seq += ring(radii[0], lambda v: v < 0, ccw)
-        out[r] = [c for k in seq for c in by_stop[k]]
-    return out
-
 
 def team_arcs(starts, team, center, boxes, arena, a, min_sep_m=0.7, radial_search=True):
     """Round mode: every robot moves on an ARC around the layout centre,
@@ -1222,29 +1170,6 @@ def start_captures(pose, center, yaw_offsets_deg, index):
     ang = round(math.degrees(math.atan2(y - center[1], x - center[0])) % 360.0, 1)
     return [dict(stop=1000 + index, radius_m=round(r, 3), angle_deg=ang, x=x, y=y,
                  yaw=wrap_pi(face + math.radians(off)), yaw_offset_deg=off) for off in yaw_offsets_deg]
-
-
-def group_by_stop(captures):
-    rounds = []
-    for c in captures:
-        if not rounds or rounds[-1][0]["stop"] != c["stop"]:
-            rounds.append([])
-        rounds[-1].append(c)
-    return rounds
-
-
-def sector_rounds(plan, n_sectors, sector, center):
-    """The stops of ONE robot in round mode: its sector (split_groups) as a
-    list of rounds, each round = the captures of one stop. Also returns the
-    number of rounds of the whole team (the longest sector)."""
-    groups = split_groups(plan, n_sectors, center)
-    rounds = []
-    for c in groups[sector]:
-        if not rounds or rounds[-1][0]["stop"] != c["stop"]:
-            rounds.append([])
-        rounds[-1].append(c)
-    n_rounds = max(len({c["stop"] for c in g}) for g in groups)
-    return rounds, n_rounds, groups
 
 
 class RoundSync:

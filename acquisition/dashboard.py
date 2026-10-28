@@ -40,8 +40,8 @@ false alarms), see --p-d/--clutter:
 Terminal 3 refreshes by itself (default ~3 times per second). 'q' + enter,
 or Ctrl+C, to quit. The two video windows (terminals 1 and 2, the usual
 --live) stay separate: the camera is seen there, the merge is seen here --
-three windows/terminals for two robots, on purpose (see the "one process
-per robot" constraint already documented in patrol.py/static_trial.py).
+three windows/terminals for two robots, on purpose (one process per robot,
+see static_trial.py).
 
 "Old" data
 ----------
@@ -63,7 +63,7 @@ import time
 
 from acquisition.merge_static_trials import (
     split_instances, BASELINE)
-from vf.fusion.multi_robot_simulation import Observation
+from vf.fusion.aggregation import Observation
 from vf.fusion.localization_methods import METHODS, localize_live
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions,
                                     sensor_from_arguments, zones_from_arguments)

@@ -1,42 +1,13 @@
-"""Zone localization via on-board odometry (wheels + IMU) -- NO physical
-floor markings needed. Replaces the time-based assumption that patrol.py
-used until now ("I have been driving for X seconds, so I must be in this
-zone") with a real estimate of where the robot is, relative to the point
-where it was powered on/started.
+"""Robot pose providers: on-board odometry, camera offset and frame correction.
 
-Why not coloured tape on the floor
-------------------------------------------
-Requiring tape/mats on the floor only works if the environment is prepared
-in advance: it does not generalize to a deployment in an unknown environment
-(one of the narrative framings of the spec is precisely "disaster-site
-reconnaissance" -- there you have no time to lay coloured tape first). The
-RoboMaster SDK already exposes a position estimate from wheel odometry + IMU
-(chassis.sub_position), relative to the power-on point: it is not as
-accurate as OptiTrack (it drifts over time, like any odometry -- wheel slip,
-no external correction), but it is vastly better than "infer the zone from
-elapsed time" (the previous state of patrol.py) and it requires NO physical
-preparation of the arena: it works anywhere there is a floor with normal
-traction.
+OdometryLocalizer uses the position estimate of the RoboMaster SDK (wheels + IMU, chassis.sub_position),
+relative to the power-on point, as an alternative to OptiTrack (optitrack.py, the reference used in
+the experiments). Zones are (x, y) regions in metres, defined once per deployment in a config file
+(config/optitrack_regions.json). Odometry drifts over time (wheel slip, no external correction): for
+long runs, bring the robot back to a known point to reset it.
 
-Zones become (x, y) coordinate regions in METRES, relative to the robot's
-starting point in that deployment -- they are defined ONCE per deployment
-(a software choice, in a config file, see config/optitrack_regions.json);
-no physical lines or markers are needed.
-
-Honest limitation: odometry drifts over time (wheel slip, sensor
-inaccuracy). For long patrols/many laps the error accumulates -- if it
-becomes a problem, the simplest mitigation is to periodically reset/
-recalibrate by bringing the robot back to a known point; there is no need
-to switch to OptiTrack right away.
-
-Check against the installed SDK
---------------------------------------
-The exact signature of chassis.sub_position may vary between versions of
-the robomaster SDK -- here I use the most common one (callback with an
-(x, y, z) tuple, cs=0 = relative to the power-on point). VERIFY it against
-the installed version before trusting it on the real robot
-(`help(robot.chassis.sub_position)` or the official DJI RoboMaster SDK
-documentation).
+The signature of chassis.sub_position may differ between SDK versions (here: callback with an
+(x, y, z) tuple, cs=0 = relative to the power-on point); check it against the installed SDK.
 """
 
 import json

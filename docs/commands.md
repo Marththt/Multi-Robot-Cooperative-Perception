@@ -9,7 +9,7 @@ Run every command from the repository root. Scripts are run as modules (`python 
     python -m acquisition.static_trial --robot-id P2 --live --state-out data/live/P2.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 9 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
     python -m acquisition.static_trial --robot-id P3 --live --state-out data/live/P3.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 10 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
 
-    python -m acquisition.map_server --state-dir data/live/ --regions config/optitrack_regions.json --bayesian --localize
+    python -m acquisition.map_server --state-dir data/live/ --regions config/optitrack_regions.json --localize
 
 ## Record the box positions (OptiTrack)
 

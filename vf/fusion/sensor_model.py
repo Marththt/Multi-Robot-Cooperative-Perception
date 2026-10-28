@@ -9,7 +9,7 @@ the professor's document:
   p_D(x)      probability that the robot detects an object at x.
               With the robot pose: 0 outside the field of view (horizontal
               angle hfov, distance r_min..r_max), p_d inside -- or the
-              p_D(distance) of the fault model (fault_model.py) if given.
+              given p_D(distance) function.
               Without a pose: p_d everywhere (every robot sees the whole
               arena).
   R           covariance of the position error of a report:

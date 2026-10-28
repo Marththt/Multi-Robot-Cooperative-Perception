@@ -1,21 +1,13 @@
-"""Client for yolo_server.py: same interface as the local YOLO detector
-(yolo_detector.py) but over a socket, to be used inside patrol.py.
+"""Client of a remote YOLO server: the same .detect(img) -> list[(class_name, confidence, bbox)]
+interface as the other detectors, over a socket.
 
-Why it exists
--------------
-patrol.py imports robomaster (Python <=3.8). The local YOLO detector in
-yolo_detector.py imports ultralytics (Python >=3.10). The two cannot live
-in the same process/venv. This module never imports ultralytics/torch:
-only opencv-python (to encode the frame as JPEG) and the standard library
-socket, so it can live happily in the <=3.8 venv of patrol.py.
+The robot SDK needs Python <= 3.8 while YOLO (ultralytics) needs Python >= 3.10, so YOLO runs in a
+separate process and this client depends only on OpenCV (to encode the frame as JPEG) and the
+standard library. It is the alternative to ArUco for objects without markers
+(acquisition/static_trial.py --detector yolo).
 
-It exposes the same .detect(img) -> list[(class_name, confidence, bbox)]
-that perception.ObjectDetector expects, so patrol.py does not need to
-know whether the detector is local or remote.
-
-Wire protocol (unchanged): 4-byte big-endian length + JPEG bytes out;
-4-byte big-endian length + UTF-8 JSON list of [class, confidence, bbox]
-back. No JSON object keys are involved.
+Wire protocol: 4-byte big-endian length + JPEG bytes out; 4-byte big-endian length + UTF-8 JSON list
+of [class, confidence, bbox] back.
 """
 
 import json
@@ -36,10 +28,9 @@ def _recv_exact(conn, n):
 
 
 class RemoteYoloDetector:
-    """Connects to yolo_server.py. Reconnects on its own if the connection
+    """Connects to the YOLO server. Reconnects on its own if the connection
     drops (e.g. server restarted); if it stays unreachable, .detect()
-    returns an empty list for that round instead of crashing patrol.py --
-    better to lose one detection frame than the whole patrol."""
+    returns an empty list for that round instead of stopping the capture."""
 
     def __init__(self, host="127.0.0.1", port=8765, timeout=2.0,
                  jpeg_quality=90):

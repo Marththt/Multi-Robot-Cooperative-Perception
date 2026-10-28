@@ -27,6 +27,7 @@ import threading
 import time
 
 from natnet import NatNetClient
+from vf.control.goto import wrap_pi
 
 MOTIVE_SERVER = "127.0.0.1"     # ip of the PC running Motive
 MOTIVE_LOCAL_IP = "127.0.0.1"   # ip of your interface
@@ -90,10 +91,6 @@ def to_planar(pos, quat, up_axis=None, order=None):
         raise ValueError(f"invalid UP_AXIS: {up_axis}")
 
     return px, py, yaw
-
-
-def wrap_pi(a):
-    return (a + math.pi) % (2.0 * math.pi) - math.pi
 
 
 # ---------------------------------------------------------------------

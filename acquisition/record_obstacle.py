@@ -8,7 +8,7 @@ where they stood (to explain the results, and to reproduce them in the simulator
 Run it right after launch_all.py has started the run (or just before it, with the cartons already in
 place and not moved afterwards), with the run folder as --out:
 
-    python record_obstacles.py --rb 20 21 22 --out survey_rounds/L12_20261026-153000/ --size 0.30 0.30 0.30
+    python -m acquisition.record_obstacle --rb 20 21 22 --out data/survey_rounds/L12_20261026-153000/ --size 0.30 0.30 0.30
 
 --size: side of each carton [m], same order as --rb (used by the analysis as the radius of the blocked
 region; default 0.30).

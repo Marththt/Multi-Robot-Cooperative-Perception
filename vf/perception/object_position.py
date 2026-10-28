@@ -34,7 +34,7 @@ clustering (e.g. scikit-learn DBSCAN, which does not depend on order).
 """
 
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 # Placeholder -- TO BE VERIFIED against your real camera, or better
 # calibrated (tools/calibrate_camera.py, which gives a measured value
@@ -112,8 +112,8 @@ def estimate_object_position(bbox: Tuple[int, int, int, int],
                              image_size: Tuple[int, int],
                              robot_pose: Tuple[float, float, float],
                              class_name: str) -> Optional[Tuple[float, float]]:
-    """Single entry point. bbox=(x, y, w, h) in pixels (convention of
-    yolo_detector.py: x,y = top-left corner). image_size=(width, height)
+    """Single entry point. bbox=(x, y, w, h) in pixels
+    (x, y = top-left corner). image_size=(width, height)
     in pixels. None if it cannot be estimated (class without a known real
     height, or robot pose not available -- pass None as robot_pose in
     that case)."""

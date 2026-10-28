@@ -1,41 +1,16 @@
-"""Detection with OpenCV + classifier, and fault injection
-(Topic 4: robustness of multi-robot perception).
+"""Detection of one robot and optional simulated fault.
 
-What this module does, and what it does NOT do
-----------------------------------------------
-It combines candidates.py (finds candidate regions) and classifier.py
-(classifies them) into a single reading loop, and applies the optional
-simulated systematic fault to the result. This module does NOT decide
-how to move the robot (patrol.py) and does NOT fuse the reports of
-several robots (baselines 0-3, one level up): here only the raw
-observation of ONE robot is produced, with or without fault.
+ObjectDetector runs the reading loop of ONE robot: it reads a camera frame, runs the detector
+(ArUco by default, see aruco_detector.py; the YOLO client remains available for objects without
+markers) and returns Detection records with class, confidence, bounding box and, when the detector
+measures them, distance, bearing and viewing angle. It does not move the robot and does not fuse the
+reports of several robots (that is vf/fusion).
 
-History of the detection (for whoever reads this module from scratch)
----------------------------------------------------------------------
-Official SDK markers (`vision.sub_detect_info`) -> candidates.py +
-classifier.py (home-made, now superseded, left on disk only as a
-reference) -> zero-shot YOLO (yolo_detector.py, no training, but only a
-bbox: distance was estimated with a heuristic) -> NOW ArUco markers
-(aruco_detector.py), at the professor's explicit request: the fusion
-baselines need MEASURED distance/angle for every detection, not just
-estimated from the bbox -- see the aruco_detector.py docstring for the
-full reasoning. YOLO remains available (patrol.py --detector yolo) for
-objects without markers. In any case the interface towards patrol.py and
-detection_recorder.py does not change: whatever detector is used, a
-Detection comes out with the same shape (with distance/viewing_angle_rad
-populated only if the detector really measures them, see the dataclass
-below).
-
-Physical fault vs simulated fault
----------------------------------
-The professor's document distinguishes "physical" faults (occlusion,
-lighting, angle: obtained for real by placing an obstacle or changing
-the lighting in the lab, and with a real classifier these faults ALREADY
-happen on their own -- a half-occluded or badly lit object is classified
-worse without any dedicated code) from a "simulated systematic" fault (a
-robot designated faulty with probability p, whose detections are dropped
-or mislabelled in software, to get reproducible experiments). Only the
-latter is simulated here.
+Physical vs simulated fault
+---------------------------
+Physical faults (occlusion, lighting, steep viewing angle) happen on their own on the real setup.
+Only the simulated systematic fault is implemented here (FaultInjector): a robot designated faulty
+has its detections dropped or mislabelled in software, to get reproducible experiments.
 """
 
 import json
@@ -61,15 +36,10 @@ ZONES = ["north", "east", "south", "west", "center"]
 # ---------------------------------------------------------------------------
 # Recognised classes
 # ---------------------------------------------------------------------------
-# Defined HERE, not in the detection module: the detection can change
-# (zero-shot yolo_detector.py, now aruco_detector.py at the professor's
-# request, maybe something else tomorrow) without the simulated fault
-# below needing to know which one is in use right now.
-# "box": the current physical objects (white polystyrene boxes, each with
-# an ArUco marker attached -- see aruco_detector.py and
-# config/aruco_classes.json). "bottle"/"cup" remain for when we go back
-# to YOLO on objects without markers (see yolo_detector.py for why
-# "cards" is not there yet either).
+# Defined here, not in the detector modules, so the simulated fault does not
+# depend on which detector is in use. "box": the physical objects (boxes with
+# ArUco markers, see config/aruco_classes.json); "bottle"/"cup": classes of
+# the YOLO detector, for objects without markers.
 CLASSES = ["box", "bottle", "cup"]
 
 # ---------------------------------------------------------------------------
@@ -95,8 +65,7 @@ class Detection:
     # it cannot be computed (robot pose not available, or a "nothing
     # detected" entry that has no bbox to estimate it from). It is used to
     # tell apart two objects of the same class at different points of the
-    # room, which the zone alone cannot do (see the historical
-    # fondi_log_reali.py).
+    # room, which the zone alone cannot do.
     position: Optional[Tuple[float, float]] = None
     # distance/viewing_angle: ONLY when the detector really MEASURES them
     # (aruco_detector.ArucoDetector via solvePnP) -- not the heuristic
@@ -168,22 +137,14 @@ class ObjectDetector:
     """One reading loop: capture, detect, apply the simulated fault.
 
     `detector` is any object with a method
-    `.detect(img) -> list[(class_name, confidence, bbox)]` -- e.g. the
-    zero-shot YOLO detector (yolo_detector.py), in future possibly a
-    fine-tuned YOLO, without this class or patrol.py having to change.
+    `.detect(img) -> list[(class_name, confidence, bbox)]` (the ArUco detector
+    or the YOLO client).
 
     `camera` is any object with a NON-blocking `.read() -> (frame, age)`
-    method, returning (None, None) if there is nothing yet -- the
-    interface of YOUR Camera class (robomaster_sdk.camera.Camera): a
-    background reader caching the last frame, not a direct
-    `robot.camera.read_cv2_image()`. Reason: the same one already written
-    in the docstring of your camera.py -- read_cv2_image() blocks until
-    it has a frame, and calling it inside a 10 Hz loop ties the sample
-    rate to the video rate instead of the patrol clock. The previous
-    version of this module called read_cv2_image() directly (never tried
-    on the real robot, so never measured as a problem -- but it is the
-    same bug your code already documents as solved elsewhere, fixed here
-    before discovering it on the robot)."""
+    method, returning (None, None) if there is nothing yet, such as
+    robomaster_sdk.camera.Camera (a background reader caching the last
+    frame). A direct `robot.camera.read_cv2_image()` blocks until it has a
+    frame, which would tie the loop rate to the video rate."""
 
     def __init__(self, camera, robot_id, current_zone_fn, detector,
                  fault_injector=None, pose_fn=None, max_age=None):
@@ -209,12 +170,9 @@ class ObjectDetector:
         too old (max_age) -- MISSING data, not "I looked and there was
         nothing": the two must be kept distinct. If there is a frame but
         no detection, it still returns ONE Detection with class_name=None:
-        without it, events.jsonl cannot distinguish "the robot never
-        passed here" from "it passed and saw nothing" -- and without that
-        distinction neither recall nor the false positive rate can be
-        computed on real data (see metriche.py/
-        valuta_esperimento_reale.py: both also count negative cases, not
-        just detections).
+        without it, a log cannot distinguish "the robot never looked
+        here" from "it looked and saw nothing", and neither recall nor the
+        false positive rate could be computed.
 
         If `detector` also exposes .detect_with_pose(img) (today
         aruco_detector.ArucoDetector), it is used instead of

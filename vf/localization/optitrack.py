@@ -1,49 +1,13 @@
-"""Pose provider (x, y, yaw) from OptiTrack -- the position source
-explicitly required by the professor's document (September 2026,
-Section 3.4: "common world coordinate frame... via OptiTrack") as the
-shared reference across robots, instead of the on-board self-localization
-of localization.py.
+"""Pose provider (x, y, yaw) from OptiTrack: the common world frame shared by all robots.
 
-REWRITTEN in this session: the previous version guessed a NatNet interface
-(client.subscribe(name, callback)). Now that you sent your previous
-OptiTrack project (live_pp.py, two_robots.py, goto_point.py, check_grid.py,
-mocap_pose.py), there is no need to guess any more: mocap_pose.py is
-already a planar pose source that is DONE AND TESTED against Motive via
-natnet 0.3.0, with all the tricky details already solved (Y-up/Z-up
-convention, quaternion order, discarding stale data, a SINGLE NatNet
-connection shared across several rigid bodies to avoid port conflicts).
-This module does NOT duplicate that work: it wraps it in the same
-interface as localization.OdometryLocalizer
-(pose/position/current_zone/close), so patrol.py can choose between
-on-board odometry and OptiTrack with a single parameter (pose_provider in
-Patrol.__init__) without the rest of the pipeline (ObjectDetector,
-logging) knowing which one is in use.
+It wraps a pose source from mocap_pose.py (MocapPose for one rigid body per process, or
+MocapHub(...).view(rb_id) for several rigid bodies in one process) in the same interface as
+localization.OdometryLocalizer (pose / position / current_zone / close), so the acquisition scripts
+can switch between odometry and OptiTrack with one option.
 
-What to pass as pose_source
-------------------------------------
-Any object from your mocap_pose.py with a method
-`.get_pose() -> (x, y, yaw) or None`:
-  - mocap_pose.MocapPose(rb_id, ...)                one robot per
-    process (the normal case for patrol.py: one process per robot,
-    see the patrol.py docstring)
-  - mocap_pose.MocapHub(rb_ids, ...).view(rb_id)     several rigid bodies
-    in the SAME process (e.g. if in future patrol.py handled several
-    robots in a single script, as live_pp.py does)
-
-Why pose()/position() here can return None
-------------------------------------------------------------
-Unlike OdometryLocalizer (which always returns a triple, at worst (0,0,0)
-before the first odometry sample), get_pose() of mocap_pose.py EXPLICITLY
-returns None when data is missing or stale (reflective markers occluded,
-tracking lost mid-run -- see STALE_AFTER in mocap_pose.py). Faking a
-(0,0,0) pose in that case would be FALSE data passed off as real, worse
-than signalling "I don't know": None propagates correctly, without any
-changes, through perception.ObjectDetector (pose_fn can already return
-None, see its call to estimate_object_position) and through
-current_zone()/position() below (None -> unknown_zone, not a crash). The
-ONLY place that needed updating to handle this is the status print in
-patrol.py Patrol.run(), which assumed an always-valid triple -- see the
-fix there.
+pose() and position() return None when the tracking data is missing or stale (markers occluded,
+tracking lost; see STALE_AFTER in mocap_pose.py): a fake (0, 0, 0) would be wrong data, while None
+propagates as "position unknown" (unknown zone, no world position for that detection).
 """
 
 import logging
@@ -70,7 +34,7 @@ class OptiTrackPose:
         # pose_source (e.g. a MocapPose dedicated to ONE robot/process).
         # With a view of a MocapHub SHARED by several robots in the same
         # process, leave it False: whoever owns the hub closes it once for
-        # everyone (see live_pp.py); closing it here would break the other
+        # everyone; closing it here would break the other
         # robots still using it.
         self.close_source = close_source
         self._last_known_pose = None   # only for a more useful log

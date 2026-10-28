@@ -9,7 +9,7 @@ A scene can be
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 
@@ -69,7 +69,7 @@ def estimate_orientations(n_boxes, observations, step_deg=0.25):
 
 
 def scene_from_real(run_scenes, rng):
-    """One Scene from the rounds of one real run (gnn_dataset.build_scenes output, one dict per round)."""
+    """One Scene from the rounds of one real run (gnn.dataset.build_scenes output, one dict per round)."""
     first = run_scenes[0]
     truth = first["truth"]
     obs = []

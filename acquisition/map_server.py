@@ -54,7 +54,7 @@ from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions,
                                     sensor_from_arguments, zones_from_arguments)
 from acquisition.merge_static_trials import (
     split_instances, BASELINE)
-from vf.fusion.multi_robot_simulation import Observation
+from vf.fusion.aggregation import Observation
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _LOC_LOCK = threading.Lock()

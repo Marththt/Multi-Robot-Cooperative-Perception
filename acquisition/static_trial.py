@@ -1,85 +1,32 @@
-"""Capture ONE static trial for one robot: one observation per distinct
-physical OBJECT in view (class, confidence, distance, bearing, position)
--- not a patrol.
+"""Capture of ONE static trial for one robot, or live preview / live state for the dashboards.
 
-This is the "static trial" design from the professor's document (Section
-3.2: "exactly one observation is counted per robot per static trial, a
-single snapshot, not one per video frame") -- different from the
-continuous-patrol architecture of patrol.py, which was built before this
-detail and is NOT the priority for now: moving is not needed to validate
-the fusion algorithms, running them on a stationary trial is. patrol.py
-stays ready for later; this script neither touches nor replaces it.
+A static trial is one stationary arrangement of objects: the robot does not move and takes one
+snapshot. It writes one observation per distinct physical object in view (class, confidence,
+distance, bearing, position): --n-readings closely spaced readings (default 5) are grouped by
+estimated position (capture_trial()), and for each object the reading whose distance is closest to
+the group median is kept (_pick_representative()). merge_static_trials.py then pairs the objects
+across robots, again by position, and runs the fusion.
 
-If the scene contains MORE than one object (e.g. 2 boxes seen together),
-"one observation per robot per trial" is read per OBJECT, not per trial:
-each robot may write several rows in the same trial (one per distinct
-physical instance it sees), grouped by estimated position -- see
-capture_trial() below. merge_static_trials.py then re-pairs them across
-robots, again by position, before running the fusion.
+Trial (one process per robot, the same --trial-id for all robots):
 
-Why a separate file, and not patrol.py without the motion
-------------------------------------------------------------------------
-A static trial has no "traversed zones" and no path: robots and objects
-stay still, and a human decides WHEN to take the snapshot (run this
-script once per robot per trial). Reusing PATROL_ROUTE / the 10Hz loop of
-Patrol.run() only to ignore its motion would be more code to understand
-for a simpler task. What IS reused (identical, already tested):
-ObjectDetector, the detector (ArUco or YOLO), the pose provider
-(OptiTrack or odometry) -- same logic, same modules as patrol.py, just
-without driving the chassis.
-
-One trial = one physical arrangement of objects in the arena, stationary.
---n-readings closely spaced readings per robot in THAT trial (default 5),
-and only ONE is kept (see _pick_representative() below: with ArUco, whose
-confidence is always 1.0, the reading whose distance is closest to the
-group median is chosen -- this reduces the noise of a single unlucky
-frame, residual motion blur or a reflection, so the choice is actually
-meaningful rather than an arbitrary tie-break), staying faithful to the
-document's "one observation per robot per trial": the final choice that
-ends up in the log is ONE, not N.
-
-Usage (one process per robot, like patrol.py -- see there for why YOLO
-needs separate processes)
---------------------------------------------------------------------------
-    python -m acquisition.static_trial --robot-id T0 --trial-id trial001 \\
-        --out trials/ --regions config/optitrack_regions.json \\
-        --localization optitrack --optitrack-rb-id 0 \\
+    python -m acquisition.static_trial --robot-id P0 --trial-id trial001 \
+        --out data/trials/ --regions config/optitrack_regions.json \
+        --localization optitrack --optitrack-rb-id 8 \
         --detector aruco --aruco-marker-size 0.08
 
-    python -m acquisition.static_trial --robot-id T1 --trial-id trial001 \\
-        --out trials/ --regions config/optitrack_regions.json \\
-        --localization optitrack --optitrack-rb-id 1 \\
-        --detector aruco --aruco-marker-size 0.08
+Each trial appends one row per object to <out>/<robot-id>.jsonl, labelled with its --trial-id.
 
-Appends ONE JSON row to <out>/<robot-id>.jsonl (one file per robot:
-several trials in the same folder accumulate, each row labelled with its
---trial-id). merge_static_trials.py then reads ALL robot files in a
-folder, groups them by trial-id and runs one or more aggregation
-baselines on top.
+Live preview (camera video with the detected markers drawn on top; 'q' in the window to quit):
 
-Live preview, BEFORE trusting a trial
-------------------------------------------------
-If a trial returns class_name=None for a robot, a log cannot tell whether
-the camera failed to start or the marker simply was not well framed.
---live opens a window with the REAL camera video, with detected markers
-drawn on top in real time (green outline + class/distance), instead of
-capturing a trial:
+    python -m acquisition.static_trial --robot-id P0 --detector aruco --aruco-marker-size 0.08 --live
 
-    python -m acquisition.static_trial --robot-id P0 --detector aruco \\
-        --aruco-marker-size 0.08 --live
+With --state-out (plus --regions and the localization options) it also writes the live state of the
+robot for dashboard.py and map_server.py:
 
-With --live, --trial-id/--out/--regions/--localization are not needed
-(the camera and the detector are all this question requires). Press 'q'
-in the window to quit. Same robot connection as always, same command you
-would use for a real trial: just add/remove --live, --trial-id/--out.
-
-Adding --state-out (plus --regions and the localization flags) also
-writes this robot's live state continuously, for dashboard.py:
-
-    python -m acquisition.static_trial --robot-id P0 --live --state-out live/P0.json \\
-        --regions config/optitrack_regions.json \\
-        --localization optitrack --optitrack-rb-id 8 \\
-        --detector aruco --aruco-marker-size 0.08 \\
+    python -m acquisition.static_trial --robot-id P0 --live --state-out data/live/P0.json \
+        --regions config/optitrack_regions.json \
+        --localization optitrack --optitrack-rb-id 8 \
+        --detector aruco --aruco-marker-size 0.08 \
         --camera-calib config/checkerboard_calib_P0.json
 """
 
@@ -425,8 +372,7 @@ def capture_trial(detector, n_readings=5, pause_s=0.1, instance_threshold_m=0.5,
     """n_readings closely spaced readings. If the scene contains MORE than
     one object (e.g. 2 boxes in view at the same time), the n_readings see
     ALL of them repeatedly -- this function groups them by estimated
-    POSITION (same principle as object_position.py /
-    the instance-separation option of fondi_log_reali.py) so the result
+    POSITION (see object_position.cluster_by_position) so the result
     is ONE reading per distinct PHYSICAL OBJECT, not one per raw reading
     (which would count the same object several times).
 
@@ -555,8 +501,7 @@ def main():
                    default="optitrack",
                    help="OptiTrack by default for static trials: the "
                         "robot is stationary, the pose is needed only "
-                        "once, no drift to accumulate as in patrolling "
-                        "(see patrol.py)")
+                        "once, no odometry drift to accumulate")
     p.add_argument("--optitrack-rb-id", type=int, default=None)
     p.add_argument("--optitrack-server", default="127.0.0.1")
     p.add_argument("--optitrack-local", default="127.0.0.1")

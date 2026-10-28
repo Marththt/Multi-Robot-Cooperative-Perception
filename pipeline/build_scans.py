@@ -74,15 +74,12 @@ from collections import defaultdict
 import numpy as np
 
 from vf.fusion.localization_methods import METHODS, measurement_from_observation, ospa, run_method
+from vf.control.goto import wrap_pi
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions,
                                     sensor_from_arguments, zones_from_arguments)
 
 ARENA_DEFAULT = (-2.690, 2.135, -2.672, 1.519)
 DISTANCE_BANDS = (0.0, 1.0, 1.5, 2.0, 2.5, 3.0, float("inf"))
-
-
-def wrap_pi(a):
-    return (a + math.pi) % (2.0 * math.pi) - math.pi
 
 
 def band(d):

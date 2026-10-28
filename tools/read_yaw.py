@@ -4,7 +4,7 @@ used for the alignment check: place the two robots physically PARALLEL
 at a time with its --rb-id, and compare the printed yaw. If for an
 identical physical alignment the two robots give a different yaw, that
 difference is the rigid body calibration offset to correct before
-trusting any distance/position computed by patrol.py/static_trial.py (see
+trusting any distance/position computed by the acquisition scripts (see
 object_position.global_position, which adds bearing + this yaw).
 
 Usage
@@ -18,7 +18,6 @@ intentional: it is a check, there is no need to read them together.
 
 import argparse
 import math
-import sys
 import threading
 import time
 from vf.localization.mocap_pose import MocapPose

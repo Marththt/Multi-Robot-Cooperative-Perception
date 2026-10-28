@@ -1,37 +1,21 @@
-"""Merge the static trials of several robots (written by static_trial.py, one
-.jsonl file per robot) and run one or more fusion baselines over them.
+"""Merge the static trials of several robots (written by static_trial.py, one .jsonl file per robot)
+and run one or more class-vote fusion baselines on them.
 
-No alignment by zone/time window here, unlike fondi_log_reali.py (meant
-for continuous patrolling, where robots pass through the same zone at
-different times): a static trial ALREADY is "all robots on the same scene",
-by construction -- static_trial.py captures each robot separately but with
-the SAME --trial-id.
-
-More than one object in the same scene (e.g. 2 boxes seen together)
-------------------------------------------------------------------------
-static_trial.py may write SEVERAL rows per robot in the same trial, one per
-distinct physical instance that robot sees (see capture_trial() there).
-Here, BEFORE fusing, the rows of ALL robots for a trial are grouped AGAIN
-by position (split_instances(), same principle as fondi_log_reali.py
---separa-istanze) so that "the box seen by P0 at (0.1, 0.2)" and "the box
-seen by P1 at (0.12, 0.18)" end up in the SAME group (they are the same
-physical box, small estimation difference) instead of two different
-groups. Each group is then an independent fusion -- printed as
-"trial_id instance#N" when a trial has more than one, otherwise just
-"trial_id" (identical behaviour to before for single-object trials).
+A static trial is already "all robots on the same scene": every robot is captured with the same
+--trial-id. When a trial contains several objects, each robot may write several rows (one per object
+it sees); before fusing, the rows of all robots of a trial are grouped again by position
+(split_instances()), so the same physical box seen by two robots ends up in the same group. Each
+group is fused independently and printed as "trial_id instance#N" (just "trial_id" when the trial
+has a single object).
 
 Usage
 -----
-    python -m acquisition.merge_static_trials --trial-dir trials/
-    python -m acquisition.merge_static_trials --trial-dir trials/ --baseline majority
-    python -m acquisition.merge_static_trials --trial-dir trials/ --baseline majority \\
+    python -m acquisition.merge_static_trials --trial-dir data/trials/
+    python -m acquisition.merge_static_trials --trial-dir data/trials/ --baseline majority \
         --ground-truth ground_truth_trials.json
 
-ground_truth_trials.json (optional): {"trial001": "box", "trial002": null, ...}
--- the true class for that trial, used ONLY for single-instance trials
-(with several instances it is unknown which one a single ground truth per
-trial_id would refer to, so accuracy is not counted there, only the
-decisions are printed).
+ground_truth_trials.json (optional): {"trial001": "box", "trial002": null, ...}, the true class of each
+trial; accuracy is counted only for single-object trials.
 """
 
 import argparse
@@ -39,7 +23,7 @@ import glob
 import json
 import os
 from collections import defaultdict
-from vf.fusion.multi_robot_simulation import Observation
+from vf.fusion.aggregation import Observation
 from vf.perception.object_position import cluster_by_position
 from vf.fusion.aggregation import (
     baseline_single_robot, baseline_0_union, baseline_1_majority,
@@ -84,9 +68,8 @@ def group_by_trial(per_robot):
 
 def split_instances(robot_rows, threshold_m=0.5):
     """[(robot_id, row), ...] of ONE trial -> list of {robot_id: row},
-    one dict per distinct physical instance (same principle as
-    fondi_log_reali.py --separa-istanze, but here across rows of different
-    robots instead of across readings over time of the same robot).
+    one dict per distinct physical instance (rows of different robots are
+    grouped by position, see object_position.cluster_by_position).
 
     Rows WITHOUT a position (class_name=None "nothing seen", or detected but
     without a position estimate) have no point to cluster: they are copied

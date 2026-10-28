@@ -4,10 +4,8 @@ Minimal usage:
 
     from robomaster_sdk import Robot
 
-    with Robot("T0") as r:
-        print(r.arm.angles())
-        r.arm.move_to(215, 133)
-        r.gripper.close()
+    with Robot("P0") as r:
+        r.chassis.drive_speed(x=0.1, y=0, z=0)
 """
 
 import logging
@@ -16,7 +14,6 @@ import robomaster
 from robomaster import robot as dji_robot
 
 from . import config
-from .arm import Arm, Gripper, Watchdog
 
 log = logging.getLogger(__name__)
 
@@ -25,10 +22,7 @@ class Robot:
     """A single RoboMaster EP.
 
     Hides serial number, connection type and subsystem initialization.
-    Exposes: .arm, .gripper, .chassis, .camera, .servo.
-
-    NOTE: the arm is commanded via direct servos, not via robotic_arm,
-    which does not respond on these robots. See arm.py.
+    Exposes: .chassis, .camera, .servo.
     """
 
     def __init__(self, name, sn=None, conn_type=None, ip=None):
@@ -46,8 +40,6 @@ class Robot:
         self.conn_type = conn_type or config.CONN_TYPE
         self.ip = ip
         self._ep = None
-        self.arm = None
-        self.gripper = None
         self.chassis = None
         self.camera = None
         self.servo = None
@@ -57,7 +49,7 @@ class Robot:
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
-    def connect(self, check_safe=True):
+    def connect(self):
         """Open the connection and set up the subsystems."""
         if self._connected:
             log.warning("%s: connect() on an already connected robot", self.name)
@@ -101,32 +93,10 @@ class Robot:
         self.chassis = self._ep.chassis
         self.camera = self._ep.camera
         self.servo = self._ep.servo
-        self.arm = Arm(self._ep.servo)
-        self.gripper = Gripper(self._ep.gripper)
 
         self._connected = True
 
-        if check_safe:
-            try:
-                s1, s2 = self.arm.angles()
-                m = self.arm.margin(s1, s2)
-                log.info("%s: arm at (%.1f, %.1f), margin %.1f degrees",
-                         self.name, s1, s2, m)
-                if m < 0:
-                    log.warning(
-                        "%s: the arm starts OUTSIDE the safe region. "
-                        "Call arm.recover() before commanding it, or "
-                        "arm.learn_pose() if you have verified that the pose "
-                        "is harmless.", self.name)
-            except Exception as e:
-                log.warning("%s: reading the arm failed: %s",
-                            self.name, e)
-
         return self
-
-    def watchdog(self, **kw):
-        """Create a watchdog on the arm. Use as a context manager."""
-        return Watchdog(self.arm, **kw)
 
     def disconnect(self):
         """Close the connection (idempotent)."""

@@ -1,65 +1,24 @@
-"""Detection with ArUco markers -- replaces YOLO as the main detector at
-the professor's explicit request (message to Alessio, September 2026):
-"try to use ArUco instead of YOLO since the algorithm may require more
-detailed information including the distance, angle, etc. all 4 alg
-require the distance between robots and objects. So, ArUco assumes the
-known object size. there are some ways to relax this constraint. dont
-worry abt the distance assumption"
+"""Detection with ArUco markers: class, distance, bearing and viewing angle of every marker.
 
-Why the switch (not a change of mind on our side, it is technical)
-------------------------------------------------------------------
-Zero-shot YOLO only gave a bounding box: distance was estimated with a
-heuristic (assumed object height + bbox height in pixels, see
-object_position.estimate_distance) -- a single number, less and less
-reliable far from the camera, and WITHOUT any viewing angle of the
-object. The professor's baselines (Chair-Varshney, and above all the
-fault model p_D(occlusion, angle, distance) of Section 7) need distance
-AND angle for every detection, not just "I saw it here". An ArUco marker
-gives this with a single standard geometric step (solvePnP), knowing two
-things: the real physical size of the marker (measure it -- see
---aruco-marker-size in patrol.py) and the camera parameters (see
-tools/calibrate_camera.py). Same underlying assumption as before ("known
-real size"), but applied to an object designed specifically to be
-measured precisely, not to an arbitrary bottle -- exactly the
-professor's point ("ArUco assumes the known object size").
+Every box carries ArUco markers of known physical size, so solvePnP gives the measured distance and
+orientation of each marker from one image, given the marker size (--aruco-marker-size) and the
+camera calibration (tools/calibrate_camera.py; without it, distance and angle are only approximated
+from the declared field of view). The fusion methods need these measured distances and angles for
+every detection.
 
-YOLO is not thrown away (yolo_client.py/yolo_server.py/yolo_detector.py
-all stay there, see patrol.py --detector yolo): it remains the option for
-anonymous objects without markers. With the current polystyrene boxes,
-which were not a COCO class anyway, ArUco is also more convenient: a
-printed marker stuck on the box instead of hoping that zero-shot
-recognises it.
-
-"Same class, same ID" trick (from the professor's original document)
---------------------------------------------------------------------
-Several IDs can map to the same class (--aruco-classes in patrol.py,
-JSON: see config/aruco_classes.json). This simulates the realistic
-situation in which the robot recognises THE CLASS of an object but not
-its unique individual identity -- two boxes with the same marker are
-indistinguishable for the detector, exactly as two real bottles would
-be. Disambiguation by physical INSTANCE therefore remains the job of the
-estimated position (see object_position.py and the instance-splitting
-option of the historical fondi_log_reali.py), not of the marker -- and
-it is now also more reliable, because the position comes from a REAL
-distance (solvePnP) instead of the bbox heuristic. For now there is a
-single real class ("box"): without --aruco-classes, every detected
-marker maps there (default_class).
-
-What it does NOT solve yet
---------------------------
-The professor points out that the "known size" assumption can be relaxed
-in the future, but also says not to worry about it now ("dont worry abt
-the distance assumption"): here the marker size stays a required
-parameter, no attempt to estimate it automatically. And without a real
-camera calibration (tools/calibrate_camera.py), distance/angle remain
-approximated from the declared FOV -- it works to run the loop today,
-not for the final numbers the fault model will require.
+Same class, same ID
+-------------------
+Several IDs can map to the same class (--aruco-classes, see config/aruco_classes.json), and all
+boxes carry the same marker: a robot recognises the CLASS of an object but not its identity. Telling
+two boxes apart is the job of the estimated position (object_position.py) and of the fusion methods,
+not of the marker. Without --aruco-classes every marker maps to the single class "box"
+(default_class).
 """
 
 import json
 import logging
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np

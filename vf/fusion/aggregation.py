@@ -1,95 +1,38 @@
-"""Multi-robot aggregation baselines (Topic 4, high-level part).
+"""Class-vote fusion baselines: from the observations of N robots of the same zone (or object
+instance) at the same instant to ONE decision, the class believed to be present, or None.
 
-Each baseline takes the observations of N robots of the SAME zone at the
-SAME instant (see multi_robot_simulation.py, or real events grouped by
-zone/time window from events.jsonl, see fondi_log_reali.py) and produces
-ONE decision: the class believed to be present, or None.
+    baseline_single_robot          one robot only, no fusion (worst-case reference)
+    baseline_0_union               trust every detection: the most frequent class wins
+                                   (ties by the highest confidence)
+    baseline_1_majority            majority vote, "no object" included
+    baseline_chair_varshney        Chair-Varshney fusion, optimal under conditional independence
+                                   of the robots; needs per-robot P_d / P_fa; extended to multi-class
+    baseline_2_robust_statistics   geometric median (Weiszfeld) of per-robot evidence vectors over
+                                   [classes..., none]: robust to a bounded number of arbitrary reports
+    baseline_3a_trimmed_mean       coordinate-wise trimmed mean of the same vectors
+    ReputationAggregator           robots weighted by how often they agreed with past decisions
 
-Updated to the "fidelity ladder" of the professor's document (September
-2026, the one with OptiTrack/ArUco/Chair-Varshney/Bayesian counting -- no
-longer the summary spec pasted into chat earlier). Mapping between the
-document's levels and the functions here:
-
-    level 0   (single robot)          -> baseline_single_robot
-    level 1   (union)                 -> baseline_0_union
-    level 2   (majority)              -> baseline_1_majority
-    level 2.5 (Chair-Varshney)        -> baseline_chair_varshney (new)
-    level 3a  (geometric median /
-               trimmed mean)          -> baseline_2_robust_statistics,
-                                         baseline_3a_trimmed_mean (new/rewritten)
-    level 4   (GNN)                   -> gnn_aggregazione.py
-    (not in the document)             -> ReputationAggregator (our own addition)
-    MHT, PHD/CPHD (localization)      -> localization_methods.py
-
-The already existing function numbering (baseline_0_union etc., one
-number behind the document) was kept so as not to break the scripts that
-already call them (esperimento_baseline.py, heatmap_fault.py,
-valuta_esperimento_reale.py...).
-
-Baseline (level 0) -- single robot, no fusion
--------------------------------------------------------
-The worst-case reference: the decision of ONE robot only, ignoring all
-the others. It measures how much multi-robot fusion gains over having no
-redundancy at all.
-
-Baseline 0 here / level 1 in the document -- union (no robustness)
-------------------------------------------------------------------------
-Trust every detection: the most frequent reported class wins (ties broken
-by the highest confidence). A single faulty robot can introduce a false
-positive that nobody corrects. The document notes that under fault-free
-sensing (p_D=1, no misclassification) union/majority/Chair-Varshney are
-mathematically guaranteed to agree -- useful as a correctness test of the
-code before introducing faults.
-
-Baseline 1 here / level 2 in the document -- majority vote
-------------------------------------------------------------------
-The class (including "no object") reported by the majority of robots
-wins. Already robust to an isolated faulty robot, as long as the faulty
-robots remain a minority.
-
-Chair-Varshney (level 2.5) -- optimal fusion for binary fusion
-------------------------------------------------------------------------
-The document's "theoretical ceiling" (Section 7.3): provably optimal
-under conditional independence of the sensors; it requires per-robot
-P_d/P_fa (from real calibration, Week 3-4 -- here an explicit parameter,
-not guessed). See baseline_chair_varshney below for details and for how
-it was extended from binary (presence/absence of ONE target, as in the
-original paper) to multi-class.
-
-Baseline 2 here / level 3a in the document -- robust statistics
-------------------------------------------------------------------------
-REWRITTEN in this session: the previous version was a majority vote with
-the median of the confidences as tie-breaker -- not really the "geometric
-median/trimmed mean" the document asks for (Section 7.4, the
-Byzantine/worst-case model: a bounded number of robots may report
-arbitrary values, not just probabilistically faulty ones). Now every
-observation becomes an evidence vector over [classes..., none] (see
-_evidence_vector), and the true geometric median of these vectors is
-computed (Weiszfeld algorithm) -- a single robot reporting a vector far
-from the others (an arbitrary/adversarial fault) moves the median much
-less than it would move a mean. baseline_3a_trimmed_mean is the simpler
-alternative the document mentions as equally valid (trimmed mean,
-coordinate-wise) -- neither of the two requires knowing P_d/P_fa, unlike
-Chair-Varshney: that is the document's point ("provable robustness
-guarantees independent of any fault-probability estimate... more
-conservative when faults are actually well-behaved").
-
-Baseline 3 here (not in the document) -- weighted by historical reliability
---------------------------------------------------------------------------
-Each robot carries a weight based on how much it agreed with the
-aggregated decision in previous ticks (simple online reputation: no need
-to know in advance who is faulty). It is the closest starting point to a
-graph/GNN extension -- the historical per-robot weight is what a GNN could
-learn to estimate from topology + features, instead of with this fixed
-heuristic.
+Without faults (p_D = 1, no misclassification) union, majority and Chair-Varshney agree, which is a
+useful correctness test. The multi-object localization methods (MHT, PHD/CPHD) are in
+localization_methods.py.
 """
 
 import math
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from vf.fusion.multi_robot_simulation import Observation
 from vf.perception.perception import CLASSES
+
+
+@dataclass
+class Observation:
+    """What one robot reports about one zone (or object instance) at one instant."""
+    robot_id: str
+    class_name: Optional[str]     # None = "no object detected"
+    confidence: float
+    fault_injected: bool
+    dropped: bool
 
 
 def baseline_single_robot(observations: Dict[str, Observation],
@@ -173,11 +116,9 @@ def _geometric_median(vectors: List[List[float]], iterations: int = 50,
 
 
 def baseline_2_robust_statistics(observations: Dict[str, Observation]) -> Optional[str]:
-    """Level 3a of the document: geometric median of the evidence vectors
-    (see _geometric_median/_evidence_vector above). REWRITTEN in this
-    session -- the previous version was a majority vote with the median of
-    the CONFIDENCES as tie-breaker, not a real robust statistic on
-    vectors: see the module docstring for the reason of the change."""
+    """Geometric median of the per-robot evidence vectors (see
+    _geometric_median and _evidence_vector above): a robot reporting a vector
+    far from the others moves the median much less than it would move a mean."""
     vectors = [_evidence_vector(o) for o in observations.values()]
     if not vectors:
         return None

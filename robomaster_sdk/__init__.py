@@ -1,26 +1,15 @@
-"""RoboMaster EP SDK for data collection and control.
+"""RoboMaster EP SDK used for the data collection: connection and camera.
 
 Public API:
 
     from robomaster_sdk import Robot
 
-    with Robot("T0") as r:
-        with r.watchdog():
-            r.arm.move_to(215, 133)
-            r.gripper.close()
+    with Robot("P0") as r:
+        r.chassis.drive_speed(x=0.1, y=0, z=0)
 """
 
-from .arm import Arm, ArmError, Gripper, UnsafePose, Watchdog
-from .arm_safety import SAFE_REGION, SafeRegion
 from .camera import Camera, CameraError
 from .robot import Robot
-from .recorder import Recorder
-from .teleop import Teleop
 
-__all__ = [
-    "Robot", "Arm", "Gripper", "Watchdog",
-    "ArmError", "UnsafePose",
-    "SAFE_REGION", "SafeRegion",
-    "Teleop", "Recorder", "Camera", "CameraError",
-]
-__version__ = "0.2.0"
+__all__ = ["Robot", "Camera", "CameraError"]
+__version__ = "0.3.0"
