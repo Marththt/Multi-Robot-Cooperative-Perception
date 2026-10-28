@@ -10,6 +10,7 @@ import math
 import numpy as np
 
 APOTHEM_M = 0.087                       # box centre -> face centre (side about 0.30 m)
+MIN_CENTER_DISTANCE_M = 2 * APOTHEM_M   # two boxes touching face to face; closer centres are impossible
 FACE_ANGLES = (0.0, 2 * math.pi / 3, 4 * math.pi / 3)
 
 
@@ -33,6 +34,20 @@ def box_polygon(center, theta):
     return np.array([c + 2 * APOTHEM_M * np.array([math.cos(theta + math.pi / 3 + k * 2 * math.pi / 3),
                                                    math.sin(theta + math.pi / 3 + k * 2 * math.pi / 3)])
                      for k in range(3)])
+
+
+def polygons_overlap(a, b, margin=0.0):
+    """True if two convex polygons overlap (separating-axis test); margin [m] keeps them apart by at
+    least that gap."""
+    for poly in (a, b):
+        n = len(poly)
+        for k in range(n):
+            edge = poly[(k + 1) % n] - poly[k]
+            axis = np.array([-edge[1], edge[0]]) / (np.hypot(*edge) + 1e-12)
+            pa, pb = a @ axis, b @ axis
+            if pa.max() + margin <= pb.min() or pb.max() + margin <= pa.min():
+                return False
+    return True
 
 
 def rectangle(center, width, depth, angle):

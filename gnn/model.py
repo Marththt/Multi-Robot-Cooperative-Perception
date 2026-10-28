@@ -1,20 +1,33 @@
-"""GNN for multi-robot box association, stage 1 (feature vectors only).
+"""GNN for multi-robot box association (feature vectors only, no images).
 
-Graph: one NODE per robot. A node carries the robot pose and the set of its detections (feature vectors:
-distance, bearing, viewing angle, world position). EDGES join robots that are neighbours on the ring
-(all pairs when there are 3 robots or fewer) and carry the relative pose of the two robots. Two rounds
-of message passing (two hops) let every robot receive the information of every other robot of a
-four-robot ring. Everything runs on the host PC.
+Two graph designs, same inputs and same read-out:
+
+  RobotGNN       one NODE per robot, carrying the robot pose and the set of its detections; EDGES join
+                 robots that can exchange messages and carry their relative pose.
+  DetectionGNN   one NODE per detection, carrying the feature vector and the pose of its robot; EDGES join
+                 detections that may be the same box (closer than the pair gate) and whose robots can
+                 exchange messages, or that come from the same robot (two faces of one box); they carry
+                 the offset between the two detections.
+
+Which robots exchange messages (edges=):
+  ring     neighbours on the ring around the robots' centre (every pair with 3 robots or fewer)
+  range    robots closer than comm_range metres (limited communication)
+  full     every pair of robots (upper bound: one central model sees everything)
+`hops` rounds of message passing; with a local graph a robot hears robots up to `hops` links away.
+
+Inputs (features=):
+  full       detection position, line of sight, distance, bearing, viewing angle of the marker, robot pose
+  positions  the same without the viewing angle: only what follows from the positions and the robot poses
 
 Read-out:
-  same-box head   for every pair of detections of the scene (also two detections of the same robot):
-                  probability that they are the same box
+  same-box head   for every pair of detections closer than the pair gate (also two detections of the same
+                  robot): probability that they are the same box
   false head      for every detection: probability that it is a false detection
-Decoding (decode()): false detections are dropped, the rest are grouped by average-linkage clustering
-on the same-box probabilities; the number of groups is the box count and the mean position of each
-group is the box position.
+Decoding (decode()): false detections are dropped, the rest are grouped by average-linkage clustering on
+the same-box probabilities (pairs beyond the gate count as 0); the number of groups is the box count and
+the mean position of each group is the box position.
 
-Only the PyTorch operations nn.Linear, ReLU, indexing, cat, index_add and BCE-with-logits are used.
+Everything runs on the host PC. Only nn.Linear, ReLU, indexing, cat, index_add and BCE-with-logits are used.
 """
 
 import math
@@ -28,7 +41,7 @@ RING_SCALE_M = 1.3          # ring radius, used to scale positions
 PAIR_SCALE_M = 0.1          # pair offsets are given in units of 10 cm
 PAIR_CLIP_M = 1.0           # pair offsets beyond 1 m carry no extra information
 
-DET_FEATURES = 10
+DET_FEATURES = {"full": 10, "positions": 8}
 ROBOT_FEATURES = 5
 EDGE_FEATURES = 5
 PAIR_FEATURES = 6
@@ -55,8 +68,37 @@ def ring_edges(robot_xy, center):
     return sorted(edges)
 
 
-def encode_scene(scene, rotation=0.0):
-    """numpy features of one scene, in a frame centred on the robots and rotated by `rotation`."""
+def robot_edges(robot_xy, mode="ring", comm_range=None):
+    """Directed robot-robot edges for the chosen communication graph."""
+    n = len(robot_xy)
+    if mode == "ring":
+        return ring_edges(robot_xy, np.zeros(2))
+    if mode == "full":
+        return [(i, j) for i in range(n) for j in range(n) if i != j]
+    if mode == "range":
+        if comm_range is None:
+            raise ValueError("edges='range' needs comm_range")
+        d = np.linalg.norm(robot_xy[:, None, :] - robot_xy[None, :, :], axis=2)
+        return [(i, j) for i in range(n) for j in range(n) if i != j and d[i, j] <= comm_range]
+    raise ValueError(f"unknown edge mode {mode}")
+
+
+def pair_features(pos, u, r_of, i, j):
+    """Offset of detection j seen from detection i (arrays of indices): along and across i's line of sight,
+    distance, same robot, angle between the two lines of sight, |across|."""
+    d = pos[j] - pos[i]
+    dist = np.minimum(np.hypot(d[:, 0], d[:, 1]), PAIR_CLIP_M)
+    ui = u[i]
+    along = np.clip((d * ui).sum(axis=1), -PAIR_CLIP_M, PAIR_CLIP_M)
+    across = np.clip(ui[:, 0] * d[:, 1] - ui[:, 1] * d[:, 0], -PAIR_CLIP_M, PAIR_CLIP_M)
+    cos_rays = (ui * u[j]).sum(axis=1)
+    return np.column_stack([along / PAIR_SCALE_M, across / PAIR_SCALE_M, dist / PAIR_SCALE_M,
+                            (r_of[i] == r_of[j]).astype(float), cos_rays, np.abs(across) / PAIR_SCALE_M])
+
+
+def encode_scene(scene, rotation=0.0, features="full", edges="ring", comm_range=None, gate=None):
+    """numpy features of one scene, in a frame centred on the robots and rotated by `rotation`.
+    gate: only pairs of detections closer than this [m] are scored (None = every pair)."""
     poses = scene["poses"]
     center = poses[:, :2].mean(axis=0)
     c, s = math.cos(rotation), math.sin(rotation)
@@ -64,93 +106,91 @@ def encode_scene(scene, rotation=0.0):
 
     robot_xy = (poses[:, :2] - center) @ R.T
     robot_yaw = poses[:, 2] + rotation
-    pos = (scene["pos"] - center) @ R.T
-    r_of = scene["det_robot"]
+    pos = (np.asarray(scene["pos"], float).reshape(-1, 2) - center) @ R.T
+    r_of = np.asarray(scene["det_robot"], int)
     ray = robot_yaw[r_of] - scene["bearing"]                  # world direction of each detection
-    u = np.stack([np.cos(ray), np.sin(ray)], axis=1)          # unit vector along the line of sight
+    u = np.stack([np.cos(ray), np.sin(ray)], axis=1).reshape(-1, 2)   # unit vector along the line of sight
     n_det = np.bincount(r_of, minlength=len(poses))
 
-    robot = np.column_stack([robot_xy / RING_SCALE_M, np.cos(robot_yaw), np.sin(robot_yaw),
-                             n_det / 4.0])
-    det = np.column_stack([pos / RING_SCALE_M, u, scene["distance"], scene["bearing"],
-                           np.cos(scene["view"]), np.sin(scene["view"]), robot_xy[r_of] / RING_SCALE_M])
+    robot = np.column_stack([robot_xy / RING_SCALE_M, np.cos(robot_yaw), np.sin(robot_yaw), n_det / 4.0])
+    cols = [pos / RING_SCALE_M, u, scene["distance"], scene["bearing"]]
+    if features == "full":
+        cols += [np.cos(scene["view"]), np.sin(scene["view"])]
+    elif features != "positions":
+        raise ValueError(f"unknown feature set {features}")
+    cols.append(robot_xy[r_of] / RING_SCALE_M)
+    det = np.column_stack(cols).reshape(len(pos), DET_FEATURES[features])
 
-    edges = ring_edges(robot_xy, np.zeros(2))
-    edge_feat = []
-    for i, j in edges:                                        # message i -> j, seen from robot j
+    edge_list = robot_edges(robot_xy, edges, comm_range)
+    edge_arr = np.array(edge_list, int).reshape(-1, 2)
+    if len(edge_arr):
+        i, j = edge_arr[:, 0], edge_arr[:, 1]                 # message i -> j, seen from robot j
         d = robot_xy[i] - robot_xy[j]
-        cj, sj = math.cos(-robot_yaw[j]), math.sin(-robot_yaw[j])
-        local = np.array([cj * d[0] - sj * d[1], sj * d[0] + cj * d[1]])
+        cj, sj = np.cos(-robot_yaw[j]), np.sin(-robot_yaw[j])
+        local = np.column_stack([cj * d[:, 0] - sj * d[:, 1], sj * d[:, 0] + cj * d[:, 1]])
         dyaw = robot_yaw[i] - robot_yaw[j]
-        edge_feat.append([*(local / RING_SCALE_M), math.cos(dyaw), math.sin(dyaw),
-                          np.hypot(*d) / RING_SCALE_M])
+        edge_feat = np.column_stack([local / RING_SCALE_M, np.cos(dyaw), np.sin(dyaw),
+                                     np.hypot(d[:, 0], d[:, 1]) / RING_SCALE_M])
+    else:
+        edge_feat = np.zeros((0, EDGE_FEATURES))
 
-    pairs = [(i, j) for i in range(len(pos)) for j in range(i + 1, len(pos))]
-    pair_ij, pair_ji = [], []
-    for i, j in pairs:
-        pair_ij.append(pair_features(pos, u, r_of, i, j))
-        pair_ji.append(pair_features(pos, u, r_of, j, i))
+    ii, jj = np.triu_indices(len(pos), k=1)
+    if gate is not None and len(ii):
+        near = np.hypot(*(pos[jj] - pos[ii]).T) <= gate
+        ii, jj = ii[near], jj[near]
+    pairs = np.column_stack([ii, jj]).astype(int).reshape(-1, 2)
+    pair_ij = pair_features(pos, u, r_of, ii, jj).reshape(-1, PAIR_FEATURES)
+    pair_ji = pair_features(pos, u, r_of, jj, ii).reshape(-1, PAIR_FEATURES)
+    linked = np.zeros((len(poses), len(poses)), bool)
+    np.fill_diagonal(linked, True)
+    if len(edge_arr):
+        linked[edge_arr[:, 0], edge_arr[:, 1]] = True
+    pair_link = linked[r_of[ii], r_of[jj]] | linked[r_of[jj], r_of[ii]]
 
     label = scene.get("label")
-    same = [float(label[i] >= 0 and label[i] == label[j]) for i, j in pairs] if label is not None else []
-    false = (label < 0).astype(float) if label is not None else np.zeros(len(pos))
-    return dict(robot=robot, det=det, det_robot=r_of, edges=edges, edge_feat=edge_feat,
-                pairs=pairs, pair_ij=pair_ij, pair_ji=pair_ji, same=same, false=false)
-
-
-def pair_features(pos, u, r_of, i, j):
-    """Offset of detection j seen from detection i: along and across i's line of sight, distance,
-    same robot, angle between the two lines of sight."""
-    d = pos[j] - pos[i]
-    dist = min(float(np.hypot(*d)), PAIR_CLIP_M)
-    along = float(np.clip(d @ u[i], -PAIR_CLIP_M, PAIR_CLIP_M))
-    across = float(np.clip(u[i][0] * d[1] - u[i][1] * d[0], -PAIR_CLIP_M, PAIR_CLIP_M))
-    cos_rays = float(u[i] @ u[j])
-    return [along / PAIR_SCALE_M, across / PAIR_SCALE_M, dist / PAIR_SCALE_M,
-            float(r_of[i] == r_of[j]), cos_rays, abs(across) / PAIR_SCALE_M]
+    if label is not None:
+        label = np.asarray(label, int)
+        same = ((label[ii] >= 0) & (label[ii] == label[jj])).astype(float)
+        false = (label < 0).astype(float)
+    else:
+        same, false = np.zeros(len(ii)), np.zeros(len(pos))
+    return dict(robot=robot, det=det, det_robot=r_of, edges=edge_arr, edge_feat=edge_feat,
+                pairs=pairs, pair_ij=pair_ij, pair_ji=pair_ji, pair_link=pair_link, same=same, false=false)
 
 
 def collate(encoded):
     """Several encoded scenes -> one batch of tensors (block-diagonal graph)."""
-    robot, det, det_robot, edge_src, edge_dst, edge_feat = [], [], [], [], [], []
-    pair_a, pair_b, pair_ij, pair_ji, same, false, pair_scene = [], [], [], [], [], [], []
-    r0 = d0 = 0
-    for k, e in enumerate(encoded):
-        robot.append(e["robot"])
-        det.append(e["det"])
-        det_robot.extend(e["det_robot"] + r0)
-        for (i, j), f in zip(e["edges"], e["edge_feat"]):
-            edge_src.append(i + r0)
-            edge_dst.append(j + r0)
-            edge_feat.append(f)
-        for (i, j), fij, fji in zip(e["pairs"], e["pair_ij"], e["pair_ji"]):
-            pair_a.append(i + d0)
-            pair_b.append(j + d0)
-            pair_ij.append(fij)
-            pair_ji.append(fji)
-            pair_scene.append(k)
-        same.extend(e["same"])
-        false.extend(e["false"])
-        r0 += len(e["robot"])
-        d0 += len(e["det"])
+    r_off = np.cumsum([0] + [len(e["robot"]) for e in encoded])
+    d_off = np.cumsum([0] + [len(e["det"]) for e in encoded])
 
-    def f32(x, width):
-        return torch.tensor(np.asarray(x, float).reshape(-1, width), dtype=torch.float32)
+    def cat(key, width=None, offset=None):
+        parts = [e[key] + (offset[k] if offset is not None else 0) for k, e in enumerate(encoded)]
+        if width is not None:
+            parts = [np.asarray(p, float).reshape(-1, width) for p in parts]
+        return np.concatenate(parts) if parts else np.zeros((0,) if width is None else (0, width))
+
+    det_width = encoded[0]["det"].shape[1]
+    edges = cat("edges", offset=r_off).reshape(-1, 2) if encoded else np.zeros((0, 2), int)
+    pairs = cat("pairs", offset=d_off).reshape(-1, 2) if encoded else np.zeros((0, 2), int)
+
+    def f32(x):
+        return torch.as_tensor(np.asarray(x, np.float32))
 
     def i64(x):
-        return torch.tensor(np.asarray(x, np.int64), dtype=torch.long)
+        return torch.as_tensor(np.asarray(x, np.int64))
 
-    return dict(robot=f32(np.concatenate(robot), ROBOT_FEATURES), det=f32(np.concatenate(det), DET_FEATURES),
-                det_robot=i64(det_robot), n_robots=r0, n_det=d0,
-                edge_src=i64(edge_src), edge_dst=i64(edge_dst), edge_feat=f32(edge_feat, EDGE_FEATURES),
-                pair_a=i64(pair_a), pair_b=i64(pair_b),
-                pair_ij=f32(pair_ij, PAIR_FEATURES), pair_ji=f32(pair_ji, PAIR_FEATURES),
-                same=torch.tensor(np.asarray(same, float), dtype=torch.float32),
-                false=torch.tensor(np.asarray(false, float), dtype=torch.float32))
+    return dict(robot=f32(cat("robot", ROBOT_FEATURES)), det=f32(cat("det", det_width)),
+                det_robot=i64(cat("det_robot", offset=r_off)), n_robots=int(r_off[-1]), n_det=int(d_off[-1]),
+                edge_src=i64(edges[:, 0]), edge_dst=i64(edges[:, 1]), edge_feat=f32(cat("edge_feat", EDGE_FEATURES)),
+                pair_a=i64(pairs[:, 0]), pair_b=i64(pairs[:, 1]),
+                pair_ij=f32(cat("pair_ij", PAIR_FEATURES)), pair_ji=f32(cat("pair_ji", PAIR_FEATURES)),
+                pair_link=torch.as_tensor(np.concatenate([e["pair_link"] for e in encoded]).astype(bool)),
+                same=f32(np.concatenate([e["same"] for e in encoded])),
+                false=f32(np.concatenate([e["false"] for e in encoded])))
 
 
 # ====================================================================
-# Model
+# Models
 # ====================================================================
 
 def mlp(*sizes):
@@ -167,40 +207,81 @@ def segment_mean(values, index, n):
     return total / count.clamp(min=1.0)
 
 
+class PairReadout(nn.Module):
+    """Same-box logit per scored pair (symmetric) and false-detection logit per detection."""
+
+    def __init__(self, h):
+        super().__init__()
+        self.pair_head = mlp(2 * h + PAIR_FEATURES, h, h // 2, 1)
+        self.false_head = mlp(h, h // 2, 1)
+
+    def forward(self, g, b):
+        ga, gb = g[b["pair_a"]], g[b["pair_b"]]
+        same = 0.5 * (self.pair_head(torch.cat([ga, gb, b["pair_ij"]], dim=1)) +
+                      self.pair_head(torch.cat([gb, ga, b["pair_ji"]], dim=1)))
+        return same.view(-1), self.false_head(g).view(-1)
+
+
 class RobotGNN(nn.Module):
-    def __init__(self, hidden=64, hops=2):
+    def __init__(self, hidden=64, hops=2, det_features=DET_FEATURES["full"]):
         super().__init__()
         h = hidden
-        self.det_enc = nn.Sequential(mlp(DET_FEATURES, h, h), nn.ReLU())
+        self.det_enc = nn.Sequential(mlp(det_features, h, h), nn.ReLU())
         self.robot_enc = nn.Sequential(mlp(ROBOT_FEATURES + h, h, h), nn.ReLU())
         self.message = nn.ModuleList([nn.Sequential(mlp(h + EDGE_FEATURES, h, h), nn.ReLU())
                                       for _ in range(hops)])
         self.update = nn.ModuleList([mlp(2 * h, h, h) for _ in range(hops)])
         self.det_ctx = nn.Sequential(mlp(2 * h, h, h), nn.ReLU())
-        self.pair_head = mlp(2 * h + PAIR_FEATURES, h, h // 2, 1)
-        self.false_head = mlp(h, h // 2, 1)
+        self.readout = PairReadout(h)
 
     def forward(self, b):
         h_det = self.det_enc(b["det"])                                       # detections
         pooled = segment_mean(h_det, b["det_robot"], b["n_robots"])          # set of detections per robot
         node = self.robot_enc(torch.cat([b["robot"], pooled], dim=1))        # robot nodes
-        for message, update in zip(self.message, self.update):               # two hops on the ring
+        for message, update in zip(self.message, self.update):               # message passing between robots
             m = message(torch.cat([node[b["edge_src"]], b["edge_feat"]], dim=1))
             agg = segment_mean(m, b["edge_dst"], b["n_robots"])
             node = node + update(torch.cat([node, agg], dim=1))
         g = self.det_ctx(torch.cat([h_det, node[b["det_robot"]]], dim=1))   # detection in its context
-        ga, gb = g[b["pair_a"]], g[b["pair_b"]]
-        same = 0.5 * (self.pair_head(torch.cat([ga, gb, b["pair_ij"]], dim=1)) +
-                      self.pair_head(torch.cat([gb, ga, b["pair_ji"]], dim=1)))
-        false = self.false_head(g)
-        return same.view(-1), false.view(-1)
+        return self.readout(g, b)
+
+
+class DetectionGNN(nn.Module):
+    def __init__(self, hidden=64, hops=2, det_features=DET_FEATURES["full"]):
+        super().__init__()
+        h = hidden
+        self.enc = nn.Sequential(mlp(det_features + ROBOT_FEATURES, h, h), nn.ReLU())
+        self.message = nn.ModuleList([nn.Sequential(mlp(h + PAIR_FEATURES, h, h), nn.ReLU())
+                                      for _ in range(hops)])
+        self.update = nn.ModuleList([mlp(2 * h, h, h) for _ in range(hops)])
+        self.readout = PairReadout(h)
+
+    def forward(self, b):
+        g = self.enc(torch.cat([b["det"], b["robot"][b["det_robot"]]], dim=1))
+        link = b["pair_link"]
+        a, c = b["pair_a"][link], b["pair_b"][link]
+        src = torch.cat([a, c])
+        dst = torch.cat([c, a])
+        feat = torch.cat([b["pair_ji"][link], b["pair_ij"][link]])      # offset of src seen from dst
+        for message, update in zip(self.message, self.update):
+            m = message(torch.cat([g[src], feat], dim=1))
+            agg = segment_mean(m, dst, b["n_det"])
+            g = g + update(torch.cat([g, agg], dim=1))
+        return self.readout(g, b)
+
+
+def build_model(graph="robot", hidden=64, hops=2, features="full"):
+    cls = {"robot": RobotGNN, "detection": DetectionGNN}[graph]
+    return cls(hidden=hidden, hops=hops, det_features=DET_FEATURES[features])
 
 
 def loss_fn(same_logit, false_logit, b, pos_weight_same, pos_weight_false):
     loss = F.binary_cross_entropy_with_logits(
-        same_logit, b["same"], pos_weight=torch.tensor(float(pos_weight_same), dtype=torch.float32))
-    return loss + F.binary_cross_entropy_with_logits(
         false_logit, b["false"], pos_weight=torch.tensor(float(pos_weight_false), dtype=torch.float32))
+    if len(same_logit):
+        loss = loss + F.binary_cross_entropy_with_logits(
+            same_logit, b["same"], pos_weight=torch.tensor(float(pos_weight_same), dtype=torch.float32))
+    return loss
 
 
 # ====================================================================
@@ -208,24 +289,36 @@ def loss_fn(same_logit, false_logit, b, pos_weight_same, pos_weight_false):
 # ====================================================================
 
 def decode(pos, pairs, p_same, p_false, threshold=0.5):
-    """Boxes of one scene: drop false detections, then average-linkage clustering on p_same.
-    Returns (list of box positions, cluster index per detection, -1 for dropped ones)."""
+    """Boxes of one scene: drop false detections, then average-linkage clustering on p_same (pairs not
+    scored count as 0). Returns (list of box positions, cluster index per detection, -1 for dropped ones)."""
+    pos = np.asarray(pos, float).reshape(-1, 2)
     n = len(pos)
     P = np.eye(n)
     for (i, j), p in zip(pairs, p_same):
         P[i, j] = P[j, i] = p
     keep = [i for i in range(n) if p_false[i] < threshold]
     clusters = [[i] for i in keep]
-    while len(clusters) > 1:
-        best, bi, bj = threshold, -1, -1
-        for a in range(len(clusters)):
-            for c in range(a + 1, len(clusters)):
-                link = float(np.mean(P[np.ix_(clusters[a], clusters[c])]))
-                if link > best:
-                    best, bi, bj = link, a, c
-        if bi < 0:
-            break
-        clusters[bi] += clusters.pop(bj)
+    if clusters:
+        S = P[np.ix_(keep, keep)].copy()          # current sum of probabilities between clusters
+        sizes = np.ones(len(keep))
+        alive = np.ones(len(keep), bool)
+        members = [[i] for i in keep]
+        np.fill_diagonal(S, -np.inf)
+        while alive.sum() > 1:
+            link = S / np.outer(sizes, sizes)
+            link[~alive, :] = -np.inf
+            link[:, ~alive] = -np.inf
+            a, c = np.unravel_index(np.argmax(link), link.shape)
+            if link[a, c] <= threshold:
+                break
+            a, c = min(a, c), max(a, c)
+            S[a, :] += S[c, :]
+            S[:, a] += S[:, c]
+            S[a, a] = -np.inf
+            sizes[a] += sizes[c]
+            alive[c] = False
+            members[a] += members[c]
+        clusters = [members[k] for k in range(len(keep)) if alive[k]]
     assign = np.full(n, -1)
     for k, cl in enumerate(clusters):
         assign[cl] = k

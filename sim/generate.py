@@ -17,6 +17,9 @@ Two modes:
     python -m sim.generate random --model config/sensor_model.json --spec sim/specs/train_general.json \\
         --runs 1000 --name TRAIN --seed 1 --out data/sim_train/
 
+  --runs-per-folder N writes N runs in each folder instead of one folder per run (every record keeps its
+  run_id), for large sets such as the 50,000-scene training set.
+
 --set key=value overrides a field of the sensor model for this generation only (e.g. --set false_rate=0.4),
 which is how the failure-prone test conditions raise the rate of false or two-face detections.
 """
@@ -111,12 +114,15 @@ def random_runs(a, model):
     spec = ScenarioSpec(**{k: v for k, v in raw.items() if k in names})
     truth = {}
     rows = []
-    for i in range(a.runs):
+    per_folder = max(1, getattr(a, "runs_per_folder", 1))
+    start = getattr(a, "start", 0)          # first run index (sim.make_sets splits large sets into parts)
+    for i in range(start, start + a.runs):
         seed = a.seed * 1_000_003 + i
         rng = np.random.default_rng(seed)
         scene = random_scene(spec, rng, layout_id=a.name, run_id=f"{a.name}_{i:05d}")
         run_model, factors = jittered(model, spec, rng)
-        truth.update(write_run(a.out, scene, simulate_scene(scene, run_model, rng), run_model))
+        folder = f"{a.name}_part{i // per_folder:04d}" if per_folder > 1 else None
+        truth.update(write_run(a.out, scene, simulate_scene(scene, run_model, rng), run_model, folder=folder))
         rows.append(dict(run=scene.run_id, seed=seed, n_boxes=len(scene.boxes), **scene.meta, **factors))
     save_truth(a.out, truth)
     with open(os.path.join(a.out, "runs.csv"), "w", newline="") as f:
@@ -145,6 +151,8 @@ def main():
     g.add_argument("--spec", required=True)
     g.add_argument("--runs", type=int, default=100)
     g.add_argument("--name", default="SIM", help="layout name of these runs (used to group the results)")
+    g.add_argument("--runs-per-folder", type=int, default=1,
+                   help="runs written in one folder (e.g. 500 for a training set: far fewer files)")
     a = ap.parse_args()
 
     model = override(SensorModel.load(a.model), a.set)

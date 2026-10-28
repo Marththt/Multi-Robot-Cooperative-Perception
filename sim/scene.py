@@ -13,7 +13,7 @@ from typing import List
 
 import numpy as np
 
-from .geometry import box_polygon, rectangle, wrap
+from .geometry import APOTHEM_M, MIN_CENTER_DISTANCE_M, box_polygon, polygons_overlap, rectangle, wrap
 
 ROTATION_STEP_DEG = 15.0          # ring rotation between rounds on the real setup
 
@@ -115,25 +115,30 @@ def _spaced(points, p, spacing):
     return all(math.hypot(p[0] - q[0], p[1] - q[1]) >= spacing for q in points)
 
 
-def random_boxes(spec, n, rng, tries=2000):
-    kind = rng.choice(spec.arrangements)
-    s = rng.uniform(*spec.spacing_m)
-    half = spec.area_half_m
+def random_boxes(spec, n, rng, tries=2000, stretch=0.0, kind=None):
+    """Box centres of one arrangement. stretch (m) widens the spacing and the area, used by random_scene
+    when the boxes could not be placed or oriented without touching."""
+    kind = kind or str(rng.choice(spec.arrangements))
+    base = max(rng.uniform(*spec.spacing_m), MIN_CENTER_DISTANCE_M)
+    s = base + stretch
+    half = spec.area_half_m + stretch
     pts = []
     if kind == "line":
         ang = rng.uniform(0, math.pi)
-        s = min(s, 2 * half / max(n - 1, 1))
+        s = max(min(s, 2 * half / max(n - 1, 1)), spec.spacing_m[0] + stretch)
         for k in range(n):
             t = (k - (n - 1) / 2) * s
             pts.append((t * math.cos(ang), t * math.sin(ang)))
     elif kind == "pairs":
         n_pairs = (n + 1) // 2
         centres = []
-        for _ in range(tries):
+        for k in range(tries):
             if len(centres) == n_pairs:
                 break
-            c = rng.uniform(-half + s, half - s, 2)
-            if _spaced(centres, c, s + 0.6):
+            if k % 100 == 99:                # stuck: start again
+                centres = []
+            c = rng.uniform(-half, half, 2)
+            if _spaced(centres, c, base + 0.35):     # the boxes of two pairs are at least 35 cm apart
                 centres.append(c)
         for c in centres:
             ang = rng.uniform(0, math.pi)
@@ -142,11 +147,16 @@ def random_boxes(spec, n, rng, tries=2000):
             if len(pts) < n:
                 pts.append(tuple(c - off))
     else:                                    # uniform or cluster
-        lim = half if kind == "uniform" else min(half, max(0.25, s * math.sqrt(n) * 0.75))
+        if kind == "uniform":                # too many boxes for the area at this spacing: wider area
+            s, lim = base, spec.area_half_m + 3 * stretch
+        else:
+            lim = min(half, max(0.25, s * math.sqrt(n) * 0.75) + stretch)
         centre = np.zeros(2) if kind == "uniform" else rng.uniform(-half + lim, half - lim, 2)
-        for _ in range(tries):
+        for k in range(tries):
             if len(pts) == n:
                 break
+            if k % 200 == 199:               # stuck: start again
+                pts = []
             p = centre + rng.uniform(-lim, lim, 2)
             if _spaced(pts, p, s):
                 pts.append(tuple(p))
@@ -200,9 +210,54 @@ def random_obstacles(spec, boxes, robots, rng, tries=200):
     return obstacles
 
 
-def random_scene(spec, rng, layout_id, run_id):
+def box_orientations(boxes, rng, gap=0.005, step_deg=3.0):
+    """Random orientations with no two boxes overlapping (at least `gap` apart); None if not found.
+    Boxes are oriented one after the other: each takes a random orientation among those (on a grid of
+    step_deg over the 120 deg of the triangle's symmetry) that do not touch the boxes already placed.
+    Only boxes closer than two vertex radii can touch, so only those pairs are tested."""
+    n = len(boxes)
+    thetas = rng.uniform(0, 2 * math.pi, n)
+    if n < 2:
+        return thetas
+    d = np.linalg.norm(boxes[:, None, :] - boxes[None, :, :], axis=2)
+    if (d[np.triu_indices(n, 1)] < MIN_CENTER_DISTANCE_M + gap).any():
+        return None
+    reach = 4 * APOTHEM_M + gap                   # two vertex radii
+    grid = np.radians(np.arange(0.0, 120.0, step_deg))
+    polys = [box_polygon(boxes[k], thetas[k]) for k in range(n)]
+    for j in range(1, n):
+        near = [k for k in range(j) if d[j, k] < reach]
+        if not near:
+            continue
+        for t in rng.permutation(grid + rng.uniform(0, math.radians(step_deg))):
+            p = box_polygon(boxes[j], t)
+            if not any(polygons_overlap(p, polys[k], gap) for k in near):
+                thetas[j] = t + 2 * math.pi / 3 * rng.integers(3)
+                polys[j] = p
+                break
+        else:
+            return None
+    return thetas
+
+
+def random_scene(spec, rng, layout_id, run_id, attempts=60):
+    """A random scene of the family `spec`. The boxes are real prisms: two boxes never overlap. When the
+    drawn arrangement cannot hold the boxes without overlapping (e.g. a line of three or more boxes needs
+    a pitch of about 22 cm), it is drawn again, and after every 3 failures the spacing is widened by 1 cm."""
     n = int(rng.choice(spec.n_boxes))
-    boxes, kind, spacing = random_boxes(spec, n, rng)
+    kind = str(rng.choice(spec.arrangements))          # kept through the attempts, so no family is favoured
+    for attempt in range(attempts):
+        boxes, kind, spacing = random_boxes(spec, n, rng, stretch=0.01 * (attempt // 3), kind=kind)
+        thetas = None
+        if len(boxes) == n:
+            for _ in range(10):
+                thetas = box_orientations(boxes, rng)
+                if thetas is not None:
+                    break
+        if thetas is not None:
+            break
+    else:
+        raise RuntimeError(f"no non-overlapping layout of {n} boxes for {run_id}")
     centre = boxes.mean(axis=0) if len(boxes) else np.zeros(2)
     n_rob = int(rng.choice(spec.n_robots))
     poses, placement = robot_poses(spec, n_rob, centre, rng)
@@ -216,8 +271,8 @@ def random_scene(spec, rng, layout_id, run_id):
             yr = centre[1] + dx * math.sin(rot) + dy * math.cos(rot)
             captures.append(Capture(round=rnd, robot=f"P{k}", pose=(xr, yr, yaw + rot), radius=rr,
                                     angle_deg=(ang + ROTATION_STEP_DEG * rnd) % 360))
-    scene = Scene(layout_id=layout_id, run_id=run_id, boxes=boxes,
-                  thetas=rng.uniform(0, 2 * math.pi, len(boxes)), obstacles=obstacles, captures=captures)
+    scene = Scene(layout_id=layout_id, run_id=run_id, boxes=boxes, thetas=thetas, obstacles=obstacles,
+                  captures=captures)
     scene.meta = dict(arrangement=kind, spacing_m=round(float(spacing), 3), placement=placement,
                       n_robots=n_rob, n_obstacles=len(obstacles))
     return scene

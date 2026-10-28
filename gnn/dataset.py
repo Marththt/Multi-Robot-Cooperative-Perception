@@ -18,7 +18,9 @@ pipeline/calibrate.py (--sensor-calib), exactly as pipeline/evaluate_runs.py app
 methods see the same detections at the same positions.
 
 A detection is labelled with the nearest true box when it lies within LABEL_RADIUS_M of it, otherwise it
-is a false detection (-1). The labels are used for training only; the evaluation compares the estimated
+is a false detection (-1). Simulated runs carry the true label of every detection (sim_box), which is used
+instead, so two boxes closer than the measurement error are still told apart. The labels are used for
+training only; the evaluation compares the estimated
 boxes with the true boxes as pipeline/evaluate_runs.py does.
 
     python -m gnn.dataset --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
@@ -97,7 +99,7 @@ def build_scenes(survey_dir, truth_path, calib_path=None):
             continue
         robots = sorted({r["robot_id"] for r in recs})
         poses = {}
-        det_robot, distance, bearing, view, pos = [], [], [], [], []
+        det_robot, distance, bearing, view, pos, sim_box = [], [], [], [], [], []
         for r in sorted(recs, key=lambda q: (q["robot_id"], q.get("t", 0.0))):
             x, y, yaw = r["robot_pose"]
             cam = (x + off * math.cos(yaw), y + off * math.sin(yaw), yaw)
@@ -108,12 +110,15 @@ def build_scenes(survey_dir, truth_path, calib_path=None):
             distance.append(d)
             bearing.append(b)
             view.append(float(r.get("viewing_angle_rad") or 0.0))
+            sim_box.append(r.get("sim_box"))
             # bearing positive to the right: world direction = yaw - bearing
             pos.append((cam[0] + d * math.cos(cam[2] - b), cam[1] + d * math.sin(cam[2] - b)))
         pos = np.array(pos, float)
         gaps = np.linalg.norm(pos[:, None, :] - true_xy[None, :, :], axis=2)
         nearest = gaps.argmin(axis=1)
         label = np.where(gaps[np.arange(len(pos)), nearest] <= LABEL_RADIUS_M, nearest, -1)
+        if all(b is not None for b in sim_box):          # simulated run: true labels
+            label = np.array(sim_box, int)
         scenes.append(dict(
             run=run, layout=layout, round=rnd, robots=robots,
             poses=np.array([poses[q] for q in robots], float),

@@ -1,7 +1,9 @@
 """Writes a simulated run in the format of the real runs:
   <out>/<run_id>/P<k>.jsonl      one feature vector per line, same fields as survey.py
   <out>/<run_id>/ground_truth.json
-plus two fields the real records do not have: sim_box (index of the true box, -1 = false detection) and
+With folder= several runs share one folder (<out>/<folder>/P<k>.jsonl, appended, no per-run ground truth):
+every record carries its run_id, so the readers keep the runs apart; large sets then need far fewer files.
+Every record has two fields the real records do not have: sim_box (index of the true box, -1 = false detection) and
 sim_face. They are ignored by every evaluation script and only serve diagnostics.
 """
 
@@ -11,10 +13,10 @@ import os
 from collections import defaultdict
 
 
-def write_run(out_dir, scene, detections, model, t0=1.0e9):
+def write_run(out_dir, scene, detections, model, t0=1.0e9, folder=None):
     """detections: {capture index: list of detection dicts from sensor.capture}. Returns the
     ground-truth entries {layout_id: boxes, run_id: boxes}."""
-    run_dir = os.path.join(out_dir, scene.run_id)
+    run_dir = os.path.join(out_dir, folder or scene.run_id)
     os.makedirs(run_dir, exist_ok=True)
     off = model.camera_offset_m
     per_robot = defaultdict(list)
@@ -35,12 +37,13 @@ def write_run(out_dir, scene, detections, model, t0=1.0e9):
                 run_id=scene.run_id, sim_box=int(det["box"]), sim_face=int(det["face"])))
         t += 3.0
     for robot, recs in per_robot.items():
-        with open(os.path.join(run_dir, f"{robot}.jsonl"), "w") as f:
+        with open(os.path.join(run_dir, f"{robot}.jsonl"), "a" if folder else "w") as f:
             for r in recs:
                 f.write(json.dumps(r) + "\n")
     boxes = [dict(class_name="box", x=round(float(c[0]), 4), y=round(float(c[1]), 4), rb_id=11 + j)
              for j, c in enumerate(scene.boxes)]
     truth = {scene.layout_id: boxes, scene.run_id: boxes}
-    with open(os.path.join(run_dir, "ground_truth.json"), "w") as f:
-        json.dump(truth, f, indent=2)
+    if not folder:
+        with open(os.path.join(run_dir, "ground_truth.json"), "w") as f:
+            json.dump(truth, f, indent=2)
     return truth
