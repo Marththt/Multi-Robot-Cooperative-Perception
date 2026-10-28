@@ -1,0 +1,74 @@
+{
+  "robot_id": "P0",
+  "layout_id": "L11",
+  "written": "2026-10-26 16:16:33",
+  "camera_resolution": "720",
+  "camera_matrix": [
+    [
+      631.221049171357,
+      0.0,
+      630.1485288021505
+    ],
+    [
+      0.0,
+      628.1945561536057,
+      351.9886760803036
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "dist_coeffs": [
+    [
+      -0.058031817579122805,
+      -0.017090210490026757,
+      -0.0003801954655680754,
+      0.0005592386020747354,
+      -0.001087005433644274
+    ]
+  ],
+  "camera_calib_file": "config\\checkerboard_calib_P0.json",
+  "aruco_marker_size_m": 0.077,
+  "aruco_dict": "4X4_50",
+  "aruco_classes_file": null,
+  "camera_offset_forward_m": 0.12,
+  "camera_offset_right_m": 0.0,
+  "frame_correction_file": null,
+  "yaw_offset_deg": 0.0,
+  "optitrack_rb_id": 8,
+  "n_readings": 5,
+  "instance_threshold_m": 0.2,
+  "settle_s": 1.0,
+  "jpeg_quality": 95,
+  "ground_truth_file": "survey_rounds/L11_20261026-161628\\ground_truth.json",
+  "true_boxes": [
+    {
+      "class_name": "box",
+      "x": 0.1189,
+      "y": 0.2134,
+      "rb_id": 11
+    },
+    {
+      "class_name": "box",
+      "x": -0.3093,
+      "y": -0.145,
+      "rb_id": 12
+    },
+    {
+      "class_name": "box",
+      "x": -0.2016,
+      "y": -0.3937,
+      "rb_id": 13
+    },
+    {
+      "class_name": "box",
+      "x": 0.5837,
+      "y": -0.4979,
+      "rb_id": 14
+    }
+  ],
+  "pose_convention": "(x, y, yaw_rad) in the OptiTrack planar frame; camera_pose = body pose moved by the camera offsets",
+  "detection_convention": "distance = camera->marker [m]; bearing_rad positive to the right of the optical axis; viewing_angle_rad 0 = marker facing the camera"
+}

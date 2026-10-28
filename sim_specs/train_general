@@ -1,0 +1,53 @@
+{
+  "spacing_m": [
+    0.2,
+    0.6
+  ],
+  "area_half_m": 0.8,
+  "n_robots": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "robot_radius_m": [
+    1.0,
+    2.0
+  ],
+  "placements": [
+    "ring",
+    "ring_gap"
+  ],
+  "rounds": 1,
+  "n_obstacles": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "noise_jitter": 0.4,
+  "n_boxes": [
+    1,
+    2,
+    3,
+    5,
+    6,
+    8,
+    9,
+    10
+  ],
+  "arrangements": [
+    "uniform"
+  ],
+  "false_factor": [
+    0.5,
+    2.0
+  ],
+  "two_face_factor": [
+    0.5,
+    2.0
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "_readme": "Zone regions in METRES, in the ABSOLUTE Motive frame (OptiTrack coordinates, not relative to where the robot was switched on). Built from the 4 real corners of the arena measured in September 2026 after the OptiTrack recalibration: (1.918, 1.452), (2.135, -2.672), (-2.690, -2.628), (-2.213, 1.519). The bounding box (x -2.690..2.135, y -2.672..1.519) is split into thirds: north/south across the full width, east/west/center in the middle band. x_max/y_max are EXCLUSIVE. If Motive is recalibrated, rebuild this file from the new corners.",
+  "_rotation_note": "The 4 corners are not a perfectly axis-aligned rectangle: there is a rotation of about 1 degree (long sides ~4.13-4.17 m, short sides ~4.13-4.83 m). Ignored here: the regions are the axis-aligned bounding box, not the exact quadrilateral. For ~1.5 m zones this moves zone borders by a few cm at the edges; if zone assignments look wrong near the borders, this is the first suspect.",
+  "regions": [
+    {
+      "name": "north",
+      "x_min": -2.69,
+      "x_max": 2.135,
+      "y_min": 0.122,
+      "y_max": 1.519
+    },
+    {
+      "name": "south",
+      "x_min": -2.69,
+      "x_max": 2.135,
+      "y_min": -2.672,
+      "y_max": -1.275
+    },
+    {
+      "name": "east",
+      "x_min": 0.527,
+      "x_max": 2.135,
+      "y_min": -1.275,
+      "y_max": 0.122
+    },
+    {
+      "name": "west",
+      "x_min": -2.69,
+      "x_max": -1.082,
+      "y_min": -1.275,
+      "y_max": 0.122
+    },
+    {
+      "name": "center",
+      "x_min": -1.082,
+      "x_max": 0.527,
+      "y_min": -1.275,
+      "y_max": 0.122
+    }
+  ]
+}

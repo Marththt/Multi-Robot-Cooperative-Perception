@@ -1,0 +1,6 @@
+{
+  "_readme": "ArUco marker ID (dictionary DICT_4X4_50 by default, see vf/perception/aruco_detector.py; change it with --aruco-dict) -> reported class. Professor's 'same class, same ID' rule: every object of a class carries the same ID, so the robot recognises the CLASS but not the individual object; telling instances apart is done by the estimated position, not by the marker. An ID not listed here gets the default class (box). Add entries when more than one real class is used.",
+  "marker_to_class": {
+    "0": "box"
+  }
+}

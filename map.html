@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live map — RoboMaster</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #161d2e;
+    --panel-2: #1d2740;
+    --line: #2a3550;
+    --text: #e6e9f0;
+    --muted: #8b94ac;
+    --accent: #4fb0ff;
+    --bad: #ff6868;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  }
+  #app { display: flex; height: 100vh; min-height: 600px; }
+  #mapWrap {
+    position: relative; flex: 1 1 auto; min-width: 0; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  #mapCanvas {
+    background: #0b0f18; border: 1px solid var(--line); border-radius: 8px;
+    max-width: 100%; max-height: 100%;
+  }
+  #panel {
+    width: 420px; min-width: 340px; flex: 0 0 auto;
+    background: var(--panel); border-left: 1px solid var(--line);
+    overflow-y: auto; padding: 16px 18px;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  #panel::-webkit-scrollbar { display: none; }
+  /* Everything on one page: the side panel is two columns
+     (robots + localization | instances) */
+  #panel {
+    width: clamp(620px, 50vw, 940px); min-width: 0;
+    display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; align-content: start;
+  }
+  #panel > h1, #panel > .sub { grid-column: 1 / -1; }
+  .col { min-width: 0; }
+  section { margin-bottom: 16px; }
+  #panel h1 {
+    font-size: 18px; margin: 0 0 4px; font-weight: 600;
+  }
+  #panel .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+  #statusLine {
+    position: absolute; top: 24px; left: 24px;
+    font-size: 12px; padding: 4px 10px; border-radius: 6px;
+    background: rgba(0,0,0,0.4); color: var(--muted);
+  }
+  #statusLine.ok { color: #6fd67a; }
+  #statusLine.err { color: var(--bad); }
+  section { margin-bottom: 22px; }
+  section h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin: 0 0 10px; font-weight: 600;
+    border-bottom: 1px solid var(--line); padding-bottom: 6px;
+  }
+  .dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    margin-right: 6px; flex: 0 0 auto;
+  }
+  .robotRow {
+    display: flex; align-items: flex-start; gap: 4px;
+    padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13px;
+  }
+  .robotRow .dot { margin-top: 4px; }
+  .robotRow .main { flex: 1; }
+  .robotRow .id { font-weight: 600; }
+  .robotRow .stale { color: var(--bad); font-size: 11px; }
+  .robotRow .live { color: #6fd67a; font-size: 11px; }
+  .robotRow .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .instCard {
+    background: var(--panel-2); border-radius: 8px; padding: 8px 12px;
+    margin-bottom: 8px; font-size: 12px;
+  }
+  .instCard .label { font-weight: 600; margin-bottom: 6px; }
+  .instLine { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+  .instCard .label { display: flex; justify-content: space-between; }
+  .instCard .verdict { color: var(--text); font-weight: 600; }
+  .instCard .verdict.split { color: var(--bad); }
+  .instLine .robotId { font-weight: 600; min-width: 28px; }
+  .instLine .detail { color: var(--muted); font-size: 12px; }
+  .baselineRow {
+    display: flex; justify-content: space-between; font-size: 12px;
+    padding: 3px 0; color: var(--muted);
+  }
+  .baselineRow b { color: var(--text); font-weight: 500; }
+  .empty { color: var(--muted); font-size: 13px; font-style: italic; }
+  .locCard {
+    background: var(--panel-2); border-radius: 8px; padding: 10px 12px;
+    margin-bottom: 10px; font-size: 13px;
+  }
+  .locCard .className { font-weight: 600; margin-bottom: 6px; }
+  .locRow {
+    display: flex; gap: 8px; align-items: baseline; padding: 4px 6px;
+    border-radius: 5px; cursor: pointer; font-size: 12px;
+  }
+  .locRow:hover { background: #26324f; }
+  .locRow.sel { background: #2b3b63; outline: 1px solid var(--accent); }
+  .locRow .name { width: 96px; color: var(--text); }
+  .locRow .n { width: 34px; font-weight: 700; color: var(--accent); }
+  .locRow .pos { color: var(--muted); flex: 1; white-space: normal; }
+  .locNote { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+  #tooltip {
+    position: absolute; pointer-events: none; display: none;
+    background: rgba(10,14,24,0.95); border: 1px solid var(--line);
+    border-radius: 6px; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+    color: var(--text); white-space: nowrap; z-index: 10;
+  }
+  #tooltip b { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="mapWrap">
+    <div id="statusLine">connecting...</div>
+    <canvas id="mapCanvas" width="760" height="760"></canvas>
+    <div id="tooltip"></div>
+  </div>
+  <div id="panel">
+    <h1>Live map</h1>
+    <div class="sub">robots + detected objects, updated by the local server</div>
+    <div class="col">
+    <section id="robotSection"><h2>Robots</h2><div id="robotPanel" class="empty">waiting for data...</div></section>
+    <section id="locSection"><h2>Localization</h2><div id="locPanel" class="empty">not active (start the server with --localize)</div></section>
+    </div>
+    <div class="col">
+    <section id="instSection"><h2>Instances / fusion</h2><div id="instPanel" class="empty">waiting for data...</div></section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var params = new URLSearchParams(location.search);
+  var POLL_MS = parseInt(params.get("ms") || "250", 10);
+
+  var ROBOT_PALETTE = ["#4fb0ff", "#ff9f4f", "#6fd67a", "#e070e0", "#f2e26b", "#7d8bff"];
+  var CLASS_PALETTE = ["#ff9f4f", "#4fb0ff", "#6fd67a", "#e070e0", "#f2e26b", "#7d8bff", "#ff6868"];
+
+  var chosenMethod = params.get("method");  // method drawn on the map (click in the panel)
+  var robotOrder = [];   // robot_id in the order we see them -> stable colour
+  var classOrder = [];   // same for class
+
+  function robotColor(id) {
+    var i = robotOrder.indexOf(id);
+    if (i === -1) { robotOrder.push(id); i = robotOrder.length - 1; }
+    return ROBOT_PALETTE[i % ROBOT_PALETTE.length];
+  }
+  function classColor(name) {
+    var i = classOrder.indexOf(name);
+    if (i === -1) { classOrder.push(name); i = classOrder.length - 1; }
+    return CLASS_PALETTE[i % CLASS_PALETTE.length];
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function fmt(n, d) {
+    if (n === null || n === undefined) return "n/a";
+    return Number(n).toFixed(d === undefined ? 2 : d);
+  }
+  function deg(rad) {
+    if (rad === null || rad === undefined) return null;
+    return rad * 180 / Math.PI;
+  }
+
+  // ---------------------------------------------------------------
+  // Canvas / map
+  // ---------------------------------------------------------------
+  var canvas = document.getElementById("mapCanvas");
+  var ctx = canvas.getContext("2d");
+  // The map fills the space left of the panel (a square as big as fits),
+  // drawn at the screen's real pixel density so it stays sharp.
+  // W, H are in CSS pixels; the context is scaled by the pixel ratio.
+  var W = canvas.width, H = canvas.height, dpr = 1;
+  function resizeCanvas() {
+    var wrap = document.getElementById("mapWrap");
+    var size = Math.max(200, Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight) - 32));
+    dpr = window.devicePixelRatio || 1;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    W = size; H = size;
+  }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+  var PAD = 36;
+
+  var bounds = { x_min: -3, x_max: 3, y_min: -3, y_max: 3, fixed: false };
+  var markers = [];  // rebuilt on every render: [{x,y (canvas px), kind, ...data}]
+
+  function computeBounds(data) {
+    if (data.regions) {
+      bounds = Object.assign({ fixed: true }, data.regions);
+      return;
+    }
+    // No --regions passed to the server: fit the bounds to the points seen
+    // so far, with a margin, so the map stays useful even without that
+    // file.
+    var xs = [], ys = [];
+    Object.keys(data.robots || {}).forEach(function (rid) {
+      var r = data.robots[rid];
+      if (r.pose) { xs.push(r.pose[0]); ys.push(r.pose[1]); }
+      (r.detections || []).forEach(function (d) {
+        if (d.position) { xs.push(d.position[0]); ys.push(d.position[1]); }
+      });
+    });
+    if (!xs.length) return; // keep the previous bounds
+    var margin = 1.0;
+    var nb = {
+      x_min: Math.min.apply(null, xs) - margin, x_max: Math.max.apply(null, xs) + margin,
+      y_min: Math.min.apply(null, ys) - margin, y_max: Math.max.apply(null, ys) + margin,
+      fixed: false
+    };
+    // Avoid abrupt scale jumps: only grow, never shrink, if we already had
+    // automatic bounds.
+    if (!bounds.fixed) {
+      nb.x_min = Math.min(nb.x_min, bounds.x_min);
+      nb.x_max = Math.max(nb.x_max, bounds.x_max);
+      nb.y_min = Math.min(nb.y_min, bounds.y_min);
+      nb.y_max = Math.max(nb.y_max, bounds.y_max);
+    }
+    bounds = nb;
+  }
+
+  function worldToCanvas(x, y) {
+    var rx = bounds.x_max - bounds.x_min, ry = bounds.y_max - bounds.y_min;
+    var scale = Math.min((W - 2 * PAD) / rx, (H - 2 * PAD) / ry);
+    var cx = W / 2 - ((bounds.x_min + bounds.x_max) / 2) * scale;
+    var cy = H / 2 + ((bounds.y_min + bounds.y_max) / 2) * scale;
+    return { x: cx + x * scale, y: cy - y * scale, scale: scale };
+  }
+
+  function drawGrid() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#0b0f18";
+    ctx.fillRect(0, 0, W, H);
+
+    var step = 0.5; // metres
+    ctx.lineWidth = 1;
+    for (var x = Math.ceil(bounds.x_min / step) * step; x <= bounds.x_max; x += step) {
+      var p0 = worldToCanvas(x, bounds.y_min), p1 = worldToCanvas(x, bounds.y_max);
+      ctx.strokeStyle = Math.abs(x) < 1e-6 ? "#3a4568" : "#161d2e";
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    for (var y = Math.ceil(bounds.y_min / step) * step; y <= bounds.y_max; y += step) {
+      var q0 = worldToCanvas(bounds.x_min, y), q1 = worldToCanvas(bounds.x_max, y);
+      ctx.strokeStyle = Math.abs(y) < 1e-6 ? "#3a4568" : "#161d2e";
+      ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke();
+    }
+    if (bounds.fixed) {
+      var tl = worldToCanvas(bounds.x_min, bounds.y_max);
+      var br = worldToCanvas(bounds.x_max, bounds.y_min);
+      ctx.strokeStyle = "#4a5788";
+      ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Smooth rendering
+  // ---------------------------------------------------------------
+  // Every snapshot from the server is noisy: ArUco positions jitter by a
+  // few centimetres from frame to frame, and a marker can vanish for a
+  // single frame and come back. Redrawing each snapshot as it is makes the
+  // map jump. Instead the page keeps "visual tracks":
+  //   - every marker glides toward its latest measured position
+  //     (exponential smoothing with time constant SMOOTH_S seconds);
+  //   - a new marker fades in; a marker missing from the latest snapshots
+  //     stays where it was for HOLD_S seconds and then fades out, so a
+  //     one-frame dropout does not blink;
+  //   - the canvas is redrawn at the screen refresh rate
+  //     (requestAnimationFrame), the side panel at most every PANEL_MS.
+  // Only the drawing is smoothed: the numbers in the panel and in the
+  // tooltips are the ones computed by the server.
+  // Tunable from the URL, e.g. map.html?smooth=0.5&hold=1.5
+  var SMOOTH_S = parseFloat(params.get("smooth") || "0.35");
+  var HOLD_S = parseFloat(params.get("hold") || "0.8");
+  var FADE_S = 0.25;
+  var GATE_M = 0.4;   // max jump (m) to still consider a detection "the same marker"
+  var PANEL_MS = parseInt(params.get("panel_ms") || "700", 10);
+
+  var latest = null;          // latest snapshot from the server
+  var tracks = {};            // group key -> [track]; track = {x, y, yaw, tx, ty, tyaw, alpha, present, lastSeen, data, id}
+  var lastPanel = 0;
+
+  function angleDiff(a, b) {
+    var d = a - b;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    return d;
+  }
+
+  // Match the targets of one group (e.g. "detections of P0 of class box")
+  // to its existing tracks: closest pairs first, within GATE_M.
+  function updateGroup(key, targets, now) {
+    var old = tracks[key] || [];
+    var pairs = [];
+    old.forEach(function (tr, i) {
+      targets.forEach(function (tg, j) {
+        var d = Math.hypot(tr.tx - tg.x, tr.ty - tg.y);
+        if (d <= GATE_M || targets.length === 1 && old.length === 1 && tg.single) pairs.push([d, i, j]);
+      });
+    });
+    pairs.sort(function (a, b) { return a[0] - b[0]; });
+    var usedOld = {}, usedNew = {};
+    pairs.forEach(function (p) {
+      if (usedOld[p[1]] || usedNew[p[2]]) return;
+      usedOld[p[1]] = usedNew[p[2]] = true;
+      var tr = old[p[1]], tg = targets[p[2]];
+      tr.tx = tg.x; tr.ty = tg.y; tr.tyaw = tg.yaw; tr.data = tg.data;
+      tr.present = true; tr.lastSeen = now;
+    });
+    old.forEach(function (tr, i) { if (!usedOld[i]) tr.present = false; });
+    targets.forEach(function (tg, j) {
+      if (usedNew[j]) return;
+      var ids = old.map(function (t) { return t.id; });
+      var id = 1;
+      while (ids.indexOf(id) !== -1) id++;
+      old.push({ x: tg.x, y: tg.y, yaw: tg.yaw, tx: tg.x, ty: tg.y, tyaw: tg.yaw,
+                 alpha: 0, present: true, lastSeen: now, data: tg.data, id: id });
+    });
+    tracks[key] = old;
+  }
+
+  function onData(data, now) {
+    latest = data;
+    computeBounds(data);
+    var seen = {};
+    function group(key, targets) { seen[key] = true; updateGroup(key, targets, now); }
+
+    Object.keys(data.robots || {}).forEach(function (rid) {
+      var r = data.robots[rid];
+      group("robot|" + rid, r.pose ? [{ x: r.pose[0], y: r.pose[1], yaw: r.pose[2], single: true,
+                                        data: { robot_id: rid, pose: r.pose, stale: r.stale } }] : []);
+      var perClass = {};
+      (r.detections || []).forEach(function (det) {
+        if (!det.position) return;
+        (perClass[det.class_name] = perClass[det.class_name] || []).push(
+          { x: det.position[0], y: det.position[1], data: { robot_id: rid, det: det } });
+      });
+      Object.keys(perClass).forEach(function (c) { group("det|" + rid + "|" + c, perClass[c]); });
+    });
+
+    var loc = data.localization;
+    var m = activeMethod(loc);
+    if (m) {
+      Object.keys(loc.per_class || {}).forEach(function (className) {
+        var out = loc.per_class[className][m];
+        if (!out) return;
+        group("est|" + m + "|" + className, out.objects.map(function (xy) {
+          return { x: xy[0], y: xy[1], data: { method: m, class_name: className, xy: xy } };
+        }));
+      });
+    }
+    // groups that disappeared from this snapshot: everything in them is missing
+    Object.keys(tracks).forEach(function (key) {
+      if (!seen[key]) tracks[key].forEach(function (tr) { tr.present = false; });
+    });
+
+    if (now - lastPanel >= PANEL_MS) { renderPanels(data); lastPanel = now; }
+  }
+
+  function step(dt, now) {
+    var k = 1 - Math.exp(-dt / SMOOTH_S);
+    Object.keys(tracks).forEach(function (key) {
+      tracks[key] = tracks[key].filter(function (tr) {
+        tr.x += (tr.tx - tr.x) * k;
+        tr.y += (tr.ty - tr.y) * k;
+        if (tr.yaw !== undefined && tr.tyaw !== undefined) tr.yaw += angleDiff(tr.tyaw, tr.yaw) * k;
+        var visible = tr.present || (now - tr.lastSeen) < HOLD_S * 1000;
+        var target = visible ? 1 : 0;
+        var da = dt / FADE_S;
+        tr.alpha = target > tr.alpha ? Math.min(1, tr.alpha + da) : Math.max(0, tr.alpha - da);
+        return visible || tr.alpha > 0;
+      });
+      if (!tracks[key].length) delete tracks[key];
+    });
+  }
+
+  function eachTrack(prefix, fn) {
+    Object.keys(tracks).sort().forEach(function (key) {
+      if (key.indexOf(prefix) === 0) tracks[key].forEach(function (tr) { fn(tr, key); });
+    });
+  }
+
+  function robotTrack(rid) {
+    var t = tracks["robot|" + rid];
+    return t && t.length ? t[0] : null;
+  }
+
+  function drawRobot(tr) {
+    var rid = tr.data.robot_id, stale = tr.data.stale;
+    var col = robotColor(rid);
+    var p = worldToCanvas(tr.x, tr.y);
+    var size = 16;
+    ctx.save();
+    ctx.globalAlpha = tr.alpha * (stale ? 0.5 : 1);
+    ctx.translate(p.x, p.y);
+    ctx.rotate(-tr.yaw); // canvas y is inverted with respect to the world
+    ctx.beginPath();
+    ctx.moveTo(size, 0);
+    ctx.lineTo(-size * 0.7, size * 0.6);
+    ctx.lineTo(-size * 0.7, -size * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = stale ? "#3a4155" : col;
+    ctx.fill();
+    if (stale) {
+      ctx.strokeStyle = col; ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+    ctx.globalAlpha = tr.alpha;
+    ctx.fillStyle = "#c7cfe6";
+    ctx.font = "11px Segoe UI, sans-serif";
+    ctx.fillText(rid, p.x + size + 4, p.y - size);
+    ctx.globalAlpha = 1;
+    markers.push({ x: p.x, y: p.y, kind: "robot", robot_id: rid, pose: tr.data.pose, stale: stale });
+  }
+
+  function drawDetection(tr) {
+    var rid = tr.data.robot_id, det = tr.data.det;
+    var rcol = robotColor(rid);
+    var p = worldToCanvas(tr.x, tr.y);
+    var rt = robotTrack(rid);
+    if (rt) {
+      var rp = worldToCanvas(rt.x, rt.y);
+      ctx.strokeStyle = rcol; ctx.globalAlpha = 0.35 * tr.alpha; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(rp.x, rp.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    }
+    ctx.globalAlpha = tr.alpha;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = classColor(det.class_name);
+    ctx.fill();
+    ctx.strokeStyle = rcol; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = "#c7cfe6";
+    ctx.font = "11px Segoe UI, sans-serif";
+    ctx.fillText(det.class_name, p.x + 10, p.y + 4);
+    ctx.globalAlpha = 1;
+    markers.push({ x: p.x, y: p.y, kind: "det", robot_id: rid, det: det });
+  }
+
+  // Field of view of the robots used by the localization (same hfov and
+  // r_max as the sensor model): what each robot CAN see.
+  function drawFov() {
+    var loc = latest && latest.localization;
+    if (!loc || !loc.sensor) return;
+    var half = loc.sensor.hfov_deg * Math.PI / 360;
+    (loc.used || []).forEach(function (rid) {
+      var rt = robotTrack(rid);
+      if (!rt) return;
+      var c = worldToCanvas(rt.x, rt.y);
+      var rad = loc.sensor.r_max * c.scale;
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y);
+      ctx.arc(c.x, c.y, rad, -rt.yaw - half, -rt.yaw + half);
+      ctx.closePath();
+      ctx.fillStyle = robotColor(rid);
+      ctx.globalAlpha = 0.07 * rt.alpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  function activeMethod(loc) {
+    if (!loc || !loc.methods || !loc.methods.length) return null;
+    if (chosenMethod && loc.methods.indexOf(chosenMethod) !== -1) return chosenMethod;
+    return loc.methods.indexOf("mht") !== -1 ? "mht" : loc.methods[0];
+  }
+
+  // Estimates of the selected method: white ring with a cross. The number
+  // next to the class stays attached to the same estimate while it moves.
+  function drawEstimate(tr) {
+    var p = worldToCanvas(tr.x, tr.y);
+    ctx.globalAlpha = tr.alpha;
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 13, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.x - 6, p.y - 6); ctx.lineTo(p.x + 6, p.y + 6);
+    ctx.moveTo(p.x + 6, p.y - 6); ctx.lineTo(p.x - 6, p.y + 6);
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 11px Segoe UI, sans-serif";
+    ctx.fillText(tr.data.class_name + " " + tr.id, p.x + 15, p.y - 10);
+    ctx.globalAlpha = 1;
+    markers.push({ x: p.x, y: p.y, kind: "estimate", method: tr.data.method,
+                   class_name: tr.data.class_name, idx: tr.id, xy: tr.data.xy });
+  }
+
+  function drawFrame() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    markers = [];
+    drawGrid();
+    if (!latest) return;
+    drawFov();
+    eachTrack("robot|", drawRobot);
+    eachTrack("det|", drawDetection);
+    var m = activeMethod(latest.localization);
+    if (m) eachTrack("est|" + m + "|", drawEstimate);
+  }
+
+  var lastFrame = null;
+  function loop(ts) {
+    var dt = lastFrame === null ? 0 : Math.min((ts - lastFrame) / 1000, 0.25);
+    lastFrame = ts;
+    step(dt, performance.now());
+    drawFrame();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function renderPanels(data) {
+    renderRobotPanel(data);
+    renderLocPanel(data);
+    renderInstPanel(data);
+  }
+
+  // Panels are written through this proxy: the DOM is touched only when the
+  // content really changed. Rewriting the HTML on every poll makes the text
+  // flicker and breaks mouse hover/selection in the panel.
+  function panelProxy(id) {
+    var real = document.getElementById(id);
+    return {
+      set innerHTML(h) { if (real.__html !== h) { real.innerHTML = h; real.__html = h; } },
+      set textContent(t) { if (real.__html !== "#" + t) { real.textContent = t; real.__html = "#" + t; } },
+      set className(c) { if (real.className !== c) real.className = c; }
+    };
+  }
+
+  // ---------------------------------------------------------------
+  // Side panel
+  // ---------------------------------------------------------------
+  function renderRobotPanel(data) {
+    var ids = Object.keys(data.robots || {}).sort();
+    var el = panelProxy("robotPanel");
+    if (!ids.length) { el.className = "empty"; el.textContent = "no robots yet (no file in --state-dir)"; return; }
+    el.className = "";
+    el.innerHTML = ids.map(function (rid) {
+      var r = data.robots[rid];
+      var col = robotColor(rid);
+      var nSeen = (r.detections || []).length;
+      var poseTxt = r.pose
+        ? "x=" + fmt(r.pose[0]) + " y=" + fmt(r.pose[1]) + " yaw=" + fmt(deg(r.pose[2]), 0) + "°"
+        : "pose not available";
+      var stateTxt = r.stale
+        ? '<span class="stale">STALE (' + fmt(r.age, 1) + "s ago)</span>"
+        : '<span class="live">live (' + fmt(r.age, 1) + "s ago)</span>";
+      return '<div class="robotRow">' +
+        '<span class="dot" style="background:' + col + '"></span>' +
+        '<div class="main">' +
+        '<div><span class="id">' + esc(rid) + "</span> — " + stateTxt + "</div>" +
+        '<div class="meta">' + esc(poseTxt) + " · " + nSeen + " object(s) seen" +
+        ((r.p_d !== null && r.p_d !== undefined && r.p_d < 1) ? ' · <span class="stale">interference p_D=' + fmt(r.p_d, 2) + "</span>" : "") +
+        "</div>" +
+        "</div></div>";
+    }).join("");
+  }
+
+  function renderLocPanel(data) {
+    var el = panelProxy("locPanel");
+    var loc = data.localization;
+    if (!loc) { el.className = "empty"; el.textContent = "not active (start the server with --localize)"; return; }
+    var m = activeMethod(loc);
+    var classes = Object.keys(loc.per_class || {}).sort();
+    var note = '<div class="locNote">robots used: ' + esc((loc.used || []).join(", ") || "none") +
+      ((loc.excluded || []).length ? " · excluded (no pose/stale): " + esc(loc.excluded.join(", ")) : "") +
+      " · p_D=" + fmt(loc.sensor.p_d, 2) + " · sigma=" + fmt(loc.sensor.sigma_pos, 2) + " m" +
+      " · click a method to draw it on the map</div>";
+    if (!classes.length) { el.className = ""; el.innerHTML = note + '<div class="empty">no object with a position</div>'; return; }
+    el.className = "";
+    el.innerHTML = note + classes.map(function (className) {
+      var rows = loc.methods.filter(function (name) { return loc.per_class[className][name]; }).map(function (name) {
+        var out = loc.per_class[className][name];
+        var pos = out.objects.map(function (xy) { return "(" + fmt(xy[0]) + "," + fmt(xy[1]) + ")"; }).join(" ") || "-";
+        return '<div class="locRow' + (name === m ? " sel" : "") + '" data-method="' + esc(name) + '">' +
+          '<span class="name">' + esc(name) + '</span><span class="n">n=' + out.n + '</span>' +
+          '<span class="pos">' + esc(pos) + "</span></div>";
+      }).join("");
+      return '<div class="locCard"><div class="className">' + esc(className) + "</div>" + rows + "</div>";
+    }).join("");
+  }
+  document.getElementById("locPanel").addEventListener("click", function (ev) {
+    var row = ev.target.closest(".locRow");
+    if (!row) return;
+    chosenMethod = row.getAttribute("data-method");
+    if (latest) renderLocPanel(latest);
+  });
+
+  function renderInstPanel(data) {
+    var el = panelProxy("instPanel");
+    var instances = data.instances || [];
+    if (!instances.length) { el.className = "empty"; el.textContent = "no data yet"; return; }
+    el.className = "";
+    el.innerHTML = instances.map(function (inst) {
+      var rows = Object.keys(inst.per_robot).sort().map(function (rid) {
+        var r = inst.per_robot[rid];
+        var col = robotColor(rid);
+        if (!r.class_name) {
+          return '<div class="instLine"><span class="dot" style="background:' + col + '"></span>' +
+            '<span class="robotId">' + esc(rid) + '</span><span class="detail">nothing seen</span></div>';
+        }
+          var d = r.distance !== null && r.distance !== undefined ? "d=" + fmt(r.distance) + "m " : "";
+        var xy = r.position ? "(" + fmt(r.position[0]) + "," + fmt(r.position[1]) + ")" : "n/a";
+        return '<div class="instLine"><span class="dot" style="background:' + col + '"></span>' +
+          '<span class="robotId">' + esc(rid) + '</span>' +
+          '<span class="detail">' + esc(r.class_name) + " " + d + xy + "</span></div>";
+      }).join("");
+      // All baselines agree (the usual case): one word instead of six rows.
+      // When they disagree, list only the decisions, compactly.
+      var names = Object.keys(inst.baselines).sort();
+      var values = names.map(function (n) { return String(inst.baselines[n]); });
+      var agree = values.every(function (v) { return v === values[0]; });
+      var verdict = agree
+        ? '<span class="verdict">all baselines: ' + esc(values[0]) + "</span>"
+        : '<span class="verdict split">baselines disagree</span>';
+      var detail = agree ? "" : '<div class="instLine"><span class="detail">' +
+        names.map(function (n) { return esc(n) + "=" + esc(inst.baselines[n]); }).join(" · ") + "</span></div>";
+      return '<div class="instCard"><div class="label"><span>' + esc(inst.label) + "</span>" + verdict + "</div>" +
+        rows + detail + "</div>";
+    }).join("");
+  }
+
+  // ---------------------------------------------------------------
+  // Mouse-over tooltip
+  // ---------------------------------------------------------------
+  var tooltip = document.getElementById("tooltip");
+  canvas.addEventListener("mousemove", function (ev) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = (ev.clientX - rect.left) * (W / rect.width);
+    var my = (ev.clientY - rect.top) * (H / rect.height);
+    var best = null, bestD = 16;
+    markers.forEach(function (m) {
+      var dd = Math.hypot(m.x - mx, m.y - my);
+      if (dd < bestD) { bestD = dd; best = m; }
+    });
+    if (!best) { tooltip.style.display = "none"; return; }
+    var html;
+    if (best.kind === "estimate") {
+      html = "<b>" + esc(best.method) + ": " + esc(best.class_name) + " " + best.idx + "</b><br>xy=(" +
+        fmt(best.xy[0]) + "," + fmt(best.xy[1]) + ")";
+    } else if (best.kind === "robot") {
+      html = "<b>" + esc(best.robot_id) + "</b><br>x=" + fmt(best.pose[0]) + " y=" + fmt(best.pose[1]) +
+        " yaw=" + fmt(deg(best.pose[2]), 0) + "°" + (best.stale ? "<br>STALE" : "");
+    } else {
+      var d = best.det;
+      html = "<b>" + esc(best.robot_id) + " → " + esc(d.class_name) + "</b><br>" +
+        "conf=" + fmt(d.confidence) + "<br>" +
+        (d.distance !== null && d.distance !== undefined ? "d=" + fmt(d.distance) + "m " : "") +
+        (d.bearing_rad !== null && d.bearing_rad !== undefined ? "b=" + fmt(deg(d.bearing_rad), 0) + "°" : "") +
+        "<br>xy=(" + fmt(d.position[0]) + "," + fmt(d.position[1]) + ")";
+    }
+    tooltip.innerHTML = html;
+    tooltip.style.display = "block";
+    tooltip.style.left = (ev.clientX - rect.left + 14) + "px";
+    tooltip.style.top = (ev.clientY - rect.top + 14) + "px";
+  });
+  canvas.addEventListener("mouseleave", function () { tooltip.style.display = "none"; });
+
+  // ---------------------------------------------------------------
+  // Server polling
+  // ---------------------------------------------------------------
+  var statusEl = document.getElementById("statusLine");
+  function tick() {
+    fetch("/api/state", { cache: "no-store" }).then(function (r) { return r.json(); })
+      .then(function (data) {
+        statusEl.className = "ok";
+        statusEl.textContent = "connected — updated " + new Date(data.t * 1000).toLocaleTimeString();
+        onData(data, performance.now());
+      })
+      .catch(function (e) {
+        statusEl.className = "err";
+        statusEl.textContent = "server unreachable (" + e.message + ")";
+      });
+  }
+  tick();
+  setInterval(tick, POLL_MS);
+})();
+</script>
+</body>
+</html>

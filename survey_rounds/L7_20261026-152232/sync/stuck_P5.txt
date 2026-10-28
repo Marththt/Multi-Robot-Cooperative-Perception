@@ -1,0 +1,35 @@
+--- 15:22:58 driving to L7/P5/000/+0
+--- 15:22:59 arrived at L7/P5/000/+0, settling
+--- 15:23:00 capturing L7/P5/000/+0 (camera + marker detection)
+--- 15:23:01 saving L7/P5/000/+0
+--- 15:23:01 writing L7/P5/000/+0
+--- 15:23:01 driving to L7/P5/001/+0
+--- 15:23:03 arrived at L7/P5/001/+0, settling
+--- 15:23:04 capturing L7/P5/001/+0 (camera + marker detection)
+--- 15:23:04 saving L7/P5/001/+0
+--- 15:23:04 writing L7/P5/001/+0
+--- 15:23:05 driving to L7/P5/002/+0
+--- 15:23:07 arrived at L7/P5/002/+0, settling
+--- 15:23:08 capturing L7/P5/002/+0 (camera + marker detection)
+--- 15:23:08 saving L7/P5/002/+0
+--- 15:23:08 writing L7/P5/002/+0
+--- 15:23:09 driving to L7/P5/003/+0
+--- 15:23:10 arrived at L7/P5/003/+0, settling
+--- 15:23:11 capturing L7/P5/003/+0 (camera + marker detection)
+--- 15:23:12 saving L7/P5/003/+0
+--- 15:23:12 writing L7/P5/003/+0
+--- 15:23:12 driving to L7/P5/004/+0
+--- 15:23:14 arrived at L7/P5/004/+0, settling
+--- 15:23:15 capturing L7/P5/004/+0 (camera + marker detection)
+--- 15:23:16 saving L7/P5/004/+0
+--- 15:23:16 writing L7/P5/004/+0
+--- 15:23:16 driving to L7/P5/005/+0
+--- 15:23:18 arrived at L7/P5/005/+0, settling
+--- 15:23:19 capturing L7/P5/005/+0 (camera + marker detection)
+--- 15:23:20 saving L7/P5/005/+0
+--- 15:23:20 writing L7/P5/005/+0
+--- 15:23:20 driving to L7/P5/006/+0
+--- 15:23:22 arrived at L7/P5/006/+0, settling
+--- 15:23:23 capturing L7/P5/006/+0 (camera + marker detection)
+--- 15:23:23 saving L7/P5/006/+0
+--- 15:23:23 writing L7/P5/006/+0
