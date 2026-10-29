@@ -7,7 +7,11 @@ the real runs). No test scene is ever used for training or for choosing anything
         --graph robot --features full --edges ring --hops 2 --seeds 5 --out results/gnn_sim/
 
 The sets come from sim.make_sets; --standard-tests tests on T0-T7 and on the 56 real scenes. Other test sets
-can be added with --test (below).
+can be added with --test (below). --combined-tests adds the real scenes with combined rounds (4 to 28
+viewpoints, pipeline.combine_rounds); with --eval-only and no other test they are written to
+summary_combined.csv, mcnemar_combined.csv, test_scenes_combined.csv, next to the main results:
+    python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ \\
+        --sensor-calib config/sensor_calib.json --combined-tests --eval-only --out results/gnn_sim/
 
 Variant (the folder name in --out is built from it, e.g. robot_full_ring_h2):
   --graph     robot (one node per robot) | detection (one node per detection)
@@ -222,6 +226,12 @@ def main():
     ap.add_argument("--standard-tests", action="store_true",
                     help="test on T0-T7 (data/sim_T*/, baselines in results/baselines_sim/T*/, as written by "
                          "sim.make_sets) and on the real runs (data/survey_rounds/, results/evaluation_calib/)")
+    ap.add_argument("--combined-tests", action="store_true",
+                    help="test on the real scenes with combined rounds (data/real_combined/rounds_*/, baselines in "
+                         "results/baselines_real_combined/, as written by pipeline.combine_rounds)")
+    ap.add_argument("--results-name", default=None,
+                    help="suffix of the result files (summary_<name>.csv ...), so an evaluation on other test sets "
+                         "does not overwrite the main one (default: 'combined' with only --combined-tests)")
     ap.add_argument("--out", default="results/gnn_sim/")
     ap.add_argument("--graph", choices=["robot", "detection"], default="robot")
     ap.add_argument("--features", choices=["full", "positions"], default="full")
@@ -250,6 +260,14 @@ def main():
                                f"results/baselines_sim/T{k}/scenes.csv"])
         a.test.append(["REAL", "data/survey_rounds/", "config/ground_truth_positions.json",
                        "results/evaluation_calib/scenes.csv"])
+    if a.results_name is None:
+        a.results_name = "combined" if a.combined_tests and not a.standard_tests and not a.test else ""
+    if a.combined_tests:
+        for r in range(1, 8):
+            d = f"data/real_combined/rounds_{r}/"
+            if os.path.isdir(d):
+                a.test.append([f"REALx{r}", d, os.path.join(d, "ground_truth.json"),
+                               f"results/baselines_real_combined/rounds_{r}/scenes.csv"])
     for t in a.test:
         if t[3] != "-" and not os.path.exists(t[3]):
             print(f"warning: no baseline {t[3]} for {t[0]}; the GNN alone is evaluated")
@@ -301,13 +319,14 @@ def main():
             tests_rows += rows
 
         seed_stats = [stats(rows) for rows in per_seed]
-        g = dict(test=name, method="gnn", scenes=seed_stats[0]["scenes"])
+        g = dict(test=name, method="gnn", scenes=seed_stats[0]["scenes"],
+                 viewpoints=round(float(np.mean([r["n_robots"] for r in per_seed[0]])), 1))
         for k in ("exact_pct", "correct_pct", "too_few_pct", "too_many_pct", "rmse_median_cm", "ospa_mean"):
             vals = np.array([s[k] for s in seed_stats], float)
             g[k] = round(float(np.nanmean(vals)), 3)
             g[k + "_sd"] = round(float(np.nanstd(vals)), 3)
         summary.append(g)
-        line = f"  {name:<6} GNN {g['exact_pct']:5.1f}±{g['exact_pct_sd']:.1f}% exact, " \
+        line = f"  {name:<6} ({g['viewpoints']:4.1f} viewpoints) GNN {g['exact_pct']:5.1f}±{g['exact_pct_sd']:.1f}% exact, " \
                f"{g['correct_pct']:5.1f}±{g['correct_pct_sd']:.1f}% correct"
 
         if baseline_path != "-":
@@ -339,10 +358,12 @@ def main():
                             f"(McNemar p max over seeds {max(ps):.2g})"
         print(line, flush=True)
 
-    write_csv(os.path.join(out, "test_scenes.csv"), tests_rows)
-    write_csv(os.path.join(out, "summary.csv"), summary)
-    write_csv(os.path.join(out, "mcnemar.csv"), mc)
-    print(f"\nwritten in {out}: summary.csv, mcnemar.csv, test_scenes.csv, models")
+    sfx = f"_{a.results_name}" if a.results_name else ""
+    write_csv(os.path.join(out, f"test_scenes{sfx}.csv"), tests_rows)
+    write_csv(os.path.join(out, f"summary{sfx}.csv"), summary)
+    write_csv(os.path.join(out, f"mcnemar{sfx}.csv"), mc)
+    print(f"\nwritten in {out}: summary{sfx}.csv, mcnemar{sfx}.csv, test_scenes{sfx}.csv"
+          + ("" if a.eval_only else ", models"))
 
 
 if __name__ == "__main__":

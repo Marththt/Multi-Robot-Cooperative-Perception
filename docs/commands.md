@@ -84,3 +84,13 @@ The other variants change only the last flags:
 
 Each variant writes `results/gnn_sim/<variant>/summary.csv` (GNN mean and sd over the seeds, classical methods on the same scenes) and `mcnemar.csv`. `--eval-only` re-evaluates saved models; `--max-train 2000 --epochs 3 --seeds 1` is a quick check that everything runs.
 
+Real scenes with more viewpoints: the rounds of each real run are combined (4, 8, ... 28 viewpoints) and the classical methods are run on them; then every trained variant is evaluated on them (no training, writes `summary_combined.csv` next to `summary.csv`):
+
+    python -m pipeline.combine_rounds --regions config/optitrack_regions.json
+    python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --combined-tests --eval-only --graph robot --features full --edges ring --hops 2 --out results/gnn_sim/
+
+(same `--eval-only` command with the flags of every other variant)
+
+All the variants in one table and one figure (`results/gnn_sim/comparison.csv`, `comparison.png`, and `viewpoints.png` for the combined real scenes):
+
+    python -m gnn.collect --results-dir results/gnn_sim/

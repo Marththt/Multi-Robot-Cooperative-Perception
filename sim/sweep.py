@@ -233,6 +233,8 @@ def main():
     ap.add_argument("--data-dir", default="data/sim_sweep/")
     ap.add_argument("--out", default="results/failure_map/")
     a = ap.parse_args()
+    if sys.platform == "win32":
+        a.jobs = min(a.jobs, 60)             # Windows cannot wait on more than 63 process handles
 
     factors = [f.strip() for f in a.factors.split(",") if f.strip()]
     unknown = [f for f in factors if f not in FACTORS]
@@ -253,7 +255,7 @@ def main():
 
     results = {}
     if a.jobs > 1:
-        with multiprocessing.Pool(a.jobs) as pool:
+        with multiprocessing.Pool(min(a.jobs, len(tasks))) as pool:
             for (factor, value), res in pool.imap_unordered(run_value, tasks):
                 results[(factor, value)] = res
                 report(factor, value, res)

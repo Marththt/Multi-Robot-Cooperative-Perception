@@ -101,8 +101,11 @@ def main():
     ap.add_argument("--data-dir", default="data/")
     ap.add_argument("--baseline-dir", default="results/baselines_sim/")
     ap.add_argument("--no-baselines", action="store_true")
-    ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1),
+                    help="processes in parallel (default: CPU cores - 1; at most 60 on Windows)")
     a = ap.parse_args()
+    if sys.platform == "win32":
+        a.jobs = min(a.jobs, 60)             # Windows cannot wait on more than 63 process handles
 
     sets = [s.strip() for s in a.sets.split(",") if s.strip()]
     tasks, parts = [], {}
@@ -118,8 +121,8 @@ def main():
             part_dir = os.path.join(set_dir, f"part{k:02d}")
             tasks.append((spec, min(PART, runs - start), start, a.seed * 100 + seed, layout, part_dir, a.model))
             parts.setdefault(name, []).append(part_dir)
-    print(f"generating {', '.join(sets)}: {len(tasks)} parts on {a.jobs} process(es)", flush=True)
-    with multiprocessing.Pool(a.jobs) as pool:
+    print(f"generating {', '.join(sets)}: {len(tasks)} parts on {min(a.jobs, len(tasks))} process(es)", flush=True)
+    with multiprocessing.Pool(min(a.jobs, len(tasks))) as pool:
         for done in pool.imap_unordered(generate_part, tasks):
             print(f"  {done}", flush=True)
     for name in sets:

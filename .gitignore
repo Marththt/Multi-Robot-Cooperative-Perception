@@ -17,3 +17,6 @@ desktop.ini
 
 # Simulated runs (regenerated from sim/specs/ and the seeds with python -m sim.generate)
 data/sim_*/
+
+# Real scenes with combined rounds (regenerated with python -m pipeline.combine_rounds)
+data/real_combined/

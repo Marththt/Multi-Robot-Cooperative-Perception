@@ -20,15 +20,15 @@ Run every command from the repository root, with the scripts as modules:
 | Path | Content |
 |---|---|
 | `acquisition/` | Everything that runs with the robots: `launch_all` (move and capture with all robots), `survey` (one robot driving to its stops), `static_trial` (one robot: live preview / static trial), `record_obstacle`, `dashboard` and `map_server` + `map.html` (live views), `merge_static_trials`, `localize_trials`, `regroup_captures`, `pack_runs` |
-| `pipeline/` | Processing of the recorded runs: `build_scans` (scans, sanity checks), `analyze_rounds` (per-round fusion), `calibrate` (sensor calibration), `evaluate_runs` (the five classical methods, metrics and figures) |
-| `gnn/` | GNN for the association: `dataset`, `model` (robot-node and detection-node graphs), `train` (leave-one-layout-out on the real runs), `train_sim` (training on the simulator, tests on T0-T7 and on the real runs) |
+| `pipeline/` | Processing of the recorded runs: `build_scans` (scans, sanity checks), `analyze_rounds` (per-round fusion), `calibrate` (sensor calibration), `evaluate_runs` (the five classical methods, metrics and figures), `combine_rounds` (real scenes with 4 to 28 viewpoints from combined rounds) |
+| `gnn/` | GNN for the association: `dataset`, `model` (robot-node and detection-node graphs), `train` (leave-one-layout-out on the real runs), `train_sim` (training on the simulator, tests on T0-T7 and on the real runs), `collect` (all variants in one comparison) |
 | `sim/` | Measurement-level simulator: library (`geometry`, `model`, `scene`, `sensor`, `writer`) and scripts `calibrate` (fit on real runs), `generate` (replays of real layouts, random scenes), `fidelity` (real vs simulated), `sweep` (failure map of the classical methods), `make_sets` (training, validation and test sets of the GNN study); scenario files in `sim/specs/` |
 | `vf/` | Shared library: motion (`control/`), perception (`perception/`), robot pose (`localization/`), fusion methods (`fusion/`: class votes, sensor model, MHT, PHD/CPHD) |
 | `tools/` | Camera calibration, OptiTrack frame calibration, motion check, ground truth recorder, yaw reader |
 | `robomaster_sdk/` | Robot SDK used for the data collection: connection (`robot`), camera (`camera`), robot registry (`config`) |
 | `config/` | Arena regions, camera calibrations, ArUco ID -> class map, ground truth of the layouts, sensor calibration, sensor model of the simulator |
 | `data/` | Recorded runs: `survey_rounds/` (L4-L11), `survey_rounds_t02/` (L1-L3), `trials/` (static trials), `live/` (live state files); simulated runs go to `data/sim_*/` (not versioned) |
-| `results/` | Outputs: `evaluation*/` (classical methods), `evaluation_gnn/`, `failure_map/`, `baselines_sim/`, `gnn_sim/`, `analysis/` |
+| `results/` | Outputs: `evaluation*/` (classical methods), `evaluation_gnn/`, `failure_map/`, `baselines_sim/`, `baselines_real_combined/`, `gnn_sim/`, `analysis/` |
 | `docs/` | `commands.md`: the commands used in the lab and for the analysis |
 
 ## Requirements
