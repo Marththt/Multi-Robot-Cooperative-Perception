@@ -1,0 +1,23 @@
+{
+  "train_dir": "data/sim_train/",
+  "val_dir": "data/sim_val/",
+  "sensor_calib": "config/sensor_calib.json",
+  "standard_tests": true,
+  "out": "results/gnn_sim/",
+  "graph": "robot",
+  "features": "full",
+  "edges": "ring",
+  "comm_range": 1.5,
+  "hops": 2,
+  "gate": 1.0,
+  "hidden": 64,
+  "epochs": 40,
+  "patience": 8,
+  "batch": 32,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "seeds": 5,
+  "max_train": null,
+  "cutoff": 0.5,
+  "ospa_p": 2.0
+}
