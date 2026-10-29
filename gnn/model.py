@@ -11,13 +11,27 @@ Two graph designs, same inputs and same read-out:
 
 Which robots exchange messages (edges=):
   ring     neighbours on the ring around the robots' centre (every pair with 3 robots or fewer)
+  opposite the robots facing each robot across the team: the one in front and its two neighbours
+           (the diagonals); with an odd number of robots, the two that face it
   range    robots closer than comm_range metres (limited communication)
   full     every pair of robots (upper bound: one central model sees everything)
 `hops` rounds of message passing; with a local graph a robot hears robots up to `hops` links away.
 
+Association (association=):
+  central  every pair of detections closer than the pair gate is scored, whichever robots made them: one
+           central read-out sees all detections (the communication graph only carries context)
+  local    distributed: two detections are scored only if their robots are at most `hops` links apart in
+           the communication graph (or are the same robot), so a robot can only associate what reaches it
+           through the network; detections of robots that cannot reach each other are never merged
+
 Inputs (features=):
   full       detection position, line of sight, distance, bearing, viewing angle of the marker, robot pose
   positions  the same without the viewing angle: only what follows from the positions and the robot poses
+
+Skip connections (skip=):
+  residual  each hop adds its update to the node, so a node keeps what its robot saw (default)
+  none      each hop replaces the node
+  jk        jumping knowledge: residual hops, and the read-out sees the node after every hop
 
 Read-out:
   same-box head   for every pair of detections closer than the pair gate (also two detections of the same
@@ -68,11 +82,35 @@ def ring_edges(robot_xy, center):
     return sorted(edges)
 
 
+def opposite_edges(robot_xy, center):
+    """Directed edges from every robot to the robots facing it across the team: the robots are ordered by
+    their angle around the centre, and robot i is linked to the robots whose position in that order is
+    within one step of the opposite point (i + n/2): with an even n the robot in front and the two next
+    to it (the diagonals), with an odd n the two robots that face it. Every pair with 3 robots or fewer."""
+    n = len(robot_xy)
+    if n <= 1:
+        return []
+    if n <= 3:
+        return [(i, j) for i in range(n) for j in range(n) if i != j]
+    ang = np.arctan2(robot_xy[:, 1] - center[1], robot_xy[:, 0] - center[0])
+    order = list(np.argsort(ang))
+    offsets = [o for o in range(1, n) if abs(o - n / 2) <= 1]
+    edges = set()
+    for k, i in enumerate(order):
+        for o in offsets:
+            j = order[(k + o) % n]
+            edges.add((int(i), int(j)))
+            edges.add((int(j), int(i)))
+    return sorted(edges)
+
+
 def robot_edges(robot_xy, mode="ring", comm_range=None):
     """Directed robot-robot edges for the chosen communication graph."""
     n = len(robot_xy)
     if mode == "ring":
         return ring_edges(robot_xy, np.zeros(2))
+    if mode == "opposite":
+        return opposite_edges(robot_xy, np.zeros(2))
     if mode == "full":
         return [(i, j) for i in range(n) for j in range(n) if i != j]
     if mode == "range":
@@ -96,9 +134,23 @@ def pair_features(pos, u, r_of, i, j):
                             (r_of[i] == r_of[j]).astype(float), cos_rays, np.abs(across) / PAIR_SCALE_M])
 
 
-def encode_scene(scene, rotation=0.0, features="full", edges="ring", comm_range=None, gate=None):
+def reachable(n, edge_arr, hops):
+    """n x n bool: robot j can be reached from robot i in at most `hops` links (every robot reaches itself)."""
+    adj = np.eye(n, dtype=bool)
+    if len(edge_arr):
+        adj[edge_arr[:, 0], edge_arr[:, 1]] = True
+        adj[edge_arr[:, 1], edge_arr[:, 0]] = True
+    reach = np.eye(n, dtype=bool)
+    for _ in range(hops):
+        reach = (reach.astype(int) @ adj.astype(int)) > 0
+    return reach
+
+
+def encode_scene(scene, rotation=0.0, features="full", edges="ring", comm_range=None, gate=None,
+                 association="central", hops=2):
     """numpy features of one scene, in a frame centred on the robots and rotated by `rotation`.
-    gate: only pairs of detections closer than this [m] are scored (None = every pair)."""
+    gate: only pairs of detections closer than this [m] are scored (None = every pair).
+    association='local': only pairs whose robots are at most `hops` links apart are scored."""
     poses = scene["poses"]
     center = poses[:, :2].mean(axis=0)
     c, s = math.cos(rotation), math.sin(rotation)
@@ -138,6 +190,12 @@ def encode_scene(scene, rotation=0.0, features="full", edges="ring", comm_range=
     if gate is not None and len(ii):
         near = np.hypot(*(pos[jj] - pos[ii]).T) <= gate
         ii, jj = ii[near], jj[near]
+    if association == "local":
+        reach = reachable(len(poses), edge_arr, hops)
+        ok = reach[r_of[ii], r_of[jj]]
+        ii, jj = ii[ok], jj[ok]
+    elif association != "central":
+        raise ValueError(f"unknown association {association}")
     pairs = np.column_stack([ii, jj]).astype(int).reshape(-1, 2)
     pair_ij = pair_features(pos, u, r_of, ii, jj).reshape(-1, PAIR_FEATURES)
     pair_ji = pair_features(pos, u, r_of, jj, ii).reshape(-1, PAIR_FEATURES)
@@ -223,37 +281,47 @@ class PairReadout(nn.Module):
 
 
 class RobotGNN(nn.Module):
-    def __init__(self, hidden=64, hops=2, det_features=DET_FEATURES["full"]):
+    """skip: how the hops are chained (see SKIP_MODES)."""
+
+    def __init__(self, hidden=64, hops=2, det_features=DET_FEATURES["full"], skip="residual"):
         super().__init__()
         h = hidden
+        self.skip = skip
         self.det_enc = nn.Sequential(mlp(det_features, h, h), nn.ReLU())
         self.robot_enc = nn.Sequential(mlp(ROBOT_FEATURES + h, h, h), nn.ReLU())
         self.message = nn.ModuleList([nn.Sequential(mlp(h + EDGE_FEATURES, h, h), nn.ReLU())
                                       for _ in range(hops)])
         self.update = nn.ModuleList([mlp(2 * h, h, h) for _ in range(hops)])
-        self.det_ctx = nn.Sequential(mlp(2 * h, h, h), nn.ReLU())
+        n_node = (hops + 1) if skip == "jk" else 1
+        self.det_ctx = nn.Sequential(mlp(h + n_node * h, h, h), nn.ReLU())
         self.readout = PairReadout(h)
 
     def forward(self, b):
         h_det = self.det_enc(b["det"])                                       # detections
         pooled = segment_mean(h_det, b["det_robot"], b["n_robots"])          # set of detections per robot
         node = self.robot_enc(torch.cat([b["robot"], pooled], dim=1))        # robot nodes
+        states = [node]
         for message, update in zip(self.message, self.update):               # message passing between robots
             m = message(torch.cat([node[b["edge_src"]], b["edge_feat"]], dim=1))
             agg = segment_mean(m, b["edge_dst"], b["n_robots"])
-            node = node + update(torch.cat([node, agg], dim=1))
-        g = self.det_ctx(torch.cat([h_det, node[b["det_robot"]]], dim=1))   # detection in its context
+            new = update(torch.cat([node, agg], dim=1))
+            node = new if self.skip == "none" else node + new
+            states.append(node)
+        robot_view = torch.cat(states, dim=1) if self.skip == "jk" else node
+        g = self.det_ctx(torch.cat([h_det, robot_view[b["det_robot"]]], dim=1))   # detection in its context
         return self.readout(g, b)
 
 
 class DetectionGNN(nn.Module):
-    def __init__(self, hidden=64, hops=2, det_features=DET_FEATURES["full"]):
+    def __init__(self, hidden=64, hops=2, det_features=DET_FEATURES["full"], skip="residual"):
         super().__init__()
         h = hidden
+        self.skip = skip
         self.enc = nn.Sequential(mlp(det_features + ROBOT_FEATURES, h, h), nn.ReLU())
         self.message = nn.ModuleList([nn.Sequential(mlp(h + PAIR_FEATURES, h, h), nn.ReLU())
                                       for _ in range(hops)])
         self.update = nn.ModuleList([mlp(2 * h, h, h) for _ in range(hops)])
+        self.jk = nn.Sequential(mlp((hops + 1) * h, h, h), nn.ReLU()) if skip == "jk" else None
         self.readout = PairReadout(h)
 
     def forward(self, b):
@@ -263,16 +331,30 @@ class DetectionGNN(nn.Module):
         src = torch.cat([a, c])
         dst = torch.cat([c, a])
         feat = torch.cat([b["pair_ji"][link], b["pair_ij"][link]])      # offset of src seen from dst
+        states = [g]
         for message, update in zip(self.message, self.update):
             m = message(torch.cat([g[src], feat], dim=1))
             agg = segment_mean(m, dst, b["n_det"])
-            g = g + update(torch.cat([g, agg], dim=1))
+            new = update(torch.cat([g, agg], dim=1))
+            g = new if self.skip == "none" else g + new
+            states.append(g)
+        if self.jk is not None:
+            g = self.jk(torch.cat(states, dim=1))
         return self.readout(g, b)
 
 
-def build_model(graph="robot", hidden=64, hops=2, features="full"):
+SKIP_MODES = {
+    "residual": "each hop adds its update to the node (node = node + update); the read-out uses the "
+                "detection's own encoding and the node after the last hop",
+    "none": "each hop replaces the node (node = update); no shortcut across the hops",
+    "jk": "residual hops, and the read-out uses the node after EVERY hop (0, 1, ... hops): "
+          "jumping knowledge, the first layer connected to the last",
+}
+
+
+def build_model(graph="robot", hidden=64, hops=2, features="full", skip="residual"):
     cls = {"robot": RobotGNN, "detection": DetectionGNN}[graph]
-    return cls(hidden=hidden, hops=hops, det_features=DET_FEATURES[features])
+    return cls(hidden=hidden, hops=hops, det_features=DET_FEATURES[features], skip=skip)
 
 
 def loss_fn(same_logit, false_logit, b, pos_weight_same, pos_weight_false):

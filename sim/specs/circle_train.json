@@ -1,0 +1,59 @@
+{
+  "box_region": "disk",
+  "inner_radius_m": [
+    0.5,
+    0.9
+  ],
+  "arrangements": [
+    "uniform"
+  ],
+  "spacing_m": [
+    0.2,
+    0.6
+  ],
+  "n_boxes": [
+    1,
+    2,
+    3,
+    5,
+    6,
+    8,
+    9,
+    10
+  ],
+  "n_robots": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "robot_radius_m": [
+    1.2,
+    2.0
+  ],
+  "placements": [
+    "ring"
+  ],
+  "yaw_jitter_deg": 5.0,
+  "rounds": 1,
+  "n_obstacles": [
+    0
+  ],
+  "noise_jitter": 0.4,
+  "false_factor": [
+    0.5,
+    2.0
+  ],
+  "two_face_factor": [
+    0.5,
+    2.0
+  ],
+  "sensing_range_m": [
+    1.0,
+    3.0
+  ]
+}

@@ -1,6 +1,8 @@
 """Scenes: true boxes (centre + orientation), obstacles, and the camera poses of every capture.
 
 A scene can be
+  two-circle scenario         box_region "disk": the boxes inside an inner circle, the robots evenly on an
+                              outer circle around it (placement "ring"), each with a sensing range
   recreated from a real run   boxes from OptiTrack, box orientations estimated from the viewing angles of
                               the real detections, camera poses taken from the logs of every round
   generated at random         from a ScenarioSpec (number of boxes, arrangement, spacing, robots,
@@ -9,7 +11,7 @@ A scene can be
 
 import math
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -109,6 +111,9 @@ class ScenarioSpec:
     noise_jitter: float = 0.0                # per run, noise sds scaled by a factor in [1 - j, 1 + j]
     false_factor: List[float] = field(default_factory=lambda: [1.0, 1.0])    # per run, false-detection rate x [lo, hi]
     two_face_factor: List[float] = field(default_factory=lambda: [1.0, 1.0]) # per run, two-face rate x [lo, hi]
+    box_region: str = "square"               # square (area_half_m) | disk (inner circle of radius inner_radius_m)
+    inner_radius_m: List[float] = field(default_factory=lambda: [0.7, 0.7])  # disk: radius of the inner circle
+    sensing_range_m: Optional[List[float]] = None   # per run, maximum detection distance [m] (None: the model's)
 
 
 def _spaced(points, p, spacing):
@@ -146,6 +151,16 @@ def random_boxes(spec, n, rng, tries=2000, stretch=0.0, kind=None):
             pts.append(tuple(c + off))
             if len(pts) < n:
                 pts.append(tuple(c - off))
+    elif kind == "uniform" and spec.box_region == "disk":     # inner circle of the two-circle scenario
+        s, radius = base, rng.uniform(*spec.inner_radius_m) + 3 * stretch
+        for k in range(tries):
+            if len(pts) == n:
+                break
+            if k % 200 == 199:               # stuck: start again
+                pts = []
+            p = rng.uniform(-radius, radius, 2)
+            if math.hypot(p[0], p[1]) <= radius and _spaced(pts, p, s):
+                pts.append(tuple(p))
     else:                                    # uniform or cluster
         if kind == "uniform":                # too many boxes for the area at this spacing: wider area
             s, lim = base, spec.area_half_m + 3 * stretch
@@ -258,7 +273,10 @@ def random_scene(spec, rng, layout_id, run_id, attempts=60):
             break
     else:
         raise RuntimeError(f"no non-overlapping layout of {n} boxes for {run_id}")
-    centre = boxes.mean(axis=0) if len(boxes) else np.zeros(2)
+    if spec.box_region == "disk":            # two-circle scenario: robots on the circle around the inner one
+        centre = np.zeros(2)
+    else:
+        centre = boxes.mean(axis=0) if len(boxes) else np.zeros(2)
     n_rob = int(rng.choice(spec.n_robots))
     poses, placement = robot_poses(spec, n_rob, centre, rng)
     obstacles = random_obstacles(spec, boxes, poses, rng)

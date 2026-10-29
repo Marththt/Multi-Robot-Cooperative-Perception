@@ -81,6 +81,8 @@ The other variants change only the last flags:
     --graph detection --features positions --edges ring --hops 2
     --graph robot --features full --edges range --comm-range 1.5 --hops 1   (also --hops 2, --hops 3)
     --graph robot --features full --edges full --hops 1               (upper bound: every robot hears every robot)
+    --graph robot --features full --edges opposite --hops 2           (each robot linked to the robot in front and the two diagonals)
+    --graph robot --features full --edges full --hops 2               (every robot linked to every robot, 2 rounds)
 
 Each variant writes `results/gnn_sim/<variant>/summary.csv` (GNN mean and sd over the seeds, classical methods on the same scenes) and `mcnemar.csv`. `--eval-only` re-evaluates saved models; `--max-train 2000 --epochs 3 --seeds 1` is a quick check that everything runs.
 
@@ -91,6 +93,27 @@ Real scenes with more viewpoints: the rounds of each real run are combined (4, 8
 
 (same `--eval-only` command with the flags of every other variant)
 
-All the variants in one table and one figure (`results/gnn_sim/comparison.csv`, `comparison.png`, and `viewpoints.png` for the combined real scenes):
+All the variants in one table and one figure per metric (detection probability, RMSE over all true boxes with a missed box = 0.5 m, false estimates per scene): `results/gnn_sim/comparison_<metric>.csv/.png`, and `viewpoints_<metric>.png` for the combined real scenes:
 
     python -m gnn.collect --results-dir results/gnn_sim/
+
+## Two-circle scenario (targets in an inner circle, robots on an outer circle, sensing and communication range)
+
+Sets: training (3-10 robots, sensing range 1-3 m), validation, the nominal test C0 (6 robots at 1.5 m, inner circle 0.7 m, sensing range 2 m) and its variants with 3-16 robots (Cn*) and sensing ranges 1-3 m (Cs*), with the classical methods (same sensing range):
+
+    python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets circle
+
+GNN whose robots exchange messages only within a communication range, drawn between 0.5 and 5 m for every training scene, with the three skip-connection variants:
+
+    python -m gnn.train_sim --train-dir data/sim_Ctrain/ --val-dir data/sim_Cval/ --sensor-calib config/sensor_calib.json --circle-tests --edges range --comm-range-train 0.5 5 --comm-range 2.0 --skip residual --out results/gnn_circle/
+    (same with --skip none and --skip jk)
+
+The same models at other communication ranges (no training; 1 m: no neighbour, 2 m: the nearest ones, 3.2 m: everyone with 6 robots at 1.5 m):
+
+    python -m gnn.train_sim --train-dir data/sim_Ctrain/ --val-dir data/sim_Cval/ --sensor-calib config/sensor_calib.json --circle-tests --edges range --comm-range-train 0.5 5 --comm-range 1.0 --skip residual --eval-only --results-name comm1.0 --out results/gnn_circle/
+
+Distributed GNN (--association local): two detections are associated only if their robots are at most --hops links apart in the communication graph, so the communication range and the number of hops limit what each robot can merge (folder suffix _local). Same commands with --association local, e.g. hops 1-3 and the three skip variants:
+
+    python -m gnn.train_sim --train-dir data/sim_Ctrain/ --val-dir data/sim_Cval/ --sensor-calib config/sensor_calib.json --circle-tests --edges range --comm-range-train 0.5 5 --comm-range 2.0 --association local --hops 2 --skip residual --out results/gnn_circle/
+    python -m gnn.train_sim ... --association local --hops 2 --comm-range 1.0 --eval-only --results-name comm1.0 --out results/gnn_circle/
+

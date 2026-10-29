@@ -16,16 +16,23 @@ summary_combined.csv, mcnemar_combined.csv, test_scenes_combined.csv, next to th
 Variant (the folder name in --out is built from it, e.g. robot_full_ring_h2):
   --graph     robot (one node per robot) | detection (one node per detection)
   --features  full (with the viewing angle) | positions (positions and robot poses only)
-  --edges     ring (ring neighbours) | range (robots closer than --comm-range) | full (every pair)
+  --edges     ring (ring neighbours) | opposite (the robot in front and the two diagonals) |
+              range (robots closer than --comm-range; --comm-range-train LO HI draws one per training
+              scene) | full (every pair)
   --hops      rounds of message passing
+  --skip      skip connections: residual (each hop adds to the node) | none | jk (jumping knowledge)
+  --association  central (every close pair of detections is scored) | local (distributed: only pairs whose
+              robots are at most --hops links apart in the communication graph; name suffix _local)
 
 Training: Adam, --epochs at most; after every epoch the model is run on the validation scenes and the epoch
 with the highest correct rate is kept (early stop after --patience epochs without improvement). --seeds
 models are trained independently; every result is reported as mean and standard deviation over them.
 
 A --test is NAME DIR GROUND_TRUTH BASELINE: BASELINE is the scenes.csv of pipeline/evaluate_runs.py on the
-same runs ('-' for none). The GNN and every classical method are compared scene by scene; McNemar's exact
-test is run on "correct" (count right and every true box matched) for every seed. Simulated scenes in which
+same runs ('-' for none). Metrics (pipeline.evaluate_runs.detection_metrics): detection probability P_D,
+RMSE* over all true boxes (a missed box counts as the cut-off) and false estimates per scene. The GNN and
+every classical method are compared scene by scene with exact sign tests (mcnemar.csv), for every seed: on
+the boxes found, on the false estimates and on "correct" (count right and every true box matched). Simulated scenes in which
 no robot reported anything are counted for every method as an empty estimate.
 
 Outputs (in --out/<variant>/): model_seed<k>.pt, variant.json, train_log.csv, test_scenes.csv (GNN, one row
@@ -47,20 +54,31 @@ import torch
 
 from gnn.dataset import build_scenes
 from gnn.model import build_model, collate, decode, encode_scene, loss_fn
-from pipeline.evaluate_runs import scene_metrics
+from pipeline.evaluate_runs import detection_metrics, scene_metrics
 
 METHOD_ORDER = ["zone_class", "union", "phd", "cphd", "mht"]
 LABELS = dict(zone_class="Zone+class", union="Union", phd="PHD", cphd="CPHD", mht="MHT", gnn="GNN")
 
 
 def variant_name(a):
-    edges = a.edges if a.edges != "range" else f"range{a.comm_range:g}"
-    return f"{a.graph}_{a.features}_{edges}_h{a.hops}"
+    edges = a.edges
+    if a.edges == "range":
+        edges = (f"range{a.comm_range_train[0]:g}to{a.comm_range_train[1]:g}" if a.comm_range_train
+                 else f"range{a.comm_range:g}")
+    name = f"{a.graph}_{a.features}_{edges}_h{a.hops}"
+    if a.skip != "residual":
+        name += f"_skip{a.skip}"
+    return name if a.association == "central" else f"{name}_local"
 
 
-def encode_all(scenes, a):
-    return [encode_scene(s, features=a.features, edges=a.edges, comm_range=a.comm_range, gate=a.gate)
-            for s in scenes]
+def encode_all(scenes, a, rng=None):
+    """Encoded scenes. With rng and --comm-range-train, every scene gets its own communication range drawn
+    in that interval (training and validation), so one model works at any range; otherwise --comm-range."""
+    ranges = ([float(rng.uniform(*a.comm_range_train)) for _ in scenes] if rng is not None and a.comm_range_train
+              else [a.comm_range] * len(scenes))
+    return [encode_scene(s, features=a.features, edges=a.edges, comm_range=r, gate=a.gate,
+                         association=a.association, hops=a.hops)
+            for s, r in zip(scenes, ranges)]
 
 
 def class_weights(encoded):
@@ -103,7 +121,7 @@ def evaluate_scenes(model, scenes, encoded, a):
 def train_one(train_enc, val_scenes, val_enc, a, seed, log):
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    model = build_model(a.graph, a.hidden, a.hops, a.features)
+    model = build_model(a.graph, a.hidden, a.hops, a.features, a.skip)
     opt = torch.optim.Adam(model.parameters(), lr=a.lr, weight_decay=a.weight_decay)
     w_same, w_false = class_weights(train_enc)
     best, best_state, best_epoch, waited = -1.0, None, 0, 0
@@ -194,11 +212,11 @@ def mcnemar(b, c):
     return min(1.0, 2 * sum(math.exp(x) for x in logs))
 
 
-def stats(rows):
+def stats(rows, c=0.5):
     dn = np.array([r["dn"] for r in rows])
     rmse = np.array([r["rmse"] for r in rows], float)
     rmse = rmse[np.isfinite(rmse)]
-    return dict(scenes=len(rows), exact_pct=100 * float(np.mean(dn == 0)),
+    return dict(scenes=len(rows), **detection_metrics(rows, c), exact_pct=100 * float(np.mean(dn == 0)),
                 correct_pct=100 * float(np.mean([r["correct"] for r in rows])),
                 too_few_pct=100 * float(np.mean(dn < 0)), too_many_pct=100 * float(np.mean(dn > 0)),
                 rmse_median_cm=100 * float(np.median(rmse)) if len(rmse) else math.nan,
@@ -235,9 +253,20 @@ def main():
     ap.add_argument("--out", default="results/gnn_sim/")
     ap.add_argument("--graph", choices=["robot", "detection"], default="robot")
     ap.add_argument("--features", choices=["full", "positions"], default="full")
-    ap.add_argument("--edges", choices=["ring", "range", "full"], default="ring")
-    ap.add_argument("--comm-range", type=float, default=1.5, help="communication range [m] with --edges range")
+    ap.add_argument("--edges", choices=["ring", "opposite", "range", "full"], default="ring")
+    ap.add_argument("--comm-range", type=float, default=1.5,
+                    help="communication range [m] with --edges range (at test time, and in training without "
+                         "--comm-range-train)")
+    ap.add_argument("--comm-range-train", type=float, nargs=2, default=None, metavar=("LO", "HI"),
+                    help="with --edges range: a communication range drawn in [LO, HI] for every training and "
+                         "validation scene, so the model can be tested at any --comm-range")
+    ap.add_argument("--circle-tests", action="store_true",
+                    help="test on the two-circle scenario sets of sim.make_sets (data/sim_C0/, sim_Cn*/, sim_Cs*/)")
     ap.add_argument("--hops", type=int, default=2)
+    ap.add_argument("--skip", choices=["residual", "none", "jk"], default="residual",
+                    help="skip connections: residual (default), none, jk (jumping knowledge: all hops to the read-out)")
+    ap.add_argument("--association", choices=["central", "local"], default="central",
+                    help="local: distributed, a pair is scored only if its robots are at most --hops links apart")
     ap.add_argument("--gate", type=float, default=1.0, help="pairs of detections farther apart are not scored [m]")
     ap.add_argument("--hidden", type=int, default=64)
     ap.add_argument("--epochs", type=int, default=40)
@@ -262,6 +291,13 @@ def main():
                        "results/evaluation_calib/scenes.csv"])
     if a.results_name is None:
         a.results_name = "combined" if a.combined_tests and not a.standard_tests and not a.test else ""
+    if a.circle_tests:
+        from sim.make_sets import CIRCLE
+        for name, (_, _, _, role) in CIRCLE.items():
+            d = f"data/sim_{name}/"
+            if role == "test" and os.path.isdir(d):
+                a.test.append([name, d, os.path.join(d, "ground_truth.json"),
+                               f"results/baselines_sim/{name}/scenes.csv"])
     if a.combined_tests:
         for r in range(1, 8):
             d = f"data/real_combined/rounds_{r}/"
@@ -280,7 +316,7 @@ def main():
     models = []
     if a.eval_only:
         for seed in range(a.seeds):
-            m = build_model(a.graph, a.hidden, a.hops, a.features)
+            m = build_model(a.graph, a.hidden, a.hops, a.features, a.skip)
             m.load_state_dict(torch.load(os.path.join(out, f"model_seed{seed}.pt")))
             models.append(m)
     else:
@@ -289,7 +325,7 @@ def main():
         if a.max_train:
             train = train[:a.max_train]
         val = build_scenes(a.val_dir, os.path.join(a.val_dir, "ground_truth.json"), a.sensor_calib)
-        train_enc, val_enc = encode_all(train, a), encode_all(val, a)
+        train_enc, val_enc = encode_all(train, a, np.random.default_rng(101)), encode_all(val, a, np.random.default_rng(102))
         print(f"{len(train)} training scenes, {len(val)} validation scenes ({time.time() - t0:.0f} s to load)",
               flush=True)
         log = []
@@ -318,16 +354,17 @@ def main():
             per_seed.append(rows)
             tests_rows += rows
 
-        seed_stats = [stats(rows) for rows in per_seed]
+        seed_stats = [stats(rows, a.cutoff) for rows in per_seed]
         g = dict(test=name, method="gnn", scenes=seed_stats[0]["scenes"],
                  viewpoints=round(float(np.mean([r["n_robots"] for r in per_seed[0]])), 1))
-        for k in ("exact_pct", "correct_pct", "too_few_pct", "too_many_pct", "rmse_median_cm", "ospa_mean"):
+        for k in ("pd_pct", "rmse_all_cm", "false_per_scene", "exact_pct", "correct_pct", "too_few_pct",
+                  "too_many_pct", "rmse_median_cm", "ospa_mean"):
             vals = np.array([s[k] for s in seed_stats], float)
             g[k] = round(float(np.nanmean(vals)), 3)
             g[k + "_sd"] = round(float(np.nanstd(vals)), 3)
         summary.append(g)
-        line = f"  {name:<6} ({g['viewpoints']:4.1f} viewpoints) GNN {g['exact_pct']:5.1f}±{g['exact_pct_sd']:.1f}% exact, " \
-               f"{g['correct_pct']:5.1f}±{g['correct_pct_sd']:.1f}% correct"
+        line = (f"  {name:<6} ({g['viewpoints']:4.1f} viewpoints) GNN P_D {g['pd_pct']:5.1f}±{g['pd_pct_sd']:.1f}%, "
+                f"RMSE* {g['rmse_all_cm']:4.1f}±{g['rmse_all_cm_sd']:.1f} cm, false {g['false_per_scene']:.2f}")
 
         if baseline_path != "-":
             base = read_baseline(baseline_path)
@@ -337,25 +374,31 @@ def main():
                 rows = [b for _, b in paired if b is not None]
                 # scenes without any detection are absent from scenes.csv: empty estimate for this method too
                 rows += [r for r, b in paired if b is None and r.get("n_robots", 1) == 0]
-                st = stats(rows)
+                st = stats(rows, a.cutoff)
                 summary.append(dict(test=name, method=method, **{k: round(v, 3) for k, v in st.items()}))
                 for seed, rows_g in enumerate(per_seed):
-                    b = c = 0
+                    # paired sign tests, scene by scene: boxes found, false estimates, scene correct
+                    cnt = {k: [0, 0] for k in ("found", "false", "correct")}
                     for r in rows_g:
                         rb = baseline_row(base[method], r)
-                        ok_b = rb["correct"] if rb else (r["correct"] if r.get("n_robots", 1) == 0 else None)
-                        if ok_b is None:
-                            continue
-                        b += int(r["correct"] and not ok_b)
-                        c += int(ok_b and not r["correct"])
-                    mc.append(dict(test=name, baseline=method, seed=seed, gnn_only=b, baseline_only=c,
-                                   p_value=mcnemar(b, c)))
+                        if rb is None:
+                            if r.get("n_robots", 1) != 0:
+                                continue
+                            rb = dict(r, n_est=0, n_matched=0, correct=r["correct"])
+                        diffs = dict(found=int(r["n_matched"]) - int(rb["n_matched"]),
+                                     false=(int(rb["n_est"]) - int(rb["n_matched"])) - (int(r["n_est"]) - int(r["n_matched"])),
+                                     correct=int(r["correct"]) - int(rb["correct"]))
+                        for k, d in diffs.items():          # positive = the GNN is better on this scene
+                            cnt[k][0] += int(d > 0)
+                            cnt[k][1] += int(d < 0)
+                    for k, (gb, bb) in cnt.items():
+                        mc.append(dict(test=name, baseline=method, seed=seed, metric=k, gnn_better=gb,
+                                       baseline_better=bb, p_value=mcnemar(gb, bb)))
                 if missing - sum(1 for r, bb in paired if bb is None and r.get("n_robots", 1) == 0):
                     print(f"    warning: {method}: some {name} scenes have no row in {baseline_path}")
                 if method == "mht":
-                    ps = [x["p_value"] for x in mc if x["test"] == name and x["baseline"] == "mht"]
-                    line += f" | MHT {st['exact_pct']:5.1f}% exact, {st['correct_pct']:5.1f}% correct " \
-                            f"(McNemar p max over seeds {max(ps):.2g})"
+                    line += (f" | MHT P_D {st['pd_pct']:5.1f}%, RMSE* {st['rmse_all_cm']:4.1f} cm, "
+                             f"false {st['false_per_scene']:.2f}")
         print(line, flush=True)
 
     sfx = f"_{a.results_name}" if a.results_name else ""

@@ -8,6 +8,9 @@ estimate is compared with the true box positions of that run (OptiTrack):
   matching    every estimate is paired with at most one true box (optimal
               assignment); pairs farther than the cut-off c are not matched
   e_j         distance between a matched estimate and its true box
+  P_D         detection probability: matched true boxes / all true boxes
+  RMSE*       over ALL true boxes, a missed box counting as an error of c
+  false       estimates matching no true box, per scene
   RMSE        sqrt(mean e_j^2) over the matched boxes of the scene
   dn          n_est - n_true (count error: < 0 missed, > 0 invented)
   OSPA_c      position and count together (order p, cut-off c)
@@ -104,6 +107,26 @@ def match(est, truth, c):
                 best = (cost, perm)
         pairs = [(i, j) if small is est else (j, i) for i, j in enumerate(best[1])]
     return [D[i, j] for i, j in pairs if D[i, j] <= c]
+
+
+def detection_metrics(rows, c=0.5):
+    """The three summary metrics over a set of scenes (rows of scene_metrics):
+      pd_pct           detection probability: true boxes matched by an estimate / all true boxes [%]
+      rmse_all_cm      RMSE over ALL true boxes, a box with no estimate within c counting as an error of c [cm]
+      false_per_scene  estimates that match no true box, per scene
+    Detection probability and RMSE alone reward a method that reports every detection as a box (it finds
+    every box, with small errors); the false estimates per scene measure that cost."""
+    n_true = sum(int(r["n_true"]) for r in rows)
+    n_match = sum(int(r["n_matched"]) for r in rows)
+    sq = 0.0
+    for r in rows:
+        m = int(r["n_matched"])
+        e = float(r["rmse"]) if m and r["rmse"] not in ("", None) else 0.0
+        sq += m * (e * e if math.isfinite(e) else 0.0) + (int(r["n_true"]) - m) * c * c
+    n_false = sum(int(r["n_est"]) - int(r["n_matched"]) for r in rows)
+    return dict(pd_pct=100.0 * n_match / n_true if n_true else math.nan,
+                rmse_all_cm=100.0 * math.sqrt(sq / n_true) if n_true else math.nan,
+                false_per_scene=n_false / len(rows) if rows else math.nan)
 
 
 def scene_metrics(est, truth, c, p):
@@ -359,7 +382,7 @@ def fig_layouts(truth, runs, path, arena):
 
 # ====================================================================
 
-def summarize(rows, methods, key):
+def summarize(rows, methods, key, c=0.5):
     out = []
     full = [r for r in rows if r["k"] == r["n_robots"]]
     groups = by_order({r[key] for r in full}) if key else ["all"]
@@ -367,7 +390,7 @@ def summarize(rows, methods, key):
         for m in methods:
             rr = [r for r in full if r["method"] == m and (not key or r[key] == g)]
             v = np.array([r["rmse"] for r in rr if not math.isnan(r["rmse"])])
-            out.append(dict(group=g, method=m, scenes=len(rr),
+            out.append(dict(group=g, method=m, scenes=len(rr), **detection_metrics(rr, c),
                             rmse_median=float(np.median(v)) if len(v) else np.nan,
                             rmse_p90=float(np.percentile(v, 90)) if len(v) else np.nan,
                             rmse_mean=float(np.mean(v)) if len(v) else np.nan,
@@ -471,15 +494,17 @@ def main():
 
     rows = evaluate(points, truth, sensor, zones, methods, a.cutoff, a.ospa_p, full_only=a.full_only, quiet=a.quiet)
     write_csv(os.path.join(a.out, "scenes.csv"), rows)
-    summ = summarize(rows, methods, None) + summarize(rows, methods, "layout")
+    summ = summarize(rows, methods, None, a.cutoff) + summarize(rows, methods, "layout", a.cutoff)
     write_csv(os.path.join(a.out, "summary.csv"), summ)
 
     print("\n=== all robots fused, per method (all scenes) ===")
-    print(f"  {'method':<14}{'scenes':>7}{'RMSE med':>10}{'RMSE p90':>10}{'exact':>8}{'|dn|':>7}{'OSPA':>7}")
+    print(f"  {'method':<14}{'scenes':>7}{'P_D':>8}{'RMSE*':>8}{'false':>8}{'exact':>8}{'OSPA':>7}")
     for s in summ:
         if s["group"] == "all":
-            print(f"  {METHOD_LABELS[s['method']]:<14}{s['scenes']:>7}{s['rmse_median']:>10.3f}"
-                  f"{s['rmse_p90']:>10.3f}{s['exact_pct']:>7.0f}%{s['mean_abs_dn']:>7.2f}{s['ospa_mean']:>7.3f}")
+            print(f"  {METHOD_LABELS[s['method']]:<14}{s['scenes']:>7}{s['pd_pct']:>7.1f}%{s['rmse_all_cm']:>6.1f}cm"
+                  f"{s['false_per_scene']:>8.2f}{s['exact_pct']:>7.0f}%{s['ospa_mean']:>7.3f}")
+    print(f"  P_D = true boxes found; RMSE* = over all true boxes, a missed box = {a.cutoff:g} m; "
+          f"false = estimates with no true box, per scene")
 
     fig_cdf(rows, methods, os.path.join(a.out, "cdf_rmse.png"), names)
     fig_rmse_by_layout(rows, methods, os.path.join(a.out, "rmse_by_layout.png"))

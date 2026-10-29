@@ -42,6 +42,7 @@ from collections import defaultdict
 
 import numpy as np
 
+from pipeline.evaluate_runs import detection_metrics
 from sim.generate import random_runs
 from sim.model import SensorModel
 
@@ -149,7 +150,10 @@ def summarize(rows, factor, value):
         rmse = np.array([float(r["rmse"]) for r in rs if r["rmse"] not in ("", "nan")], float)
         rmse = rmse[np.isfinite(rmse)]
         lo, hi = wilson(exact, n)
+        dm = detection_metrics(rs)
         out.append(dict(factor=factor, value=value, method=m, scenes=n,
+                        pd_pct=round(dm["pd_pct"], 2), rmse_all_cm=round(dm["rmse_all_cm"], 2),
+                        false_per_scene=round(dm["false_per_scene"], 3),
                         exact_pct=round(100 * exact / n, 1), exact_lo=round(lo, 1), exact_hi=round(hi, 1),
                         correct_pct=round(100 * correct / n, 1),
                         too_few_pct=round(100 * float((dn < 0).mean()), 1),
