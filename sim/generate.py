@@ -105,10 +105,6 @@ def jittered(model, spec, rng):
     m.two_face_q *= f_two
     factors = dict(noise_factor=round(float(f_noise), 3), false_factor=round(float(f_false), 3),
                    two_face_factor=round(float(f_two), 3))
-    if spec.sensing_range_m:                 # drawn last, so the other draws stay as before
-        m.r_max_m = float(rng.uniform(*spec.sensing_range_m))
-        m.false_within_range = True
-        factors["sensing_range_m"] = round(m.r_max_m, 3)
     return m, factors
 
 

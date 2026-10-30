@@ -261,7 +261,7 @@ def main():
                     help="with --edges range: a communication range drawn in [LO, HI] for every training and "
                          "validation scene, so the model can be tested at any --comm-range")
     ap.add_argument("--circle-tests", action="store_true",
-                    help="test on the two-circle scenario sets of sim.make_sets (data/sim_C0/, sim_Cn*/, sim_Cs*/)")
+                    help="test on the two-circle scenario sets of sim.make_sets (data/sim_C0/, sim_Cn*/)")
     ap.add_argument("--hops", type=int, default=2)
     ap.add_argument("--skip", choices=["residual", "none", "jk"], default="residual",
                     help="skip connections: residual (default), none, jk (jumping knowledge: all hops to the read-out)")

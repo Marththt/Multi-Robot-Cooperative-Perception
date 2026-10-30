@@ -68,9 +68,6 @@ def capture(scene, cap, model, rng, bias):
         for p, a, f in reported:
             out.append(measure(model, rng, cam, yaw, c, d, a, f, j, bias))
     false = false_detections(model, rng)
-    if model.false_within_range:            # a robot with a sensing range reports nothing beyond it
-        A, B = model.range_fit
-        false = [f for f in false if (f["distance"] - B) / A <= model.r_max_m]
     out += false
     rng.shuffle(out)
     return out

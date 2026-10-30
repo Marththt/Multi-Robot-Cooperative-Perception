@@ -2,7 +2,7 @@
 
 A scene can be
   two-circle scenario         box_region "disk": the boxes inside an inner circle, the robots evenly on an
-                              outer circle around it (placement "ring"), each with a sensing range
+                              outer circle around it (placement "ring")
   recreated from a real run   boxes from OptiTrack, box orientations estimated from the viewing angles of
                               the real detections, camera poses taken from the logs of every round
   generated at random         from a ScenarioSpec (number of boxes, arrangement, spacing, robots,
@@ -113,7 +113,6 @@ class ScenarioSpec:
     two_face_factor: List[float] = field(default_factory=lambda: [1.0, 1.0]) # per run, two-face rate x [lo, hi]
     box_region: str = "square"               # square (area_half_m) | disk (inner circle of radius inner_radius_m)
     inner_radius_m: List[float] = field(default_factory=lambda: [0.7, 0.7])  # disk: radius of the inner circle
-    sensing_range_m: Optional[List[float]] = None   # per run, maximum detection distance [m] (None: the model's)
 
 
 def _spaced(points, p, spacing):

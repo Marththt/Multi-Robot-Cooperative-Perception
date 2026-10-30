@@ -42,9 +42,5 @@
   "two_face_factor": [
     1.0,
     1.0
-  ],
-  "sensing_range_m": [
-    2.0,
-    2.0
   ]
 }

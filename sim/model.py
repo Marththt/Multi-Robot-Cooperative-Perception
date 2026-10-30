@@ -46,7 +46,6 @@ class SensorModel:
     false_far_range_m: List[float] = field(default_factory=lambda: [4.4, 7.4])
     false_edge_share: float = 0.5           # share at the edge of the field of view
     false_edge_band_deg: List[float] = field(default_factory=lambda: [38.0, 44.0])
-    false_within_range: bool = False       # drop the false detections beyond r_max (sensing-range scenarios)
 
     # --- provenance
     source: dict = field(default_factory=dict)

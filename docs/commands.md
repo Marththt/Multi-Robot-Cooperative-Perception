@@ -97,9 +97,9 @@ All the variants in one table and one figure per metric (detection probability, 
 
     python -m gnn.collect --results-dir results/gnn_sim/
 
-## Two-circle scenario (targets in an inner circle, robots on an outer circle, sensing and communication range)
+## Two-circle scenario (targets in an inner circle, robots on an outer circle, communication range)
 
-Sets: training (3-10 robots, sensing range 1-3 m), validation, the nominal test C0 (6 robots at 1.5 m, inner circle 0.7 m, sensing range 2 m) and its variants with 3-16 robots (Cn*) and sensing ranges 1-3 m (Cs*), with the classical methods (same sensing range):
+Sets: training (3-10 robots), validation, the nominal test C0 (6 robots at 1.5 m, inner circle 0.7 m) and its variants with 3-16 robots (Cn*), with the classical methods:
 
     python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets circle
 

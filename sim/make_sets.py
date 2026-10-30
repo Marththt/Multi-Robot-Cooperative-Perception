@@ -16,13 +16,11 @@ ground_truth.json and one runs.csv.
 --sets chooses what to build (default: train,val,T0,T1,T2,T3,T4,T5,T6,T7); --no-baselines skips the
 classical methods. A set that is built again replaces the old one.
 
-Two-circle scenario (--sets circle): the boxes inside an inner circle, the robots evenly on an outer circle,
-each robot with a sensing range (sim/specs/circle_train.json, circle_test.json):
-  sim_Ctrain, sim_Cval        3-10 robots, outer radius 1.2-2 m, sensing range 1-3 m, randomised sensor
-  sim_C0                      nominal test: 6 robots at 1.5 m, inner circle 0.7 m, sensing range 2 m
+Two-circle scenario (--sets circle): the boxes inside an inner circle, the robots evenly on an outer circle
+(sim/specs/circle_train.json, circle_test.json):
+  sim_Ctrain, sim_Cval        3-10 robots, outer radius 1.2-2 m, randomised sensor
+  sim_C0                      nominal test: 6 robots at 1.5 m, inner circle 0.7 m
   sim_Cn3 ... sim_Cn16        the nominal test with 3, 4, 8, 12 or 16 robots
-  sim_Cs1.0, Cs1.5, Cs3.0     the nominal test with a sensing range of 1, 1.5 or 3 m
-The classical methods get the same sensing range (--r-max) as the scenes.
 """
 
 import argparse
@@ -42,7 +40,7 @@ TESTS = {"T0": "T0_nominal", "T1": "T1_close", "T2": "T2_dense", "T3": "T3_obsta
          "T5": "T5_two_faces", "T6": "T6_unseen_count", "T7": "T7_many_robots"}
 PART = 2500                                   # runs per parallel part
 
-# two-circle scenario (targets in an inner circle, robots evenly on an outer circle, sensing range):
+# two-circle scenario (targets in an inner circle, robots evenly on an outer circle):
 # name -> (spec file, overrides of the spec, seed, role)
 CIRCLE = {
     "Ctrain": ("circle_train", {}, 3, "train"),
@@ -53,9 +51,6 @@ CIRCLE = {
     "Cn8": ("circle_test", {"n_robots": [8]}, 33, "test"),
     "Cn12": ("circle_test", {"n_robots": [12]}, 34, "test"),
     "Cn16": ("circle_test", {"n_robots": [16]}, 35, "test"),
-    "Cs1.0": ("circle_test", {"sensing_range_m": [1.0, 1.0]}, 36, "test"),
-    "Cs1.5": ("circle_test", {"sensing_range_m": [1.5, 1.5]}, 37, "test"),
-    "Cs3.0": ("circle_test", {"sensing_range_m": [3.0, 3.0]}, 38, "test"),
 }
 
 
@@ -80,13 +75,6 @@ def expand_sets(text):
     for s in [x.strip() for x in text.split(",") if x.strip()]:
         out += list(CIRCLE) if s == "circle" else [s]
     return out
-
-
-def sensing_range(spec_path):
-    """The fixed sensing range of a test spec (None if it has none or a range of values)."""
-    with open(spec_path) as f:
-        r = json.load(f).get("sensing_range_m")
-    return r[0] if r and r[0] == r[-1] else None
 
 
 def generate_part(task):
@@ -120,14 +108,12 @@ def merge_parts(set_dir, part_dirs):
 
 
 def baseline(task):
-    name, set_dir, out, sensor_calib, regions, r_max = task
+    name, set_dir, out, sensor_calib, regions = task
     cmd = [sys.executable, "-m", "pipeline.evaluate_runs", "--survey-dir", set_dir,
            "--ground-truth", os.path.join(set_dir, "ground_truth.json"), "--sensor-calib", sensor_calib,
            "--full-only", "--quiet", "--out", out]
     if regions:
         cmd += ["--regions", regions]
-    if r_max:                                 # the methods know the sensing range of the scenes
-        cmd += ["--r-max", str(r_max)]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return name
 
@@ -184,8 +170,8 @@ def main():
     tests = [s for s in sets if s in TESTS or (s in CIRCLE and CIRCLE[s][3] == "test")]
     if tests and not a.no_baselines:
         print(f"classical methods on {', '.join(tests)}", flush=True)
-        jobs = [(t, os.path.join(a.data_dir, f"sim_{t}"), os.path.join(a.baseline_dir, t), a.sensor_calib, a.regions,
-                 sensing_range(os.path.join(a.data_dir, f"sim_{t}", "spec.json"))) for t in tests]
+        jobs = [(t, os.path.join(a.data_dir, f"sim_{t}"), os.path.join(a.baseline_dir, t), a.sensor_calib, a.regions)
+                for t in tests]
         with multiprocessing.Pool(min(a.jobs, len(jobs))) as pool:
             for done in pool.imap_unordered(baseline, jobs):
                 print(f"  {done}: {os.path.join(a.baseline_dir, done, 'scenes.csv')}", flush=True)
