@@ -6,6 +6,10 @@ evaluated, the real scenes with combined rounds) and writes (in --out):
                             the seeds of every GNN variant, and the sign-test p (largest over the seeds) vs MHT
   comparison_<metric>.png   the metric per test set: MHT, CPHD and the GNN variants (mean +- sd over the seeds)
   viewpoints_<metric>.png   the metric on the real scenes against the number of viewpoints (combined rounds)
+  comm_<metric>.png         with a communication range (--edges range): the metric against the range, one
+                            panel per test set, every GNN variant and MHT
+Results of the same model at several communication ranges (summary_comm<r>.csv, --results-name comm<r>;
+summary.csv holds the range of variant.json) are kept apart: the test set is named <test>@<r>m.
 for each metric of --metrics (default pd,rmse,false):
   pd       detection probability: true boxes found / all true boxes [%]
   rmse     RMSE over all true boxes, a missed box counting as the cut-off (0.5 m) [cm]
@@ -18,6 +22,7 @@ for each metric of --metrics (default pd,rmse,false):
 import argparse
 import csv
 import glob
+import json
 import math
 import os
 from collections import defaultdict
@@ -46,6 +51,35 @@ def variant_label(name):
             label += f" / skip {extra[4:]}" if extra.startswith("skip") else f" / {extra}"
         return label
     return name
+
+
+def comm_of(results_dir, variant, path):
+    """Communication range of one result file: from its name (summary_comm1.0.csv) or, for summary.csv of a
+    range variant, from variant.json; None without a communication range."""
+    suffix = os.path.basename(path).split(".csv")[0].split("_", 1)
+    suffix = suffix[1] if len(suffix) == 2 else ""
+    if suffix.startswith("comm"):
+        return float(suffix[4:])
+    if suffix:
+        return None
+    try:
+        with open(os.path.join(results_dir, variant, "variant.json")) as f:
+            v = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return float(v["comm_range"]) if v.get("edges") == "range" and v.get("comm_range") is not None else None
+
+
+def test_key(test, comm):
+    return test if comm is None else f"{test}@{comm:g}m"
+
+
+def base_test(t):
+    return t.split("@")[0]
+
+
+def comm_value(t):
+    return float(t.split("@")[1][:-1]) if "@" in t else None
 
 
 def read_csv(path):
@@ -88,27 +122,35 @@ def collect(results_dir, out, metric):
     gnn = defaultdict(dict)                     # test -> variant -> (mean, sd)
     p_mht = defaultdict(dict)                   # test -> variant -> largest p over the seeds
     viewpoints = {}                             # test -> mean number of viewpoints
+    main_keys = set()                           # test keys read from summary.csv (not from other ranges)
     for v in variants:
         for path in sorted(glob.glob(os.path.join(results_dir, v, "summary*.csv"))):
+            comm = comm_of(results_dir, v, path)
             for r in read_csv(path):
+                t = test_key(r["test"], comm)
+                if os.path.basename(path) == "summary.csv":
+                    main_keys.add(t)
                 if r["method"] == "gnn":
-                    gnn[r["test"]][v] = (num(r[key]), num(r.get(key + "_sd")))
+                    gnn[t][v] = (num(r[key]), num(r.get(key + "_sd")))
                     if r.get("viewpoints"):
-                        viewpoints[r["test"]] = num(r["viewpoints"])
+                        viewpoints[t] = num(r["viewpoints"])
                 else:
                     classical[r["test"]].setdefault(r["method"], num(r[key]))
         ps = defaultdict(list)
         for path in sorted(glob.glob(os.path.join(results_dir, v, "mcnemar*.csv"))):
+            comm = comm_of(results_dir, v, path)
             for r in read_csv(path):
                 if r["baseline"] == "mht" and test_name and r.get("metric", "correct") == test_name:
-                    ps[r["test"]].append(num(r["p_value"]))
+                    ps[test_key(r["test"], comm)].append(num(r["p_value"]))
         for t, vals in ps.items():
             p_mht[t][v] = max(vals)
 
-    tests = [t for t in TEST_ORDER if t in gnn] + sorted(t for t in gnn if t not in TEST_ORDER)
+    tests = [t for t in TEST_ORDER if t in gnn] + sorted(
+        (t for t in gnn if t not in TEST_ORDER), key=lambda t: (base_test(t), comm_value(t) or 0.0))
+    classical = {t: classical[base_test(t)] for t in tests}
     rows = []
     for t in tests:
-        row = dict(test=t)
+        row = dict(test=base_test(t), comm_range_m=comm_value(t) if comm_value(t) is not None else "")
         for m in CLASSICAL:
             row[m] = round(classical[t][m], 3) if m in classical[t] else ""
         for v in variants:
@@ -126,9 +168,9 @@ def collect(results_dir, out, metric):
     print(f"\n{ylabel}: MHT and every GNN variant (mean +- sd over the seeds; * = different from MHT, "
           f"sign test p < 0.05 for every seed)")
     width = max(18, max(len(variant_label(v)) for v in variants) + 2)
-    print(f"  {'test':<16}{'MHT':>8}" + "".join(f"{variant_label(v):>{width}}" for v in variants))
+    print(f"  {'test':<18}{'MHT':>8}" + "".join(f"{variant_label(v):>{width}}" for v in variants))
     for t in tests:
-        line = f"  {TEST_NAMES.get(t, t):<16}{classical[t].get('mht', math.nan):>8.{2 if metric == 'false' else 1}f}"
+        line = f"  {TEST_NAMES.get(t, t):<18}{classical[t].get('mht', math.nan):>8.{2 if metric == 'false' else 1}f}"
         for v in variants:
             mean, sd = gnn[t].get(v, (math.nan, math.nan))
             p = p_mht[t].get(v)
@@ -148,6 +190,7 @@ def collect(results_dir, out, metric):
         series.append((f"GNN {variant_label(v)}", blues[k % len(blues)],
                        [gnn[t].get(v, (math.nan, math.nan)) for t in tests]))
     bar_tests = [t for t in tests if not t.startswith("REALx")]
+    bar_tests = [t for t in bar_tests if "@" not in t or t in main_keys]   # ranged: the range of summary.csv
     keep = [tests.index(t) for t in bar_tests]
     series = [(label, color, [vals[i] for i in keep]) for label, color, vals in series]
     n = len(series)
@@ -159,7 +202,8 @@ def collect(results_dir, out, metric):
         ax.bar(x, [m for m, _ in vals], w, yerr=sds if any(sds) else None,
                color=color, label=label, capsize=2, error_kw=dict(lw=0.8))
     ax.set_xticks(range(len(bar_tests)))
-    ax.set_xticklabels([TEST_NAMES.get(t, t) for t in bar_tests], rotation=20, ha="right")
+    ax.set_xticklabels([TEST_NAMES.get(t, base_test(t)) if "@" not in t else t for t in bar_tests],
+                       rotation=20, ha="right")
     ax.set_ylabel(ylabel)
     ax.set_ylim(*ylim)
     ax.grid(axis="y", alpha=0.3)
@@ -169,6 +213,10 @@ def collect(results_dir, out, metric):
     fig.savefig(os.path.join(out, f"comparison_{metric}.png"), dpi=150)
     plt.close(fig)
     written = [f"comparison_{metric}.csv", f"comparison_{metric}.png"]
+
+    ranged = sorted({base_test(t) for t in tests if "@" in t})
+    if ranged:
+        written.append(comm_figure(ranged, tests, gnn, classical, variants, blues, ylabel, ylim, out, metric))
 
     combined = [t for t in tests if t.startswith("REALx")]
     if combined:
@@ -195,6 +243,40 @@ def collect(results_dir, out, metric):
         plt.close(fig)
         written.append(f"viewpoints_{metric}.png")
     return written
+
+
+def comm_figure(ranged, tests, gnn, classical, variants, blues, ylabel, ylim, out, metric):
+    """One panel per test set: the metric against the communication range, every GNN variant and MHT."""
+    import matplotlib.pyplot as plt
+    cols = min(3, len(ranged))
+    rows = math.ceil(len(ranged) / cols)
+    fig, axes = plt.subplots(rows, cols, figsize=(4.6 * cols, 3.4 * rows), squeeze=False)
+    for k, b in enumerate(ranged):
+        ax = axes[k // cols][k % cols]
+        ts = sorted((t for t in tests if base_test(t) == b and "@" in t), key=comm_value)
+        x = [comm_value(t) for t in ts]
+        mht = classical[ts[0]].get("mht", math.nan)
+        ax.axhline(mht, color="#d1495b", lw=1.5, ls="--", label="MHT")
+        for j, v in enumerate(variants):
+            ax.plot(x, [gnn[t].get(v, (math.nan, math.nan))[0] for t in ts], "o-", ms=3.5, lw=1.6,
+                    color=blues[j % len(blues)], label=f"GNN {variant_label(v)}")
+        ax.set_title(TEST_NAMES.get(b, b), fontsize=11)
+        ax.set_xlabel("communication range [m]")
+        ax.set_ylabel(ylabel, fontsize=9)
+        if metric == "pd":
+            ax.set_ylim(None, 100.5)
+        elif metric == "false":
+            ax.set_yscale("symlog", linthresh=0.01)            # a few duplicates and ~0 on one axis
+        ax.grid(alpha=0.3)
+    for k in range(len(ranged), rows * cols):
+        axes[k // cols][k % cols].axis("off")
+    handles, labels = axes[0][0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=2, fontsize=9, frameon=False)
+    fig.tight_layout(rect=(0, 0.03 + 0.025 * math.ceil((len(variants) + 1) / 2), 1, 1))
+    name = f"comm_{metric}.png"
+    fig.savefig(os.path.join(out, name), dpi=150)
+    plt.close(fig)
+    return name
 
 
 if __name__ == "__main__":
