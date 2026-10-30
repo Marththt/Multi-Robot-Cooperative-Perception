@@ -109,7 +109,13 @@ def match(est, truth, c):
     return [D[i, j] for i, j in pairs if D[i, j] <= c]
 
 
-def detection_metrics(rows, c=0.5):
+# An estimate counts as a box found only within this distance of the true centre [m]: half the side of a box
+# (30 cm). It lies inside the circle around the box footprint (radius 17.3 cm), below the smallest distance
+# between two box centres (17.4 cm), and about three times the position error of a well-fused box (3-5 cm).
+MATCH_CUTOFF_M = 0.15
+
+
+def detection_metrics(rows, c=MATCH_CUTOFF_M):
     """The three summary metrics over a set of scenes (rows of scene_metrics):
       pd_pct           detection probability: true boxes matched by an estimate / all true boxes [%]
       rmse_all_cm      RMSE over ALL true boxes, a box with no estimate within c counting as an error of c [cm]
@@ -382,7 +388,7 @@ def fig_layouts(truth, runs, path, arena):
 
 # ====================================================================
 
-def summarize(rows, methods, key, c=0.5):
+def summarize(rows, methods, key, c=MATCH_CUTOFF_M):
     out = []
     full = [r for r in rows if r["k"] == r["n_robots"]]
     groups = by_order({r[key] for r in full}) if key else ["all"]
@@ -452,7 +458,8 @@ def main():
                     help="camera ahead of the body pivot [m] (see pipeline/calibrate.py); only for runs saved with "
                          "survey.py --camera-offset-forward-m 0")
     ap.add_argument("--methods", default=",".join(METHODS))
-    ap.add_argument("--cutoff", type=float, default=0.5, help="matching / OSPA cut-off c [m]")
+    ap.add_argument("--cutoff", type=float, default=MATCH_CUTOFF_M,
+                    help=f"matching / OSPA cut-off c [m] (default {MATCH_CUTOFF_M:g}: half the side of a box)")
     ap.add_argument("--ospa-p", type=float, default=2.0, help="OSPA order p")
     ap.add_argument("--full-only", action="store_true",
                     help="fuse only all the robots of each scene (no subsets, no robot-count figures); "

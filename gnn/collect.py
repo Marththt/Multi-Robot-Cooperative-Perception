@@ -12,7 +12,7 @@ Results of the same model at several communication ranges (summary_comm<r>.csv, 
 summary.csv holds the range of variant.json) are kept apart: the test set is named <test>@<r>m.
 for each metric of --metrics (default pd,rmse,false):
   pd       detection probability: true boxes found / all true boxes [%]
-  rmse     RMSE over all true boxes, a missed box counting as the cut-off (0.5 m) [cm]
+  rmse     RMSE over all true boxes, a missed box counting as the cut-off (0.15 m) [cm]
   false    estimates that match no true box, per scene
   correct  scenes with the right count and every true box matched [%]   (also: exact)
 

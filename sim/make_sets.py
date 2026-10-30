@@ -14,7 +14,7 @@ ground_truth.json and one runs.csv.
         --regions config/optitrack_regions.json
 
 --sets chooses what to build (default: train,val,T0,T1,T2,T3,T4,T5,T6,T7); --no-baselines skips the
-classical methods. A set that is built again replaces the old one.
+classical methods; --baselines-only runs only the classical methods on sets already built. A set that is built again replaces the old one.
 
 Two-circle scenario (--sets circle): the boxes inside an inner circle, the robots evenly on an outer circle
 (sim/specs/circle_train.json, circle_test.json):
@@ -132,6 +132,8 @@ def main():
     ap.add_argument("--data-dir", default="data/")
     ap.add_argument("--baseline-dir", default="results/baselines_sim/")
     ap.add_argument("--no-baselines", action="store_true")
+    ap.add_argument("--baselines-only", action="store_true",
+                    help="run only the classical methods on sets already built (e.g. after changing the metrics)")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1),
                     help="processes in parallel (default: CPU cores - 1; at most 60 on Windows)")
     a = ap.parse_args()
@@ -140,7 +142,7 @@ def main():
 
     sets = expand_sets(a.sets)
     tasks, parts = [], {}
-    for name in sets:
+    for name in ([] if a.baselines_only else sets):
         spec, runs, seed, layout = set_plan(name, a)
         set_dir = os.path.join(a.data_dir, f"sim_{name}")
         if os.path.isdir(set_dir):
@@ -158,14 +160,15 @@ def main():
             part_dir = os.path.join(set_dir, f"part{k:02d}")
             tasks.append((spec, min(PART, runs - start), start, a.seed * 100 + seed, layout, part_dir, a.model))
             parts.setdefault(name, []).append(part_dir)
-    print(f"generating {', '.join(sets)}: {len(tasks)} parts on {min(a.jobs, len(tasks))} process(es)", flush=True)
-    with multiprocessing.Pool(min(a.jobs, len(tasks))) as pool:
-        for done in pool.imap_unordered(generate_part, tasks):
-            print(f"  {done}", flush=True)
-    for name in sets:
-        merge_parts(os.path.join(a.data_dir, f"sim_{name}"), parts[name])
-        n = sum(1 for _ in open(os.path.join(a.data_dir, f"sim_{name}", "runs.csv"))) - 1
-        print(f"  sim_{name}: {n} runs", flush=True)
+    if tasks:
+        print(f"generating {', '.join(sets)}: {len(tasks)} parts on {min(a.jobs, len(tasks))} process(es)", flush=True)
+        with multiprocessing.Pool(min(a.jobs, len(tasks))) as pool:
+            for done in pool.imap_unordered(generate_part, tasks):
+                print(f"  {done}", flush=True)
+        for name in sets:
+            merge_parts(os.path.join(a.data_dir, f"sim_{name}"), parts[name])
+            n = sum(1 for _ in open(os.path.join(a.data_dir, f"sim_{name}", "runs.csv"))) - 1
+            print(f"  sim_{name}: {n} runs", flush=True)
 
     tests = [s for s in sets if s in TESTS or (s in CIRCLE and CIRCLE[s][3] == "test")]
     if tests and not a.no_baselines:

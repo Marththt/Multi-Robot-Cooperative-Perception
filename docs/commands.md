@@ -93,7 +93,7 @@ Real scenes with more viewpoints: the rounds of each real run are combined (4, 8
 
 (same `--eval-only` command with the flags of every other variant)
 
-All the variants in one table and one figure per metric (detection probability, RMSE over all true boxes with a missed box = 0.5 m, false estimates per scene): `results/gnn_sim/comparison_<metric>.csv/.png`, and `viewpoints_<metric>.png` for the combined real scenes:
+All the variants in one table and one figure per metric (detection probability, RMSE over all true boxes with a missed box = 0.15 m, false estimates per scene): `results/gnn_sim/comparison_<metric>.csv/.png`, and `viewpoints_<metric>.png` for the combined real scenes:
 
     python -m gnn.collect --results-dir results/gnn_sim/
 
@@ -117,3 +117,17 @@ Distributed GNN (--association local): two detections are associated only if the
     python -m gnn.train_sim --train-dir data/sim_Ctrain/ --val-dir data/sim_Cval/ --sensor-calib config/sensor_calib.json --circle-tests --edges range --comm-range-train 0.5 5 --comm-range 2.0 --association local --hops 2 --skip residual --out results/gnn_circle/
     python -m gnn.train_sim ... --association local --hops 2 --comm-range 1.0 --eval-only --results-name comm1.0 --out results/gnn_circle/
 
+
+## Re-evaluating everything after a change of the metrics (no retraining)
+
+A box is found only by an estimate within `MATCH_CUTOFF_M` (pipeline/evaluate_runs.py, 0.15 m: half the side of a box) of its centre; P_D, RMSE* (a missed box counts as that distance), false estimates and correct scenes all follow from it. After changing it, every stored result is recomputed from the sets and the trained models:
+
+    python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --baselines-only
+    python -m pipeline.evaluate_runs --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --sensor-calib config/sensor_calib.json --out results/evaluation_calib/
+    python -m pipeline.combine_rounds --regions config/optitrack_regions.json
+    python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --standard-tests --eval-only --out results/gnn_sim/
+    python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --combined-tests --eval-only --out results/gnn_sim/
+    python -m sim.sweep --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --runs 500 --seed 1 --out results/failure_map/
+    python -m gnn.collect --results-dir results/gnn_sim/
+
+Two-circle sets: the same with `--sets circle --baselines-only`, then `--eval-only` for each trained variant (same flags as its training).

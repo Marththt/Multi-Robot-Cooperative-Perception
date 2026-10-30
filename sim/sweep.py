@@ -42,7 +42,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from pipeline.evaluate_runs import detection_metrics
+from pipeline.evaluate_runs import MATCH_CUTOFF_M, detection_metrics
 from sim.generate import random_runs
 from sim.model import SensorModel
 
@@ -111,7 +111,7 @@ def run_value(task):
     return (factor, value), summarize(rows, factor, value)
 
 
-def empty_scenes(run_dir, rows, layout_id, cutoff=0.5):
+def empty_scenes(run_dir, rows, layout_id, cutoff=MATCH_CUTOFF_M):
     """Scenes in which no robot reported anything have no feature vector, so evaluate_runs does not see
     them; they are added here as estimates with no box for every method (all boxes missed, OSPA = c)."""
     with open(os.path.join(run_dir, "ground_truth.json")) as f:

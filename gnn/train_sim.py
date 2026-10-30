@@ -30,7 +30,7 @@ models are trained independently; every result is reported as mean and standard 
 
 A --test is NAME DIR GROUND_TRUTH BASELINE: BASELINE is the scenes.csv of pipeline/evaluate_runs.py on the
 same runs ('-' for none). Metrics (pipeline.evaluate_runs.detection_metrics): detection probability P_D,
-RMSE* over all true boxes (a missed box counts as the cut-off) and false estimates per scene. The GNN and
+RMSE* over all true boxes (a missed box counts as the cut-off, 0.15 m) and false estimates per scene. The GNN and
 every classical method are compared scene by scene with exact sign tests (mcnemar.csv), for every seed: on
 the boxes found, on the false estimates and on "correct" (count right and every true box matched). Simulated scenes in which
 no robot reported anything are counted for every method as an empty estimate.
@@ -54,7 +54,7 @@ import torch
 
 from gnn.dataset import build_scenes
 from gnn.model import build_model, collate, decode, encode_scene, loss_fn
-from pipeline.evaluate_runs import detection_metrics, scene_metrics
+from pipeline.evaluate_runs import MATCH_CUTOFF_M, detection_metrics, scene_metrics
 
 METHOD_ORDER = ["zone_class", "union", "phd", "cphd", "mht"]
 LABELS = dict(zone_class="Zone+class", union="Union", phd="PHD", cphd="CPHD", mht="MHT", gnn="GNN")
@@ -276,7 +276,8 @@ def main():
     ap.add_argument("--weight-decay", type=float, default=1e-4)
     ap.add_argument("--seeds", type=int, default=5)
     ap.add_argument("--max-train", type=int, default=None, help="use only the first N training scenes (quick tests)")
-    ap.add_argument("--cutoff", type=float, default=0.5)
+    ap.add_argument("--cutoff", type=float, default=MATCH_CUTOFF_M,
+                    help="an estimate within this distance of a true box finds it [m]")
     ap.add_argument("--ospa-p", type=float, default=2.0)
     ap.add_argument("--eval-only", action="store_true", help="evaluate the models already saved in the output folder")
     a = ap.parse_args()
