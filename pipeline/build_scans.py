@@ -96,7 +96,8 @@ def band(d):
 def load_points(survey_dir, range_fit=None):
     """All the observation points of the survey: {key: point}, point =
     dict(trial_id, layout, run, robot, stop, yaw_offset, radius, angle, pose,
-    observations=[dict(class_name, distance, bearing)]).
+    observations=[dict(class_name, distance, bearing, view, pose)]), view = viewing angle of the
+    marker [rad] or None.
 
     survey_dir can be one run folder of launch_all.py or the folder with
     all the runs: the *.jsonl files are searched in every subfolder (except
@@ -136,6 +137,7 @@ def load_points(survey_dir, range_fit=None):
                         distance=(float(r["distance"]) if range_fit is None
                                   else (float(r["distance"]) - range_fit[1]) / range_fit[0]),
                         bearing=float(r["bearing_rad"]),
+                        view=(float(r["viewing_angle_rad"]) if r.get("viewing_angle_rad") is not None else None),
                         pose=tuple(r["robot_pose"]) if r.get("robot_pose") is not None else None))
     if bad:
         print(f"warning: {bad} unreadable line(s) skipped")

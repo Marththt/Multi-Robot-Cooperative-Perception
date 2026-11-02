@@ -1,5 +1,5 @@
 """Builds every simulated set of the GNN study with fixed seeds, and runs the five classical methods on the
-test sets:
+test sets (the five methods of the document plus the MHT with sensor model):
 
   data/sim_train/   general training environment (sim/specs/train_general.json)        --train-runs scenes
   data/sim_val/     same distribution, new seeds, for model selection only               --val-runs scenes
@@ -108,12 +108,14 @@ def merge_parts(set_dir, part_dirs):
 
 
 def baseline(task):
-    name, set_dir, out, sensor_calib, regions = task
+    name, set_dir, out, sensor_calib, regions, sensor_model, methods = task
     cmd = [sys.executable, "-m", "pipeline.evaluate_runs", "--survey-dir", set_dir,
            "--ground-truth", os.path.join(set_dir, "ground_truth.json"), "--sensor-calib", sensor_calib,
-           "--full-only", "--quiet", "--out", out]
+           "--sensor-model", sensor_model, "--full-only", "--quiet", "--out", out]
     if regions:
         cmd += ["--regions", regions]
+    if methods:
+        cmd += ["--methods", methods, "--keep-other-methods"]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return name
 
@@ -132,6 +134,9 @@ def main():
     ap.add_argument("--data-dir", default="data/")
     ap.add_argument("--baseline-dir", default="results/baselines_sim/")
     ap.add_argument("--no-baselines", action="store_true")
+    ap.add_argument("--methods", default=None,
+                    help="classical methods to run (default all); the rows of the other methods already in the "
+                         "baseline scenes.csv are kept, e.g. --baselines-only --methods mht_sensor adds one method")
     ap.add_argument("--baselines-only", action="store_true",
                     help="run only the classical methods on sets already built (e.g. after changing the metrics)")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1),
@@ -173,8 +178,8 @@ def main():
     tests = [s for s in sets if s in TESTS or (s in CIRCLE and CIRCLE[s][3] == "test")]
     if tests and not a.no_baselines:
         print(f"classical methods on {', '.join(tests)}", flush=True)
-        jobs = [(t, os.path.join(a.data_dir, f"sim_{t}"), os.path.join(a.baseline_dir, t), a.sensor_calib, a.regions)
-                for t in tests]
+        jobs = [(t, os.path.join(a.data_dir, f"sim_{t}"), os.path.join(a.baseline_dir, t), a.sensor_calib, a.regions,
+                 a.model, a.methods) for t in tests]
         with multiprocessing.Pool(min(a.jobs, len(jobs))) as pool:
             for done in pool.imap_unordered(baseline, jobs):
                 print(f"  {done}: {os.path.join(a.baseline_dir, done, 'scenes.csv')}", flush=True)

@@ -38,9 +38,11 @@ GATE_THRESHOLD = 13.8  # chi^2 with 2 degrees of freedom at 99.9%
 
 def top_k_combinations(options, k):
     """options: one list per element, each [(log_score,
-    exclusive_key_or_None, label), ...]. Returns the k combinations
-    (one option per element, keys never repeated) with the highest sum
-    of scores: [(sum, [label, ...])], best first.
+    exclusive_key_or_None, label), ...]; an option may carry a fourth
+    item, a key that an EARLIER element must already have taken for the
+    option to be allowed. Returns the k combinations (one option per
+    element, keys never repeated) with the highest sum of scores:
+    [(sum, [label, ...])], best first.
     Branch and bound: a branch is cut when even the best it can still
     achieve does not make it into the k best."""
     n = len(options)
@@ -61,8 +63,11 @@ def top_k_combinations(options, k):
             else:
                 heapq.heapreplace(best, entry)
             return
-        for score, key, label in opts[i]:
+        for opt in opts[i]:
+            score, key, label = opt[:3]
             if key is not None and key in used:
+                continue
+            if len(opt) > 3 and opt[3] not in used:
                 continue
             if key is not None:
                 used.add(key)

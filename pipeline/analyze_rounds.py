@@ -39,7 +39,8 @@ from vf.fusion.localization_methods import METHODS, measurement_from_observation
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions, sensor_from_arguments,
                                     zones_from_arguments)
 
-METHOD_LABELS = dict(zone_class="zone + class", union="union", mht="MHT", phd="PHD", cphd="CPHD")
+METHOD_LABELS = dict(zone_class="zone + class", union="union", mht="MHT", phd="PHD", cphd="CPHD",
+                     mht_sensor="MHT with sensor model")
 
 # Bearing correction (k, b0): measured = k * true + b0. Set by --bearing-fit (here or by
 # pipeline/evaluate_runs.py); None = bearings used as measured. The distance correction (--range-fit)
@@ -102,19 +103,23 @@ def travelled_track(points):
 
 def fuse(members, points, sensor, zones, methods):
     """members: observation-point keys (one per 'robot' of the scene).
-    Returns per_class measurements, poses and {class: {method: result}}."""
-    poses, per_class = {}, {}
+    Returns per_class measurements, poses and {class: {method: result}}.
+    Every report also keeps its viewing angle and camera pose (meta), read only by the methods that use
+    them (MHT with sensor model)."""
+    poses, per_class, meta = {}, {}, {}
     for k in members:
         pt = points[k]
         poses[k] = camera_pose(pt["pose"])
         for ob in pt["observations"]:
-            z = measurement_from_observation(camera_pose(ob["pose"]) or poses[k], ob["distance"],
-                                             corrected_bearing(ob["bearing"]))
+            cam = camera_pose(ob["pose"]) or poses[k]
+            z = measurement_from_observation(cam, ob["distance"], corrected_bearing(ob["bearing"]))
             per_class.setdefault(ob["class_name"], {}).setdefault(k, []).append(z)
+            meta.setdefault(ob["class_name"], {}).setdefault(k, []).append(dict(view=ob.get("view"), cam=cam))
     order = sorted(members)
     results = {}
     for c, reports in per_class.items():
-        results[c] = {m: run_method(m, order, reports, poses, sensor, zones=zones) for m in methods}
+        results[c] = {m: run_method(m, order, reports, poses, sensor, zones=zones, meta=meta[c])
+                      for m in methods}
     return poses, per_class, results
 
 

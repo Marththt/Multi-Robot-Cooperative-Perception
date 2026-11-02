@@ -22,6 +22,10 @@ Methods kept (the simplest and the most complex of the document's table):
                        measurements within threshold_m is one object
     mht             3  multi-hypothesis tracking, robots as scans
                        (data_association.py)
+    mht_sensor      3  the same MHT with the fitted sensor model: it also
+                       reads distance, line of sight and viewing angle
+                       of every report, the inputs of the GNN
+                       (sensor_aware_mht.py)
     phd, cphd       4  Random Finite Set filters (phd.py)
 
 Metric: OSPA (Schuhmacher, Vo, Vo 2008), the standard distance between
@@ -36,6 +40,7 @@ import numpy as np
 
 from vf.fusion.data_association import mht
 from vf.fusion.phd import cphd, phd
+from vf.fusion.sensor_aware_mht import mht_sensor
 from vf.perception.object_position import global_position
 
 
@@ -88,17 +93,22 @@ def union(order, reports, poses, sensor, zones=None, threshold_m=0.5):
     return dict(objects=[tuple(float(v) for v in c) for c in kept], n=len(kept), extra={})
 
 
-METHODS = dict(zone_class=zone_class, union=union, mht=mht, phd=phd, cphd=cphd)
+METHODS = dict(zone_class=zone_class, union=union, mht=mht, phd=phd, cphd=cphd, mht_sensor=mht_sensor)
 _TAKE_ZONES = ("zone_class", "union")
+_TAKE_META = ("mht_sensor",)
 
 
-def run_method(name, order, reports, poses, sensor, zones=None):
+def run_method(name, order, reports, poses, sensor, zones=None, meta=None):
     """Set the surveilled region of THIS shot (see
-    SensorModel.set_coverage) and run the method."""
+    SensorModel.set_coverage) and run the method.
+    meta: {robot_id: [dict(view, cam), ...]} parallel to reports, for
+    the methods that read the viewing angle (see sensor_aware_mht.py)."""
     sensor.set_coverage([poses.get(r) for r in order])
     fn = METHODS[name]
     if name in _TAKE_ZONES:
         return fn(order, reports, poses, sensor, zones=zones)
+    if name in _TAKE_META:
+        return fn(order, reports, poses, sensor, meta=meta)
     return fn(order, reports, poses, sensor)
 
 

@@ -27,8 +27,9 @@ import math
 import os
 from collections import defaultdict
 
-CLASSICAL = ["zone_class", "union", "phd", "cphd", "mht"]
-LABELS = dict(zone_class="Zone+class", union="Union", phd="PHD", cphd="CPHD", mht="MHT")
+CLASSICAL = ["zone_class", "union", "phd", "cphd", "mht", "mht_sensor"]
+LABELS = dict(zone_class="Zone+class", union="Union", phd="PHD", cphd="CPHD", mht="MHT",
+              mht_sensor="MHT with sensor model")
 TEST_ORDER = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "REAL"] + [f"REALx{r}" for r in range(1, 8)]
 METRICS = dict(
     pd=("pd_pct", "detection probability [%]", "found", (0, 100)),

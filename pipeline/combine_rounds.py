@@ -11,8 +11,8 @@ Real noise, real false detections, real occlusions; only the number of viewpoint
   rounds_7   28 viewpoints  1 combination per run (8 scenes)
 
 Each folder data/real_combined/rounds_<r>/ holds the scenes in the format of the real runs, with its
-ground_truth.json, so pipeline/evaluate_runs.py and gnn/train_sim.py read them unchanged. The five
-classical methods are then run on every folder (results/baselines_real_combined/rounds_<r>/scenes.csv).
+ground_truth.json, so pipeline/evaluate_runs.py and gnn/train_sim.py read them unchanged. The classical
+methods are then run on every folder (results/baselines_real_combined/rounds_<r>/scenes.csv).
 
     python -m pipeline.combine_rounds --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json \\
         --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json
@@ -97,12 +97,14 @@ def build(a):
 
 
 def baseline(task):
-    r, data_dir, out_dir, sensor_calib, regions = task
+    r, data_dir, out_dir, sensor_calib, regions, sensor_model, methods = task
     cmd = [sys.executable, "-m", "pipeline.evaluate_runs", "--survey-dir", data_dir,
            "--ground-truth", os.path.join(data_dir, "ground_truth.json"), "--sensor-calib", sensor_calib,
-           "--full-only", "--quiet", "--out", out_dir]
+           "--sensor-model", sensor_model, "--full-only", "--quiet", "--out", out_dir]
     if regions:
         cmd += ["--regions", regions]
+    if methods:
+        cmd += ["--methods", methods, "--keep-other-methods"]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return r
 
@@ -119,6 +121,11 @@ def main():
     ap.add_argument("--out-data", default="data/real_combined/")
     ap.add_argument("--out-baselines", default="results/baselines_real_combined/")
     ap.add_argument("--no-baselines", action="store_true")
+    ap.add_argument("--sensor-model", default="config/sensor_model.json",
+                    help="fitted sensor model, for the MHT with sensor model")
+    ap.add_argument("--methods", default=None,
+                    help="classical methods to run (default all); the rows of the other methods already in the "
+                         "baseline scenes.csv are kept")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     a = ap.parse_args()
     if sys.platform == "win32":
@@ -128,7 +135,7 @@ def main():
     if a.no_baselines:
         return
     tasks = [(r, os.path.join(a.out_data, f"rounds_{r}"), os.path.join(a.out_baselines, f"rounds_{r}"),
-              a.sensor_calib, a.regions) for r in counts]
+              a.sensor_calib, a.regions, a.sensor_model, a.methods) for r in counts]
     print("classical methods on every folder (the ones with many viewpoints take longest)", flush=True)
     with multiprocessing.Pool(min(a.jobs, len(tasks))) as pool:
         for r in pool.imap_unordered(baseline, tasks):

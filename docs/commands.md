@@ -131,3 +131,15 @@ A box is found only by an estimate within `MATCH_CUTOFF_M` (pipeline/evaluate_ru
     python -m gnn.collect --results-dir results/gnn_sim/
 
 Two-circle sets: the same with `--sets circle --baselines-only`, then `--eval-only` for each trained variant (same flags as its training).
+
+
+## MHT with sensor model (the same per-detection inputs as the GNN)
+
+`mht_sensor` (vf/fusion/sensor_aware_mht.py) is the MHT that also reads distance, line of sight and viewing angle of every report and the fitted sensor model (config/sensor_model.json). It is one of the classical methods of pipeline/evaluate_runs.py, so new evaluations include it. To add it to results already computed without running the other methods again (their rows in scenes.csv are kept):
+
+    python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --baselines-only --methods mht_sensor
+    python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets circle --baselines-only --methods mht_sensor
+    python -m pipeline.evaluate_runs --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --sensor-calib config/sensor_calib.json --methods mht_sensor --keep-other-methods --out results/evaluation_calib/
+    python -m pipeline.combine_rounds --regions config/optitrack_regions.json --methods mht_sensor
+
+The GNN results then compare with it after `--eval-only` (same commands as above).

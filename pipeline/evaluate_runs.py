@@ -2,7 +2,8 @@
 
 A SCENE is one round of one run: the captures of the robots standing at
 their positions of that round. For every scene, every subset of the robots
-(1, 2, ... all of them) is fused with each of the five methods, and the
+(1, 2, ... all of them) is fused with each classical method (the five of
+the document and the MHT with sensor model, --methods), and the
 estimate is compared with the true box positions of that run (OptiTrack):
 
   matching    every estimate is paired with at most one true box (optimal
@@ -65,13 +66,14 @@ import numpy as np
 from pipeline import analyze_rounds
 from pipeline.analyze_rounds import METHOD_LABELS, fuse
 from pipeline.build_scans import ARENA_DEFAULT, bind_run_truth, load_points, load_truth
+from vf.fusion import sensor_aware_mht
 from vf.fusion.localization_methods import METHODS
 from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions, sensor_from_arguments,
                                     zones_from_arguments)
 
 # categorical palette (fixed order, validated for adjacent pairs), one per method
-COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]
-MARKERS = ["o", "s", "^", "D", "v"]
+COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#7a4fc9"]
+MARKERS = ["o", "s", "^", "D", "v", "P"]
 TEXT, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 ORDER = {}          # layout name -> sort key (its run id), so the figures follow L1, L2, ...
 
@@ -417,6 +419,27 @@ def write_csv(path, rows):
 
 
 UNION = METHODS["union"]
+_INT_FIELDS = ("n_true", "n_est", "dn", "n_matched", "k", "n_robots")
+_FLOAT_FIELDS = ("rmse", "ospa")
+
+
+def read_other_methods(path, methods):
+    """Rows of an existing scenes.csv for the methods NOT in `methods` (numbers as numbers)."""
+    if not os.path.exists(path):
+        return []
+    rows = []
+    with open(path, newline="") as f:
+        for r in csv.DictReader(f):
+            if r["method"] in methods:
+                continue
+            for k in _INT_FIELDS:
+                r[k] = int(r[k])
+            for k in _FLOAT_FIELDS:
+                r[k] = float(r[k]) if r[k] not in ("", "nan") else float("nan")
+            if str(r.get("round", "")).lstrip("-").isdigit():
+                r["round"] = int(r["round"])
+            rows.append(r)
+    return rows
 
 
 def given(flag):
@@ -465,17 +488,25 @@ def main():
                     help="fuse only all the robots of each scene (no subsets, no robot-count figures); "
                          "for large simulated sets")
     ap.add_argument("--quiet", action="store_true", help="no line per scene")
+    ap.add_argument("--keep-other-methods", action="store_true",
+                    help="keep the rows of the methods not in --methods from the scenes.csv already in --out "
+                         "(to add one method without running the others again; same scenes and cut-off)")
     ap.add_argument("--names", nargs="*", default=[], metavar="LAYOUT=NAME",
                     help="names of the layouts in the figures, e.g. L1=Line L2=Square")
     ap.add_argument("--sensor-calib", default=None, metavar="JSON",
                     help="sensor calibration written by pipeline/calibrate.py --out (range and bearing fit, "
                          "sigma_pos, p_d); explicit command-line values win")
+    ap.add_argument("--sensor-model", default="config/sensor_model.json", metavar="JSON",
+                    help="fitted sensor model (sim/calibrate.py) used by the MHT with sensor model "
+                         "(default %(default)s)")
     ap.add_argument("--union-threshold", type=float, default=None, metavar="M",
                     help="clustering distance of union [m] (default: 3 * sigma_pos with --sensor-calib, "
                          "else 0.5)")
     add_sensor_arguments(ap)
     a = ap.parse_args()
     union_threshold = apply_sensor_calib(a)
+    if "mht_sensor" in a.methods:
+        sensor_aware_mht.set_model(a.sensor_model)
     METHODS["union"] = functools.partial(UNION, threshold_m=union_threshold)
     print(f"sensor settings: range fit {a.range_fit}, bearing fit {a.bearing_fit}, sigma_pos {a.sigma_pos:.3f} m, "
           f"p_d {a.p_d:.2f}, union threshold {union_threshold:.3f} m, camera offset {a.camera_offset:.3f} m")
@@ -500,15 +531,21 @@ def main():
     os.makedirs(a.out, exist_ok=True)
 
     rows = evaluate(points, truth, sensor, zones, methods, a.cutoff, a.ospa_p, full_only=a.full_only, quiet=a.quiet)
+    if a.keep_other_methods:
+        old = read_other_methods(os.path.join(a.out, "scenes.csv"), methods)
+        kept = [m for m in METHODS if m in {r["method"] for r in old}]
+        print(f"kept from the existing scenes.csv: {', '.join(kept) or 'nothing'}")
+        rows = old + rows
+        methods = kept + methods
     write_csv(os.path.join(a.out, "scenes.csv"), rows)
     summ = summarize(rows, methods, None, a.cutoff) + summarize(rows, methods, "layout", a.cutoff)
     write_csv(os.path.join(a.out, "summary.csv"), summ)
 
     print("\n=== all robots fused, per method (all scenes) ===")
-    print(f"  {'method':<14}{'scenes':>7}{'P_D':>8}{'RMSE*':>8}{'false':>8}{'exact':>8}{'OSPA':>7}")
+    print(f"  {'method':<22}{'scenes':>7}{'P_D':>8}{'RMSE*':>8}{'false':>8}{'exact':>8}{'OSPA':>7}")
     for s in summ:
         if s["group"] == "all":
-            print(f"  {METHOD_LABELS[s['method']]:<14}{s['scenes']:>7}{s['pd_pct']:>7.1f}%{s['rmse_all_cm']:>6.1f}cm"
+            print(f"  {METHOD_LABELS[s['method']]:<22}{s['scenes']:>7}{s['pd_pct']:>7.1f}%{s['rmse_all_cm']:>6.1f}cm"
                   f"{s['false_per_scene']:>8.2f}{s['exact_pct']:>7.0f}%{s['ospa_mean']:>7.3f}")
     print(f"  P_D = true boxes found; RMSE* = over all true boxes, a missed box = {a.cutoff:g} m; "
           f"false = estimates with no true box, per scene")
