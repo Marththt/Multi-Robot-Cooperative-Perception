@@ -103,8 +103,9 @@ def jittered(model, spec, rng):
     f_two = rng.uniform(*spec.two_face_factor)
     m.false_rate *= f_false
     m.two_face_q *= f_two
-    return m, dict(noise_factor=round(float(f_noise), 3), false_factor=round(float(f_false), 3),
+    factors = dict(noise_factor=round(float(f_noise), 3), false_factor=round(float(f_false), 3),
                    two_face_factor=round(float(f_two), 3))
+    return m, factors
 
 
 def random_runs(a, model):

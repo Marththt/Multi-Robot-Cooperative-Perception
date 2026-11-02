@@ -67,7 +67,8 @@ def capture(scene, cap, model, rng, bias):
                 reported.append(cands[1])
         for p, a, f in reported:
             out.append(measure(model, rng, cam, yaw, c, d, a, f, j, bias))
-    out += false_detections(model, rng)
+    false = false_detections(model, rng)
+    out += false
     rng.shuffle(out)
     return out
 

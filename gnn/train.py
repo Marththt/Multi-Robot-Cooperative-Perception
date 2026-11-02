@@ -42,7 +42,7 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from pipeline.evaluate_runs import scene_metrics, summarize, write_csv
+from pipeline.evaluate_runs import MATCH_CUTOFF_M, scene_metrics, summarize, write_csv
 from gnn.dataset import build_scenes, subset_robots
 from gnn.model import RobotGNN, collate, decode, encode_scene, loss_fn
 
@@ -168,7 +168,7 @@ def main():
     ap.add_argument("--robot-dropout", type=float, default=0.3)
     ap.add_argument("--det-dropout", type=float, default=0.1)
     ap.add_argument("--seeds", type=int, default=3, help="models per fold, probabilities averaged")
-    ap.add_argument("--cutoff", type=float, default=0.5)
+    ap.add_argument("--cutoff", type=float, default=MATCH_CUTOFF_M)
     ap.add_argument("--ospa-p", type=float, default=2.0)
     ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args()
