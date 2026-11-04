@@ -25,6 +25,8 @@ Two-circle scenario (--sets circle): the boxes inside an inner circle, the robot
 Random layouts (--sets R0, sim/specs/R0_random.json): the nominal sensor of T0, but 3-8 boxes and 4-8 robots
 anywhere in a 3 m x 3 m area (robots at least 0.5 m from each other and from the boxes, heading uniform at
 random); a layout is drawn again until every box is in range and in the field of view of at least two robots.
+  sim_Rtrain, sim_Rval        the same placement (sim/specs/R_train.json) with the randomised sensor, 1-10 boxes,
+                              4-10 robots and 0-3 obstacles of the general training set; --sets random builds all three
 """
 
 import argparse
@@ -42,9 +44,13 @@ from sim.model import SensorModel
 
 TESTS = {"T0": "T0_nominal", "T1": "T1_close", "T2": "T2_dense", "T3": "T3_obstacles", "T4": "T4_false",
          "T5": "T5_two_faces", "T6": "T6_unseen_count", "T7": "T7_many_robots"}
-# random layouts: robots and boxes anywhere in a 3 m x 3 m area, robots looking anywhere (not seen in training)
-# name -> (spec file, seed)
-RANDOM = {"R0": ("R0_random", 20)}
+# random layouts: robots and boxes anywhere in a 3 m x 3 m area, robots looking anywhere
+# name -> (spec file, seed, role)
+RANDOM = {
+    "Rtrain": ("R_train", 21, "train"),
+    "Rval": ("R_train", 22, "val"),
+    "R0": ("R0_random", 20, "test"),
+}
 PART = 2500                                   # runs per parallel part
 
 # two-circle scenario (targets in an inner circle, robots evenly on an outer circle):
@@ -70,8 +76,9 @@ def set_plan(name, a):
     if name in TESTS:
         return os.path.join(a.spec_dir, TESTS[name] + ".json"), a.test_runs, 10 + int(name[1:]), name
     if name in RANDOM:
-        spec, seed = RANDOM[name]
-        return os.path.join(a.spec_dir, spec + ".json"), a.test_runs, seed, name
+        spec, seed, role = RANDOM[name]
+        runs = dict(train=a.train_runs, val=a.val_runs).get(role, a.test_runs)
+        return os.path.join(a.spec_dir, spec + ".json"), runs, seed, name.upper() if role != "test" else name
     if name in CIRCLE:
         spec, _, seed, role = CIRCLE[name]
         runs = dict(train=a.train_runs, val=a.val_runs).get(role, a.test_runs)
@@ -80,10 +87,10 @@ def set_plan(name, a):
 
 
 def expand_sets(text):
-    """'circle' stands for every set of the two-circle scenario."""
+    """'circle' stands for every set of the two-circle scenario, 'random' for every random-layout set."""
     out = []
     for s in [x.strip() for x in text.split(",") if x.strip()]:
-        out += list(CIRCLE) if s == "circle" else [s]
+        out += list(CIRCLE) if s == "circle" else list(RANDOM) if s == "random" else [s]
     return out
 
 
@@ -185,7 +192,7 @@ def main():
             n = sum(1 for _ in open(os.path.join(a.data_dir, f"sim_{name}", "runs.csv"))) - 1
             print(f"  sim_{name}: {n} runs", flush=True)
 
-    tests = [s for s in sets if s in TESTS or s in RANDOM or (s in CIRCLE and CIRCLE[s][3] == "test")]
+    tests = [s for s in sets if s in TESTS or (s in RANDOM and RANDOM[s][2] == "test") or (s in CIRCLE and CIRCLE[s][3] == "test")]
     if tests and not a.no_baselines:
         print(f"classical methods on {', '.join(tests)}", flush=True)
         jobs = [(t, os.path.join(a.data_dir, f"sim_{t}"), os.path.join(a.baseline_dir, t), a.sensor_calib, a.regions,

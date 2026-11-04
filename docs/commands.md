@@ -152,3 +152,9 @@ The nominal sensor of T0, but 3-8 boxes and 4-8 robots anywhere in a 3 m x 3 m a
     python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets R0 --methods mht_sensor
     python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 5 --eval-only --results-name random --out results/gnn_sim/
     python pipeline/scene_oracle.py results results/gnn_sim/detection_full_ring_h2/test_scenes_random.csv R0
+
+GNN trained on random layouts (sim/specs/R_train.json: the R0 placement with the randomised sensor of the general training set), tested on T0-T7, the real scenes and R0; then the scene-level oracle against the MHT with sensor model:
+
+    python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets Rtrain,Rval --no-baselines
+    python -m gnn.train_sim --train-dir data/sim_Rtrain/ --val-dir data/sim_Rval/ --sensor-calib config/sensor_calib.json --standard-tests --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 3 --out results/gnn_random/
+    python pipeline/scene_oracle.py results results/gnn_random/detection_full_ring_h2/test_scenes.csv T0,T1,T2,T3,T4,T5,T6,T7,REAL,R0
