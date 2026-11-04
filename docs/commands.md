@@ -143,3 +143,12 @@ Two-circle sets: the same with `--sets circle --baselines-only`, then `--eval-on
     python -m pipeline.combine_rounds --regions config/optitrack_regions.json --methods mht_sensor
 
 The GNN results then compare with it after `--eval-only` (same commands as above).
+
+
+## Random layouts (R0)
+
+The nominal sensor of T0, but 3-8 boxes and 4-8 robots anywhere in a 3 m x 3 m area, robots looking in a random direction; a layout is drawn again until every box is in range and in the field of view of at least two robots (sim/specs/R0_random.json). No training set has this placement. Build the set, run the MHT with sensor model, then test the saved detection-node GNN on it:
+
+    python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets R0 --methods mht_sensor
+    python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 5 --eval-only --results-name random --out results/gnn_sim/
+    python pipeline/scene_oracle.py results results/gnn_sim/detection_full_ring_h2/test_scenes_random.csv R0

@@ -102,8 +102,14 @@ class ScenarioSpec:
     area_half_m: float = 0.8                 # boxes inside a square of this half-size around the centre
     n_robots: List[int] = field(default_factory=lambda: [2, 3, 4, 5, 6, 7, 8])
     robot_radius_m: List[float] = field(default_factory=lambda: [1.0, 2.0])
-    placements: List[str] = field(default_factory=lambda: ["ring", "ring_gap"])  # ring | ring_gap | one_side | random
+    placements: List[str] = field(default_factory=lambda: ["ring", "ring_gap"])  # ring | ring_gap | one_side | random | anywhere
     yaw_jitter_deg: float = 5.0
+    robot_area_half_m: float = 2.0          # anywhere: robots inside a square of this half-size around the origin
+    clearance_m: float = 0.5                 # anywhere: smallest distance of a robot from another robot or a box
+    require_coverage: bool = False           # anywhere: every box within range and field of view of some robot
+    coverage_fov_deg: float = 88.0           # field of view and range used by the coverage check
+    coverage_range_m: float = 3.0
+    coverage_robots: int = 1                 # robots that must have each box in range and field of view
     rounds: int = 1                          # captures per robot, the ring rotating ROTATION_STEP_DEG each round
     n_obstacles: List[int] = field(default_factory=lambda: [0, 1, 2, 3])
     targeted_obstacles: bool = False         # obstacles placed to hide boxes from some robots
@@ -175,6 +181,36 @@ def random_boxes(spec, n, rng, tries=2000, stretch=0.0, kind=None):
             if _spaced(pts, p, s):
                 pts.append(tuple(p))
     return np.array(pts[:n], float), kind, s
+
+
+def free_robot_poses(spec, n, boxes, rng, tries=5000):
+    """Placement 'anywhere': n robots uniformly at random in the square of half-size robot_area_half_m, each at
+    least clearance_m from every other robot and every box, with a heading uniform in [0, 2 pi)."""
+    pts = []
+    for k in range(tries):
+        if len(pts) == n:
+            break
+        p = rng.uniform(-spec.robot_area_half_m, spec.robot_area_half_m, 2)
+        if _spaced(pts, p, spec.clearance_m) and _spaced(list(boxes), p, spec.clearance_m):
+            pts.append(p)
+    if len(pts) < n:
+        raise RuntimeError(f"cannot place {n} robots with {spec.clearance_m} m clearance")
+    return [(float(x), float(y), float(rng.uniform(0, 2 * math.pi)), math.hypot(x, y),
+             math.degrees(math.atan2(y, x)) % 360) for x, y in pts]
+
+
+def covered(poses, boxes, fov_deg, range_m, min_robots=1):
+    """True when every box centre is within range_m and inside the field of view of at least min_robots robots."""
+    half = math.radians(fov_deg) / 2
+    for b in boxes:
+        seen = 0
+        for x, y, yaw, *_ in poses:
+            d = math.hypot(b[0] - x, b[1] - y)
+            off = (math.atan2(b[1] - y, b[0] - x) - yaw + math.pi) % (2 * math.pi) - math.pi
+            seen += d <= range_m and abs(off) <= half
+        if seen < min_robots:
+            return False
+    return True
 
 
 def robot_poses(spec, n, centre, rng):
@@ -277,7 +313,22 @@ def random_scene(spec, rng, layout_id, run_id, attempts=60):
     else:
         centre = boxes.mean(axis=0) if len(boxes) else np.zeros(2)
     n_rob = int(rng.choice(spec.n_robots))
-    poses, placement = robot_poses(spec, n_rob, centre, rng)
+    if "anywhere" in spec.placements:        # robots anywhere in the area, looking anywhere
+        centre = np.zeros(2)
+        for k in range(20000):
+            if k and k % 200 == 0:           # these boxes are hard to cover: draw another layout of them
+                new, kind, spacing = random_boxes(spec, n, rng, kind=kind)
+                th = box_orientations(new, rng) if len(new) == n else None
+                if th is not None:
+                    boxes, thetas = new, th
+            poses = free_robot_poses(spec, n_rob, boxes, rng)
+            if not spec.require_coverage or covered(poses, boxes, spec.coverage_fov_deg, spec.coverage_range_m, spec.coverage_robots):
+                break
+        else:
+            raise RuntimeError(f"no robot placement covers every box for {run_id}")
+        placement = "anywhere"
+    else:
+        poses, placement = robot_poses(spec, n_rob, centre, rng)
     obstacles = random_obstacles(spec, boxes, poses, rng)
     captures = []
     for rnd in range(spec.rounds):

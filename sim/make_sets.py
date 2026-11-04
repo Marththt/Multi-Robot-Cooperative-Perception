@@ -21,6 +21,10 @@ Two-circle scenario (--sets circle): the boxes inside an inner circle, the robot
   sim_Ctrain, sim_Cval        3-10 robots, outer radius 1.2-2 m, randomised sensor
   sim_C0                      nominal test: 6 robots at 1.5 m, inner circle 0.7 m
   sim_Cn3 ... sim_Cn16        the nominal test with 3, 4, 8, 12 or 16 robots
+
+Random layouts (--sets R0, sim/specs/R0_random.json): the nominal sensor of T0, but 3-8 boxes and 4-8 robots
+anywhere in a 3 m x 3 m area (robots at least 0.5 m from each other and from the boxes, heading uniform at
+random); a layout is drawn again until every box is in range and in the field of view of at least two robots.
 """
 
 import argparse
@@ -38,6 +42,9 @@ from sim.model import SensorModel
 
 TESTS = {"T0": "T0_nominal", "T1": "T1_close", "T2": "T2_dense", "T3": "T3_obstacles", "T4": "T4_false",
          "T5": "T5_two_faces", "T6": "T6_unseen_count", "T7": "T7_many_robots"}
+# random layouts: robots and boxes anywhere in a 3 m x 3 m area, robots looking anywhere (not seen in training)
+# name -> (spec file, seed)
+RANDOM = {"R0": ("R0_random", 20)}
 PART = 2500                                   # runs per parallel part
 
 # two-circle scenario (targets in an inner circle, robots evenly on an outer circle):
@@ -62,6 +69,9 @@ def set_plan(name, a):
         return os.path.join(a.spec_dir, "train_general.json"), a.val_runs, 2, "VAL"
     if name in TESTS:
         return os.path.join(a.spec_dir, TESTS[name] + ".json"), a.test_runs, 10 + int(name[1:]), name
+    if name in RANDOM:
+        spec, seed = RANDOM[name]
+        return os.path.join(a.spec_dir, spec + ".json"), a.test_runs, seed, name
     if name in CIRCLE:
         spec, _, seed, role = CIRCLE[name]
         runs = dict(train=a.train_runs, val=a.val_runs).get(role, a.test_runs)
@@ -175,7 +185,7 @@ def main():
             n = sum(1 for _ in open(os.path.join(a.data_dir, f"sim_{name}", "runs.csv"))) - 1
             print(f"  sim_{name}: {n} runs", flush=True)
 
-    tests = [s for s in sets if s in TESTS or (s in CIRCLE and CIRCLE[s][3] == "test")]
+    tests = [s for s in sets if s in TESTS or s in RANDOM or (s in CIRCLE and CIRCLE[s][3] == "test")]
     if tests and not a.no_baselines:
         print(f"classical methods on {', '.join(tests)}", flush=True)
         jobs = [(t, os.path.join(a.data_dir, f"sim_{t}"), os.path.join(a.baseline_dir, t), a.sensor_calib, a.regions,
