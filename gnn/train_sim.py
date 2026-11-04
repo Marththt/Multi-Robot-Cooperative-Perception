@@ -13,6 +13,9 @@ summary_combined.csv, mcnemar_combined.csv, test_scenes_combined.csv, next to th
     python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ \\
         --sensor-calib config/sensor_calib.json --combined-tests --eval-only --out results/gnn_sim/
 
+--train-dir and --val-dir take one or more sets, pooled (e.g. ring and random layouts:
+--train-dir data/sim_train/ data/sim_Rtrain/ --val-dir data/sim_val/ data/sim_Rval/).
+
 Variant (the folder name in --out is built from it, e.g. robot_full_ring_h2):
   --graph     robot (one node per robot) | detection (one node per detection)
   --features  full (with the viewing angle) | positions (positions and robot poses only)
@@ -237,8 +240,9 @@ def write_csv(path, rows):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--train-dir", required=True)
-    ap.add_argument("--val-dir", required=True)
+    ap.add_argument("--train-dir", required=True, nargs="+",
+                    help="one or more training sets (sim.make_sets); their scenes are pooled and shuffled")
+    ap.add_argument("--val-dir", required=True, nargs="+", help="one or more validation sets, pooled")
     ap.add_argument("--sensor-calib", required=True, help="pipeline/calibrate.py --out, the same for every set")
     ap.add_argument("--test", nargs=4, action="append", default=[], metavar=("NAME", "DIR", "GROUND_TRUTH", "BASELINE"))
     ap.add_argument("--standard-tests", action="store_true",
@@ -322,10 +326,10 @@ def main():
             models.append(m)
     else:
         t0 = time.time()
-        train = build_scenes(a.train_dir, os.path.join(a.train_dir, "ground_truth.json"), a.sensor_calib)
+        train = [s for d in a.train_dir for s in build_scenes(d, os.path.join(d, "ground_truth.json"), a.sensor_calib)]
         if a.max_train:
             train = train[:a.max_train]
-        val = build_scenes(a.val_dir, os.path.join(a.val_dir, "ground_truth.json"), a.sensor_calib)
+        val = [s for d in a.val_dir for s in build_scenes(d, os.path.join(d, "ground_truth.json"), a.sensor_calib)]
         train_enc, val_enc = encode_all(train, a, np.random.default_rng(101)), encode_all(val, a, np.random.default_rng(102))
         print(f"{len(train)} training scenes, {len(val)} validation scenes ({time.time() - t0:.0f} s to load)",
               flush=True)

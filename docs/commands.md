@@ -158,3 +158,8 @@ GNN trained on random layouts (sim/specs/R_train.json: the R0 placement with the
     python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets Rtrain,Rval --no-baselines
     python -m gnn.train_sim --train-dir data/sim_Rtrain/ --val-dir data/sim_Rval/ --sensor-calib config/sensor_calib.json --standard-tests --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 3 --out results/gnn_random/
     python pipeline/scene_oracle.py results results/gnn_random/detection_full_ring_h2/test_scenes.csv T0,T1,T2,T3,T4,T5,T6,T7,REAL,R0
+
+GNN trained on both placements (ring layouts of the general training set and random layouts, 50,000 scenes each, pooled; validation on both), tested on the same sets:
+
+    python -m gnn.train_sim --train-dir data/sim_train/ data/sim_Rtrain/ --val-dir data/sim_val/ data/sim_Rval/ --sensor-calib config/sensor_calib.json --standard-tests --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 3 --out results/gnn_mixed/
+    python pipeline/scene_oracle.py results results/gnn_mixed/detection_full_ring_h2/test_scenes.csv T0,T1,T2,T3,T4,T5,T6,T7,REAL,R0
