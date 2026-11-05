@@ -163,3 +163,16 @@ GNN trained on both placements (ring layouts of the general training set and ran
 
     python -m gnn.train_sim --train-dir data/sim_train/ data/sim_Rtrain/ --val-dir data/sim_val/ data/sim_Rval/ --sensor-calib config/sensor_calib.json --standard-tests --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 3 --out results/gnn_mixed/
     python pipeline/scene_oracle.py results results/gnn_mixed/detection_full_ring_h2/test_scenes.csv T0,T1,T2,T3,T4,T5,T6,T7,REAL,R0
+
+
+## Research plan: MHT with a learned normality gate (modules M0-M1)
+
+M0, simulator and datasets (sim/plan.py): two scene families (circle, random) in the world frame, the nominal sensor file, the error knobs k_f, k_2, h, and every set of the plan with fixed seeds (train 50,000, gate 10,000, val 2,000, 52 test sets of 1,000 scenes: G0-G2, E1-E3, S1, V1-V2 in both families). Seeds in results/plan/seeds.csv. About 3 GB in data/plan/.
+
+    python -m sim.plan --list
+    python -m sim.plan --model config/sensor_model.json
+    python -m sim.plan_check --examples --out results/plan/M0/
+
+M1, generator and gate-input check (sim/plan_check.py) on the gate-training set: position error and detection probability against the sensor file, two-face and false-detection rates, histograms of the 8 gate-input features by family, N and B, region sizes and purity (Fig. M1-1 to M1-4, table_M1.csv):
+
+    python -m sim.plan_check --set-dir data/plan/gate/ --out results/plan/M1/
