@@ -14,11 +14,17 @@ On one set of sim/plan.py (by default the gate-training set, nominal sensor, bot
         bounds; largest region; region purity (regions with 0, 1, >= 2 true boxes); boxes split over regions
 
 A region links two reports of any robots when their box-centre estimates are at most --link m apart
-(0.35 m) and is a connected component of that graph. The plan computes the histograms on the regions MHT
-gets right; MHT's region-level results come with module M2, so this script uses every region (nominal
-sensor) and says so in the table.
+and is a connected component of that graph. The plan starts from 0.35 m; on the gate-training set this gives
+regions of up to 101 reports (M_max = 64) and 27% of the regions hold two or more boxes, also in the nominal
+scene with boxes 30 cm apart, because single linkage chains the noisy reports of neighbouring boxes. 0.20 m
+keeps the largest region at 54 reports, 7% of the regions with two or more boxes (3% in G0) and splits 0.4% of
+the boxes over two regions (below the 2% of the plan), so it is the default.
+The plan computes the histograms on the regions MHT gets right: with --mht-estimates (MHT's boxes on the same
+set, from pipeline.plan_mht) only those regions are used, otherwise every region; the table says which.
 
     python -m sim.plan_check --set-dir data/plan/gate/ --out results/plan/M1/
+    python -m sim.plan_check --set-dir data/plan/gate/ --out results/plan/M1/ \
+        --mht-estimates results/plan/M2/gate/estimates_H300_o0.jsonl
     python -m sim.plan_check --examples --out results/plan/M0/        # Figure of module M0 only
 """
 
@@ -32,6 +38,7 @@ from collections import defaultdict
 import numpy as np
 
 from gnn.dataset import build_scenes
+from pipeline.plan_regions import LINK_M, region_results, regions
 from sim.geometry import blocked, faces_seen, marker_point, viewing_angle
 from sim.model import SensorModel
 from sim.sensor import sigmoid
@@ -43,27 +50,6 @@ FEATURES = ["offset x", "offset y", "distance", "cos view", "sin view", "line of
 # ====================================================================
 # Regions and gate-input features (Section 2.1-2.2)
 # ====================================================================
-
-def regions(pos, link):
-    """Connected components of the reports linked when closer than `link`: list of index arrays."""
-    n = len(pos)
-    parent = list(range(n))
-
-    def find(i):
-        while parent[i] != i:
-            parent[i] = parent[parent[i]]
-            i = parent[i]
-        return i
-
-    if n:
-        d = np.linalg.norm(pos[:, None, :] - pos[None, :, :], axis=2)
-        for i, j in zip(*np.nonzero(np.triu(d <= link, 1))):
-            parent[find(i)] = find(j)
-    groups = defaultdict(list)
-    for i in range(n):
-        groups[find(i)].append(i)
-    return [np.array(g) for g in groups.values()]
-
 
 def gate_features(scene, idx):
     """(len(idx), 8) gate input of the reports idx of one region: offset to the region mean (2), distance,
@@ -218,7 +204,7 @@ def plot_detection(pairs, path, plt):
     plt.close(fig)
 
 
-def plot_features(feats, groups, path, plt):
+def plot_features(feats, groups, path, plt, which="every region"):
     fig, ax = plt.subplots(len(groups), 8, figsize=(22, 3.2 * len(groups)))
     for r, (gname, members) in enumerate(groups):
         for c in range(8):
@@ -236,7 +222,7 @@ def plot_features(feats, groups, path, plt):
                 a.set_ylabel(gname)
             a.tick_params(labelsize=7)
         ax[r, 0].legend(fontsize=7)
-    fig.suptitle("Fig. M1-3: gate-input features of every report (all regions, nominal sensor); "
+    fig.suptitle(f"Fig. M1-3: gate-input features of the reports of {which} (nominal sensor); "
                  "density per group, report counts in brackets", fontsize=12)
     fig.tight_layout()
     fig.savefig(path, dpi=100)
@@ -300,11 +286,16 @@ def main():
     ap.add_argument("--model", default="config/sensor_model.json")
     ap.add_argument("--sensor-calib", default="config/sensor_calib.json")
     ap.add_argument("--out", default="results/plan/M1/")
-    ap.add_argument("--link", type=float, default=0.35, help="region link distance g_r [m]")
+    ap.add_argument("--link", type=float, default=LINK_M,
+                    help="region link distance g_r [m] (plan default 0.35; 0.20 keeps regions within M_max and "
+                         "boxes 30 cm apart in different regions, see M1)")
     ap.add_argument("--max-region", type=int, default=64, help="M_max of the plan")
     ap.add_argument("--detection-scenes", type=int, default=3000,
                     help="scenes used for the detection-probability check (ray casting is slow)")
     ap.add_argument("--examples", action="store_true", help="only draw the example scenes of module M0")
+    ap.add_argument("--mht-estimates", default=None,
+                    help="estimates_H<H>_o<k>.jsonl of pipeline.plan_mht on the same set: the features (M1-3) are then "
+                         "computed on the regions MHT gets right only, as the plan asks"),
     a = ap.parse_args()
     import matplotlib
     matplotlib.use("Agg")
@@ -344,11 +335,21 @@ def main():
                      passed=abs(false / captures - spec) <= 3 * math.sqrt(spec / captures)))
 
     # regions: M1-3, M1-4, purity
+    estimates = None
+    if a.mht_estimates:
+        with open(a.mht_estimates) as f:
+            estimates = {e["run"]: e for e in map(json.loads, f)}
     feats = defaultdict(list)
     sizes, per_scene, purity, split, boxes_seen = [], [], np.zeros(3), 0, 0
+    kept, total_regions = 0, 0
     for s in scenes:
         m = meta[s["run"]]
-        regs = regions(s["pos"], a.link)
+        if estimates is not None and s["run"] in estimates:
+            regs, res = region_results(s, estimates[s["run"]], a.link)
+            ok = [bool(r["correct"]) for r in res]
+        else:                                # no MHT result for this scene: its regions give no features
+            regs = regions(s["pos"], a.link)
+            ok = [True] * len(regs) if estimates is None else None
         per_scene.append(len(regs))
         where = defaultdict(set)
         for k, idx in enumerate(regs):
@@ -358,6 +359,12 @@ def main():
             for l in s["label"][idx]:
                 if l >= 0:
                     where[int(l)].add(k)
+            if ok is None:
+                continue
+            total_regions += 1
+            if not ok[k]:
+                continue
+            kept += 1
             f = gate_features(s, idx)
             feats[m["family"]].append(f)
             for key, val in (("N", int(m["n_robots"])), ("B", int(m["n_boxes"]))):
@@ -368,7 +375,8 @@ def main():
     feats = {k: np.concatenate(v) if v else np.zeros((0, 8)) for k, v in feats.items()}
     groups = [("family", ["circle", "random"]), ("robots", ["N = 4", "N = 8", "N = 16"]),
               ("boxes", ["B = 4", "B = 8", "B = 16"])]
-    plot_features(feats, groups, os.path.join(a.out, "fig_M1-3_features.png"), plt)
+    plot_features(feats, groups, os.path.join(a.out, "fig_M1-3_features.png"), plt,
+                  "the regions MHT gets right" if estimates is not None else "every region")
     plot_regions(sizes, per_scene, os.path.join(a.out, "fig_M1-4_regions.png"), plt)
     total = purity.sum()
     rows += [dict(quantity="largest region [reports]", specified=a.max_region, simulated=max(sizes), bound="",
@@ -379,8 +387,9 @@ def main():
                   n=total, passed=""),
              dict(quantity="boxes whose reports fall in two or more regions", specified=0.02,
                   simulated=split / boxes_seen, bound="", n=boxes_seen, passed=split / boxes_seen < 0.02),
-             dict(quantity="note", specified="", simulated="features and regions over every region; the plan's "
-                  "filter on MHT-correct regions needs MHT's per-region results (M2)", bound="", n="", passed="")]
+             dict(quantity="regions used for the features (MHT correct)" if estimates is not None else
+                  "regions used for the features (all; no --mht-estimates)", specified="",
+                  simulated=kept / total_regions, bound="", n=total_regions, passed="")]
     path = os.path.join(a.out, "table_M1.csv")
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["quantity", "specified", "simulated", "bound", "n", "passed"])

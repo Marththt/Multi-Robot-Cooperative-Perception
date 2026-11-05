@@ -176,3 +176,12 @@ M0, simulator and datasets (sim/plan.py): two scene families (circle, random) in
 M1, generator and gate-input check (sim/plan_check.py) on the gate-training set: position error and detection probability against the sensor file, two-face and false-detection rates, histograms of the 8 gate-input features by family, N and B, region sizes and purity (Fig. M1-1 to M1-4, table_M1.csv):
 
     python -m sim.plan_check --set-dir data/plan/gate/ --out results/plan/M1/
+
+Region link distance: 0.20 m instead of the plan's 0.35 m (pipeline/plan_regions.py LINK_M). With 0.35 m the largest region has 101 reports (M_max 64) and 27% of the regions hold two or more boxes, also in G0; with 0.20 m 54 reports, 7% (3% in G0), 0.4% of the boxes split over two regions.
+
+M2, MHT setup (pipeline/plan_mht.py): MHT with sensor model in simulation without the two real-data terms, H in {100, 300, 1000}, three random robot orders, on the validation set; writes table_M2.csv, fig_M2-1 and prints the chosen H (smallest within 0.5 points of H = 1000). Then MHT with the chosen H on the gate-training set, and M1-3 again on the regions MHT gets right only:
+
+    python -m pipeline.plan_mht --sets data/plan/val/ --hypotheses 100 300 1000 --orders 3 --choose-h --out results/plan/M2/
+    python -m pipeline.plan_mht --sets data/plan/gate/ --hypotheses H --orders 1 --out results/plan/M2/
+    python -m sim.plan_check --set-dir data/plan/gate/ --out results/plan/M1/ --mht-estimates results/plan/M2/gate/estimates_HH_o0.jsonl
+(replace H with the chosen value)

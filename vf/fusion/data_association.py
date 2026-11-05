@@ -36,7 +36,7 @@ from vf.fusion.sensor_model import P_MIN, gauss2, mahalanobis2
 GATE_THRESHOLD = 13.8  # chi^2 with 2 degrees of freedom at 99.9%
 
 
-def top_k_combinations(options, k):
+def top_k_combinations(options, k, max_nodes=None, stats=None):
     """options: one list per element, each [(log_score,
     exclusive_key_or_None, label), ...]; an option may carry a fourth
     item, a key that an EARLIER element must already have taken for the
@@ -44,7 +44,11 @@ def top_k_combinations(options, k):
     element, keys never repeated) with the highest sum of scores:
     [(sum, [label, ...])], best first.
     Branch and bound: a branch is cut when even the best it can still
-    achieve does not make it into the k best."""
+    achieve does not make it into the k best.
+    max_nodes: stop the search after this many nodes and return the best
+    combinations found so far (the options are tried best first, so these
+    are the greedy ones); None = exact. stats (dict): 'nodes' and 'cut'
+    (1 if the search was stopped) are added to it."""
     n = len(options)
     opts = [sorted(o, key=lambda t: -t[0]) for o in options]
     max_after = [0.0] * (n + 1)
@@ -52,8 +56,12 @@ def top_k_combinations(options, k):
         max_after[i] = max_after[i + 1] + opts[i][0][0]
     best = []  # min-heap of (sum, id, choices)
     ids = _counter()
+    nodes = [0]
 
     def search(i, total, used, choices):
+        nodes[0] += 1
+        if max_nodes is not None and nodes[0] > max_nodes and best:
+            return
         if len(best) >= k and total + max_after[i] <= best[0][0]:
             return
         if i == n:
@@ -78,6 +86,9 @@ def top_k_combinations(options, k):
                 used.discard(key)
 
     search(0, 0.0, set(), [])
+    if stats is not None:
+        stats["nodes"] = stats.get("nodes", 0) + nodes[0]
+        stats["cut"] = max(stats.get("cut", 0), int(max_nodes is not None and nodes[0] > max_nodes))
     return [(s, ch) for s, _, ch in sorted(best, key=lambda v: -v[0])]
 
 

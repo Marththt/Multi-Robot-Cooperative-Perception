@@ -59,10 +59,11 @@ DEFAULT_MODEL = os.path.join(os.path.dirname(__file__), "..", "..", "config", "s
 _MODEL = None
 
 
-def set_model(path):
-    """Use the fitted sensor model at `path` (sim/calibrate.py output) for every later call."""
+def set_model(path, real_terms=True, clutter_factor=1.0):
+    """Use the fitted sensor model at `path` (sim/calibrate.py output) for every later call (see FittedSensor
+    for real_terms and clutter_factor)."""
     global _MODEL
-    _MODEL = FittedSensor(path)
+    _MODEL = FittedSensor(path, real_terms=real_terms, clutter_factor=clutter_factor)
 
 
 def get_model():
@@ -90,9 +91,14 @@ def _normal(x, sd):
 
 
 class FittedSensor:
-    """The fitted sensor model, read from the JSON of sim/calibrate.py."""
+    """The fitted sensor model, read from the JSON of sim/calibrate.py.
 
-    def __init__(self, path):
+    real_terms: add the two terms for what the simulator does not contain (viewing-angle outliers,
+    lines of sight blocked by unknown obstacles; module constants). True for real data; False in simulation,
+    where the model then matches the simulator exactly (the viewing-angle noise is the file's Gaussian).
+    clutter_factor multiplies the false-detection rate ("MHT, more clutter")."""
+
+    def __init__(self, path, real_terms=True, clutter_factor=1.0):
         with open(path) as f:
             m = json.load(f)
         self.half_fov = math.radians(m.get("hfov_deg", 88.0)) / 2
@@ -100,14 +106,16 @@ class FittedSensor:
         self.r_max = float(m.get("r_max_m", 3.0))
         self.w = np.asarray(m["detect_w"], float)
         self.two_face_q = float(m.get("two_face_q", 0.0))
-        self.view_sd = VIEW_SD_RAD
-        self.view_outliers = VIEW_OUTLIER_SHARE
+        self.real_terms = bool(real_terms)
+        self.view_sd = VIEW_SD_RAD if real_terms else float(m.get("view_noise_sd_rad", VIEW_SD_RAD))
+        self.view_outliers = VIEW_OUTLIER_SHARE if real_terms else 0.0
+        self.unmodelled_occlusion = UNMODELLED_OCCLUSION if real_terms else 0.0
         self.along_mean = [float(v) for v in m["along_mean"]]
         self.along_sd = [float(v) for v in m["along_sd"]]
         self.across_sd = [float(v) for v in m["across_sd"]]
         self.bias_along = float(m.get("bias_sd_along_rel", 0.0))
         self.bias_across = float(m.get("bias_sd_across_rel", 0.0))
-        self.false_rate = float(m.get("false_rate", 0.0))
+        self.false_rate = float(m.get("false_rate", 0.0)) * float(clutter_factor)
         self.near_share = float(m.get("false_near_share", 0.0))
         self.near = [float(v) for v in m.get("false_near_range_m", [1.6, 3.0])]
         self.far = [float(v) for v in m.get("false_far_range_m", [4.4, 7.4])]
@@ -201,7 +209,7 @@ class FittedSensor:
         order = np.argsort(-p, axis=-1)
         ps = np.take_along_axis(p, order, -1)
         as_ = np.take_along_axis(a, order, -1)
-        keep = soft[:, None] * (1.0 - UNMODELLED_OCCLUSION)
+        keep = soft[:, None] * (1.0 - self.unmodelled_occlusion)
         return ps[..., 0] * keep, as_[..., 0], ps[..., 1] * keep, as_[..., 1]
 
     def p_best_from(self, cams, c, th, occluders):
@@ -232,7 +240,7 @@ class FittedSensor:
             occ = ((t > 0) & (t < 1) & (np.hypot(dx, dy) < OCCLUDER_RADIUS_M)).any(-1).astype(float)
         p = _sigmoid(self.w[0] + self.w[1] * a + self.w[2] * a * a + self.w[3] * d[:, None, None]
                      + self.w[4] * occ) * seen
-        return p.max(-1) * soft[:, None] * (1.0 - UNMODELLED_OCCLUSION)
+        return p.max(-1) * soft[:, None] * (1.0 - self.unmodelled_occlusion)
 
 
 # ====================================================================
@@ -318,12 +326,14 @@ def _kalman(m, P, z, R):
 # ====================================================================
 
 def mht_sensor(order, reports, poses, sensor, meta=None, n_hypotheses=100, gate_threshold=GATE_THRESHOLD,
-               model=None):
+               model=None, max_nodes=None):
     """Same interface as data_association.mht, plus
     meta: {robot_id: [dict(view=viewing angle [rad] or None, cam=(x, y, yaw) or None), ...]}, one entry per
     report, in the order of reports[robot_id] (cam = camera pose of the frame, default the robot pose).
     sensor (SensorModel) only gives the birth prior (n_prior over the surveilled area), as for the plain MHT;
-    everything about the camera comes from the fitted model."""
+    everything about the camera comes from the fitted model.
+    max_nodes: budget of the k-best search per hypothesis and robot (data_association.top_k_combinations);
+    None = exact search. The result's extra holds search_nodes and search_cut (1 if a budget was reached)."""
     fm = model or get_model()
     meta = meta or {}
     log_prior = math.log(sensor.prior_density())
@@ -331,6 +341,7 @@ def mht_sensor(order, reports, poses, sensor, meta=None, n_hypotheses=100, gate_
     log_view_false = math.log(1.0 / 1.6)     # viewing angle of a false detection: U(0, 1.6 rad)
     hypotheses = [(0.0, [])]
     seen_cams = []
+    search = {}
 
     for rid in order:
         cam_r = poses.get(rid)
@@ -396,7 +407,7 @@ def mht_sensor(order, reports, poses, sensor, meta=None, n_hypotheses=100, gate_
                         o.append((math.log(det2) + lg, ("f", t), ("f", t), t))
                 options.append(o)
 
-            for total, choices in top_k_combinations(options, n_hypotheses):
+            for total, choices in top_k_combinations(options, n_hypotheses, max_nodes=max_nodes, stats=search):
                 new_objects = list(objects)
                 for j, (kind, t) in enumerate(choices):
                     r = rep[j]
@@ -431,4 +442,5 @@ def mht_sensor(order, reports, poses, sensor, meta=None, n_hypotheses=100, gate_
         objects=[tuple(float(v) for v in o[0]) for o in best],
         n=len(best),
         extra=dict(p_best_hypothesis=float(weights[0]), n_distribution=n_distr,
-                   reports_per_object=[o[5] for o in best]))
+                   reports_per_object=[o[5] for o in best], search_nodes=search.get("nodes", 0),
+                   search_cut=search.get("cut", 0)))
