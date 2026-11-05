@@ -27,6 +27,7 @@ and fig_M2-1 and prints the chosen H: the smallest H whose correct-scene rate (m
 
 import argparse
 import csv
+import glob
 import json
 import math
 import multiprocessing
@@ -169,7 +170,8 @@ def choose_h(summary, out):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--sets", nargs="+", required=True, help="set folders of sim/plan.py")
+    ap.add_argument("--sets", nargs="+", required=True,
+                    help="set folders of sim/plan.py; patterns are expanded here (data/plan/E1_*), also on Windows")
     ap.add_argument("--model", default="config/sensor_model.json")
     ap.add_argument("--sensor-calib", default="config/sensor_calib.json")
     ap.add_argument("--hypotheses", type=int, nargs="+", default=[300])
@@ -189,6 +191,11 @@ def main():
     if sys.platform == "win32":
         a.jobs = min(a.jobs, 60)
     os.makedirs(a.out, exist_ok=True)
+    a.sets = sorted({d for p in a.sets for d in (glob.glob(p) if any(c in p for c in "*?[") else [p])
+                     if os.path.isdir(d)})
+    if not a.sets:
+        raise SystemExit("no set folder matches --sets")
+    print(f"{len(a.sets)} set(s): {', '.join(os.path.basename(os.path.normpath(d)) for d in a.sets)}", flush=True)
     summary = []
     with multiprocessing.Pool(a.jobs, initializer=_init,
                               initargs=(a.model, a.real_terms, a.clutter_factor)) as pool:
@@ -222,7 +229,14 @@ def main():
                           f"({time.time() - t0:.0f} s)", flush=True)
             write_csv(os.path.join(set_out, "scenes.csv"), rows)
             summary += summarize(rows, name)
-    write_csv(os.path.join(a.out, "summary.csv"), summary)
+    path = os.path.join(a.out, "summary.csv")      # rows of other sets already there are kept
+    done = {r["set"] for r in summary}
+    if os.path.exists(path):
+        with open(path) as f:
+            old = [r for r in csv.DictReader(f) if r["set"] not in done]
+        summary = old + summary
+    write_csv(path, summary)
+    summary = [r for r in summary if r["set"] in done]
     if a.choose_h:
         choose_h(summary, a.out)
 

@@ -185,3 +185,11 @@ M2, MHT setup (pipeline/plan_mht.py): MHT with sensor model in simulation withou
     python -m pipeline.plan_mht --sets data/plan/gate/ --hypotheses H --orders 1 --out results/plan/M2/
     python -m sim.plan_check --set-dir data/plan/gate/ --out results/plan/M1/ --mht-estimates results/plan/M2/gate/estimates_HH_o0.jsonl
 (replace H with the chosen value)
+
+M2 result: H = 100 (70.47% correct on validation; 300 and 1000 give 70.52%), the three orders within 1 point, so one order from here on.
+
+M3, MHT failure map (pipeline/plan_failure_map.py): MHT with H = 100 on every test set, S1 also with H = 300 and 1000; table_M3.csv, one figure per scenario, kept_cases.csv (special cases where MHT loses at least 5 points from G0):
+
+    python -m pipeline.plan_mht --sets "data/plan/G*" "data/plan/E*" "data/plan/V*" --hypotheses 100 --out results/plan/M3/
+    python -m pipeline.plan_mht --sets "data/plan/S1_*" --hypotheses 100 300 1000 --out results/plan/M3/
+    python -m pipeline.plan_failure_map --results results/plan/M3/ --out results/plan/M3/
