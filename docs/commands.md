@@ -192,4 +192,13 @@ M3, MHT failure map (pipeline/plan_failure_map.py): MHT with H = 100 on every te
 
     python -m pipeline.plan_mht --sets "data/plan/G*" "data/plan/E*" "data/plan/V*" --hypotheses 100 --out results/plan/M3/
     python -m pipeline.plan_mht --sets "data/plan/S1_*" --hypotheses 100 300 1000 --out results/plan/M3/
-    python -m pipeline.plan_failure_map --results results/plan/M3/ --out results/plan/M3/
+    python -m pipeline.plan_failure_map --results results/plan/M3/ --out results/plan/M3/ --data data/plan/
+
+(--data adds the share of scenes in which every box was reported by some robot, and MHT's correct share on those.)
+
+Evaluation scenarios kept for the thesis (advisor: at most 3-4): the nominal scene G0 as reference, E1 (false detections x1-8), E3 (robots hidden by obstacles, h 0-2), S1 (dense boxes 20 cm apart, B 4-16); both families. Dropped: E2 (MHT loses at most 6 points), G1, G2, V2 (MHT flat), V1 (nearly no scene has every box reported).
+
+M4, GNN and oracle selector (pipeline/plan_oracle.py): detection-node GNN trained on the plan's training set (nominal sensor, both families, every pair of robots linked, edges within 1 m), 3 seeds, its boxes saved on the kept test sets; then the region-level oracle against MHT (H = 100):
+
+    python -m gnn.train_sim --train-dir data/plan/train/ --val-dir data/plan/val/ --sensor-calib config/sensor_calib.json --graph detection --features full --edges full --hops 2 --seeds 3 --plan-tests "G0_*" "E1_*" "E3_*" "S1_*" --save-estimates --out results/plan/M4/gnn/
+    python -m pipeline.plan_oracle --sets "G0_*" "E1_*" "E3_*" "S1_*" --mht results/plan/M3/ --gnn results/plan/M4/gnn/detection_full_full_h2/ --out results/plan/M4/

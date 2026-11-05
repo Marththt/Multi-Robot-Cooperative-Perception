@@ -110,10 +110,16 @@ def predict(model, encoded, batch=64):
     return out
 
 
-def evaluate_scenes(model, scenes, encoded, a):
+def evaluate_scenes(model, scenes, encoded, a, estimates=None):
+    """One metrics row per scene. With a list `estimates`, the boxes of every scene and, per box, the indices of
+    the detections it was built from are appended to it (the format of pipeline.plan_mht)."""
     rows = []
     for s, e, (p_same, p_false) in zip(scenes, encoded, predict(model, encoded)):
-        est, _ = decode(s["pos"], e["pairs"], p_same, p_false)
+        est, assign = decode(s["pos"], e["pairs"], p_same, p_false)
+        if estimates is not None:
+            members = [[int(i) for i in np.nonzero(assign == k)[0]] for k in range(len(est))]
+            estimates.append(dict(run=s["run"], boxes=[[round(float(v), 4) for v in b] for b in est],
+                                  members=members))
         r = scene_metrics(est, list(s["truth"]), a.cutoff, a.ospa_p)
         r["correct"] = int(r["dn"] == 0 and r["n_matched"] == r["n_true"])
         r.update(run=s["run"], layout=s["layout"], round=s["round"], n_robots=len(s["robots"]))
@@ -284,8 +290,24 @@ def main():
                     help="an estimate within this distance of a true box finds it [m]")
     ap.add_argument("--ospa-p", type=float, default=2.0)
     ap.add_argument("--eval-only", action="store_true", help="evaluate the models already saved in the output folder")
+    ap.add_argument("--save-estimates", action="store_true",
+                    help="write the boxes of every test scene and the detections of each box "
+                         "(estimates/<test>_seed<k>.jsonl, the format of pipeline.plan_mht) for the oracle")
+    ap.add_argument("--plan-tests", nargs="*", default=None, metavar="SET",
+                    help="test sets of sim/plan.py by name or pattern (G0_*, E1_*, ...), read from --plan-dir; "
+                         "no baseline (the MHT results of the plan are compared by pipeline.plan_oracle)")
+    ap.add_argument("--plan-dir", default="data/plan/")
     a = ap.parse_args()
 
+    if a.plan_tests:
+        import glob
+        names = sorted({os.path.basename(os.path.normpath(d)) for p in a.plan_tests
+                        for d in glob.glob(os.path.join(a.plan_dir, p)) if os.path.isdir(d)})
+        if not names:
+            raise SystemExit(f"no set of {a.plan_dir} matches {a.plan_tests}")
+        for n in names:
+            d = os.path.join(a.plan_dir, n)
+            a.test.append([n, d, os.path.join(d, "ground_truth.json"), "-"])
     if a.standard_tests:
         for k in range(8):
             d = f"data/sim_T{k}/"
@@ -353,7 +375,13 @@ def main():
         empties = empty_rows(runs, seen, truth, a)
         per_seed = []
         for seed, m in enumerate(models):
-            rows = evaluate_scenes(m, scenes, enc, a) + [dict(r) for r in empties]
+            ests = [] if a.save_estimates else None
+            rows = evaluate_scenes(m, scenes, enc, a, ests) + [dict(r) for r in empties]
+            if ests is not None:
+                os.makedirs(os.path.join(out, "estimates"), exist_ok=True)
+                with open(os.path.join(out, "estimates", f"{name}_seed{seed}.jsonl"), "w") as f:
+                    for est in ests:
+                        f.write(json.dumps(est) + "\n")
             for r in rows:
                 r.update(test=name, seed=seed)
             per_seed.append(rows)

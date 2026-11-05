@@ -11,8 +11,11 @@ Reads the scenes.csv that pipeline.plan_mht wrote for the test sets of sim/plan.
                    (S1: one line per H)
 G and V are expected to stay high and flat; a drop there is printed as a warning, since it goes against the
 claim of the plan and must be understood first.
+With --data (the set folders of sim/plan.py) the table also gives the share of scenes in which every true box
+was reported by at least one robot (no method can find a box nobody reported) and MHT's correct share on those
+scenes only, which separates the boxes the sensor never delivered from the association errors.
 
-    python -m pipeline.plan_failure_map --results results/plan/M3/ --out results/plan/M3/
+    python -m pipeline.plan_failure_map --results results/plan/M3/ --out results/plan/M3/ --data data/plan/
 """
 
 import argparse
@@ -39,7 +42,21 @@ X_LABEL = dict(G0="", G1="box spacing s_min [cm]", G2="robots N", E1="false-dete
                V1="boxes B (disc 1.0 m)", V2="robots N")
 
 
-def read(results):
+def reported_all(data_dir, name, sensor_calib):
+    """{run: True if every true box has at least one report} of one set, or None without its data."""
+    import json
+    from gnn.dataset import build_scenes
+    d = os.path.join(data_dir, name)
+    if not os.path.isdir(d):
+        return None
+    with open(os.path.join(d, "ground_truth.json")) as f:
+        truth = json.load(f)
+    seen = {s["run"]: {int(l) for l in s["label"] if l >= 0}
+            for s in build_scenes(d, os.path.join(d, "ground_truth.json"), sensor_calib)}
+    return {run: len(seen.get(run, ())) == len(boxes) for run, boxes in truth.items() if run.startswith(name + "_")}
+
+
+def read(results, data_dir=None, sensor_calib=None):
     rows = []
     for path in sorted(glob.glob(os.path.join(results, "*", "scenes.csv"))):
         name = os.path.basename(os.path.dirname(path))
@@ -47,11 +64,13 @@ def read(results):
         if len(parts) != 3 or parts[0] not in SCENARIOS:
             continue
         sid, level, family = parts
+        full = reported_all(data_dir, name, sensor_calib) if data_dir else None
         with open(path) as f:
             for r in csv.DictReader(f):
                 rows.append(dict(scenario=sid, level=level, family=family, H=int(r["H"]), order=int(r["order"]),
                                  correct=int(r["correct"]), too_few=int(r["too_few"]), too_many=int(r["too_many"]),
-                                 misplaced=int(r["misplaced"])))
+                                 misplaced=int(r["misplaced"]),
+                                 all_reported=(int(full[r["run"]]) if full is not None else None)))
     return rows
 
 
@@ -61,9 +80,14 @@ def table(rows):
         groups[(r["scenario"], r["level"], r["family"], r["H"])].append(r)
     out = []
     for (sid, level, family, H), rs in groups.items():
-        out.append(dict(scenario=sid, level=level, value=LEVEL_VALUE.get((sid, level), ""), family=family, H=H,
-                        scenes=len(rs), **{k: round(100 * float(np.mean([r[k] for r in rs])), 2)
-                                           for k in ("correct", "too_few", "too_many", "misplaced")}))
+        row = dict(scenario=sid, level=level, value=LEVEL_VALUE.get((sid, level), ""), family=family, H=H,
+                   scenes=len(rs), **{k: round(100 * float(np.mean([r[k] for r in rs])), 2)
+                                      for k in ("correct", "too_few", "too_many", "misplaced")})
+        if rs[0]["all_reported"] is not None:
+            full = [r for r in rs if r["all_reported"]]
+            row["all_boxes_reported"] = round(100 * len(full) / len(rs), 2)
+            row["correct_when_all_reported"] = round(100 * float(np.mean([r["correct"] for r in full])), 2) if full else ""
+        out.append(row)
     g0 = {(r["family"], r["H"]): r["correct"] for r in out if r["scenario"] == "G0"}
     for r in out:
         ref = g0.get((r["family"], r["H"])) or next((v for (f, h), v in g0.items() if f == r["family"]), None)
@@ -109,11 +133,13 @@ def main():
     ap.add_argument("--results", default="results/plan/M3/", help="folder with one sub-folder per test set")
     ap.add_argument("--out", default="results/plan/M3/")
     ap.add_argument("--drop", type=float, default=5.0, help="points lost from G0 for a special case to be kept")
+    ap.add_argument("--data", default=None, help="set folders of sim/plan.py (data/plan/): adds the reported-box columns")
+    ap.add_argument("--sensor-calib", default="config/sensor_calib.json")
     a = ap.parse_args()
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    rows = table(read(a.results))
+    rows = table(read(a.results, a.data, a.sensor_calib))
     if not rows:
         raise SystemExit(f"no test-set results under {a.results}")
     os.makedirs(a.out, exist_ok=True)
@@ -142,10 +168,11 @@ def main():
     if kept:
         write_csv(os.path.join(a.out, "kept_cases.csv"), kept)
     print(f"{'scenario':<9}{'level':<9}{'family':<8}{'H':>5}{'correct':>9}{'few':>7}{'many':>7}{'misplaced':>10}"
-          f"{'vs G0':>8}")
+          f"{'vs G0':>8}{'all rep.':>10}{'corr|all':>10}")
     for r in rows:
         print(f"{r['scenario']:<9}{r['level']:<9}{r['family']:<8}{r['H']:>5}{r['correct']:>9.1f}{r['too_few']:>7.1f}"
-              f"{r['too_many']:>7.1f}{r['misplaced']:>10.1f}{r['change_from_G0']:>8}")
+              f"{r['too_many']:>7.1f}{r['misplaced']:>10.1f}{r['change_from_G0']:>8}"
+              f"{r.get('all_boxes_reported', ''):>10}{r.get('correct_when_all_reported', ''):>10}")
     print("special cases kept (MHT loses >= %.0f points from G0 at the highest level):" % a.drop,
           ", ".join(k["scenario"] for k in kept if k["kept"]) or "none")
 
