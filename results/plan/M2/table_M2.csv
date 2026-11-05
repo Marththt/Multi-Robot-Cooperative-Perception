@@ -1,0 +1,4 @@
+H,correct_pct_mean,orders_spread_pts,seconds_per_scene,chosen
+100,70.47,0.85,1.3605,1
+300,70.52,0.95,2.3923,0
+1000,70.52,0.95,4.1114,0
