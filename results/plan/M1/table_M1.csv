@@ -1,0 +1,10 @@
+quantity,specified,simulated,bound,n,passed
+"P_D, (robot, box) pairs in view",0.4789,0.4790,0.0030,253522,True
+"two-face rate, per pair in view",0.0048,0.0048,0.0004,253522,True
+false detections per capture,0.1205,0.1193,0.0034,94876,True
+largest region [reports],64,101,,51400,False
+regions with no true box,,0.2101,,51400.0000,
+regions with one true box,,0.5179,,51400.0000,
+regions with two or more true boxes,,0.2719,,51400.0000,
+boxes whose reports fall in two or more regions,0.0200,0.0000,,87396,True
+note,,features and regions over every region; the plan's filter on MHT-correct regions needs MHT's per-region results (M2),,,
