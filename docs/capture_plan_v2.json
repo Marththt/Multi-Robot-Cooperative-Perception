@@ -1,0 +1,5966 @@
+[
+ {
+  "id": "R01",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.309,
+    -0.468,
+    62.0
+   ],
+   [
+    -0.082,
+    -0.709,
+    99.0
+   ],
+   [
+    -0.388,
+    -0.777,
+    54.0
+   ],
+   [
+    0.008,
+    -0.393,
+    41.0
+   ],
+   [
+    -0.599,
+    -0.54,
+    33.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R01 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R02",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.388,
+    -0.633,
+    59.0
+   ],
+   [
+    -0.069,
+    -0.647,
+    70.0
+   ],
+   [
+    -0.211,
+    -0.369,
+    23.0
+   ],
+   [
+    -0.231,
+    -0.911,
+    88.0
+   ],
+   [
+    -0.511,
+    -0.352,
+    66.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    -0.781,
+    0.489,
+    -65.0
+   ],
+   [
+    -1.318,
+    -0.117,
+    -24.2
+   ],
+   [
+    -0.792,
+    -2.026,
+    70.6
+   ],
+   [
+    0.614,
+    -1.23,
+    144.2
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R02 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R03",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.622,
+    -0.163,
+    53.0
+   ],
+   [
+    -0.452,
+    -1.005,
+    94.0
+   ],
+   [
+    0.189,
+    -0.288,
+    77.0
+   ],
+   [
+    0.183,
+    -0.909,
+    24.0
+   ],
+   [
+    -0.941,
+    -0.594,
+    62.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R03 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R04",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.274,
+    -0.641,
+    82.0
+   ],
+   [
+    0.265,
+    -0.588,
+    34.0
+   ],
+   [
+    -0.809,
+    -0.365,
+    100.0
+   ],
+   [
+    -0.359,
+    -1.161,
+    74.0
+   ],
+   [
+    0.023,
+    -0.118,
+    73.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.468,
+    0.441,
+    -124.5
+   ],
+   [
+    -1.404,
+    -1.408,
+    35.4
+   ],
+   [
+    -0.175,
+    -1.815,
+    92.6
+   ],
+   [
+    1.105,
+    -1.2,
+    154.9
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R04 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R05",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.191,
+    -0.885,
+    104.0
+   ],
+   [
+    0.048,
+    -0.572,
+    109.0
+   ],
+   [
+    -0.232,
+    -0.383,
+    83.0
+   ],
+   [
+    -0.58,
+    -0.437,
+    47.0
+   ],
+   [
+    -0.831,
+    -0.68,
+    3.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R05 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R06",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.821,
+    -0.435,
+    101.0
+   ],
+   [
+    -0.605,
+    -0.718,
+    92.0
+   ],
+   [
+    -0.267,
+    -0.784,
+    64.0
+   ],
+   [
+    0.073,
+    -0.66,
+    87.0
+   ],
+   [
+    0.225,
+    -0.351,
+    85.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.991,
+    0.107,
+    -151.3
+   ],
+   [
+    -1.765,
+    0.001,
+    -21.7
+   ],
+   [
+    -1.283,
+    -1.39,
+    38.6
+   ],
+   [
+    1.107,
+    -1.337,
+    151.7
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R06 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R07",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.063,
+    -0.687,
+    80.0
+   ],
+   [
+    0.167,
+    -0.981,
+    85.0
+   ],
+   [
+    -0.143,
+    -0.923,
+    12.0
+   ],
+   [
+    -0.514,
+    -0.167,
+    104.0
+   ],
+   [
+    -0.658,
+    -0.436,
+    78.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R07 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R08",
+  "day": 1,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "due gruppi",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.626,
+    -0.241,
+    59.0
+   ],
+   [
+    -0.528,
+    -0.548,
+    88.0
+   ],
+   [
+    -0.845,
+    -0.488,
+    49.0
+   ],
+   [
+    0.244,
+    -0.805,
+    42.0
+   ],
+   [
+    -0.012,
+    -0.657,
+    77.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    -0.746,
+    0.492,
+    -69.3
+   ],
+   [
+    -1.959,
+    0.065,
+    -20.9
+   ],
+   [
+    -1.344,
+    -0.994,
+    24.2
+   ],
+   [
+    -0.805,
+    -2.027,
+    73.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R08 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R09",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.377,
+    -0.662,
+    11.0
+   ],
+   [
+    -0.046,
+    -0.578,
+    90.0
+   ],
+   [
+    -0.266,
+    -0.338,
+    116.0
+   ],
+   [
+    -0.156,
+    -0.918,
+    28.0
+   ],
+   [
+    -0.59,
+    -0.405,
+    27.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R09 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R10",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.154,
+    -0.598,
+    116.0
+   ],
+   [
+    -0.411,
+    -0.392,
+    19.0
+   ],
+   [
+    -0.471,
+    -0.707,
+    99.0
+   ],
+   [
+    -0.101,
+    -0.274,
+    1.0
+   ],
+   [
+    -0.231,
+    -0.942,
+    86.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.985,
+    0.29,
+    -145.3
+   ],
+   [
+    -0.35,
+    0.834,
+    -86.9
+   ],
+   [
+    -1.729,
+    -0.084,
+    -18.9
+   ],
+   [
+    0.069,
+    -1.563,
+    109.3
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R10 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R11",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.59,
+    -0.335,
+    97.0
+   ],
+   [
+    -0.694,
+    -0.956,
+    15.0
+   ],
+   [
+    -0.22,
+    0.042,
+    18.0
+   ],
+   [
+    0.217,
+    -0.42,
+    79.0
+   ],
+   [
+    0.017,
+    -1.093,
+    34.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R11 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R12",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.851,
+    -0.771,
+    21.0
+   ],
+   [
+    -0.289,
+    -0.975,
+    37.0
+   ],
+   [
+    0.09,
+    -0.299,
+    98.0
+   ],
+   [
+    -0.402,
+    -0.4,
+    52.0
+   ],
+   [
+    0.237,
+    -0.779,
+    116.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.367,
+    -0.533,
+    -176.0
+   ],
+   [
+    0.383,
+    0.446,
+    -119.8
+   ],
+   [
+    -1.057,
+    -1.44,
+    44.3
+   ],
+   [
+    0.597,
+    -1.786,
+    126.3
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R12 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R13",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.264,
+    -0.699,
+    89.0
+   ],
+   [
+    0.05,
+    -0.426,
+    37.0
+   ],
+   [
+    -0.321,
+    -0.386,
+    111.0
+   ],
+   [
+    -0.632,
+    -0.538,
+    64.0
+   ],
+   [
+    -0.789,
+    -0.867,
+    4.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R13 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R14",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.776,
+    -0.286,
+    95.0
+   ],
+   [
+    -0.629,
+    -0.627,
+    79.0
+   ],
+   [
+    -0.304,
+    -0.793,
+    110.0
+   ],
+   [
+    0.035,
+    -0.747,
+    8.0
+   ],
+   [
+    0.283,
+    -0.472,
+    11.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.809,
+    0.482,
+    -135.5
+   ],
+   [
+    -1.744,
+    0.12,
+    -25.7
+   ],
+   [
+    -0.267,
+    -1.542,
+    90.7
+   ],
+   [
+    1.342,
+    -0.601,
+    179.4
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R14 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R15",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.68,
+    -0.555,
+    22.0
+   ],
+   [
+    -0.479,
+    -0.324,
+    112.0
+   ],
+   [
+    -0.796,
+    -0.275,
+    58.0
+   ],
+   [
+    0.198,
+    -0.656,
+    21.0
+   ],
+   [
+    -0.037,
+    -0.907,
+    26.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R15 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R16",
+  "day": 1,
+  "block": "A base",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "due gruppi",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.595,
+    -1.07,
+    26.0
+   ],
+   [
+    -0.69,
+    -0.772,
+    100.0
+   ],
+   [
+    -0.382,
+    -0.855,
+    78.0
+   ],
+   [
+    -0.043,
+    -0.102,
+    118.0
+   ],
+   [
+    0.033,
+    -0.426,
+    23.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.72,
+    -0.125,
+    -153.8
+   ],
+   [
+    -1.775,
+    -0.056,
+    -22.3
+   ],
+   [
+    -1.727,
+    -1.137,
+    19.5
+   ],
+   [
+    -0.793,
+    -1.775,
+    68.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R16 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R17",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.467,
+    -0.589,
+    35.0
+   ],
+   [
+    -0.18,
+    -0.414,
+    51.0
+   ],
+   [
+    -0.167,
+    -0.755,
+    18.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R17 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R18",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.264,
+    -0.767,
+    23.0
+   ],
+   [
+    -0.119,
+    -0.497,
+    44.0
+   ],
+   [
+    -0.432,
+    -0.508,
+    42.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.26,
+    -0.228,
+    -166.7
+   ],
+   [
+    -0.629,
+    0.536,
+    -72.4
+   ],
+   [
+    -0.51,
+    -1.973,
+    80.2
+   ],
+   [
+    0.552,
+    -1.959,
+    121.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R18 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R19",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.156,
+    -0.003,
+    61.0
+   ],
+   [
+    -0.263,
+    -1.138,
+    82.0
+   ],
+   [
+    -0.425,
+    -0.611,
+    65.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R19 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R20",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "sparsa",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.014,
+    -0.998,
+    45.0
+   ],
+   [
+    -0.512,
+    -0.639,
+    66.0
+   ],
+   [
+    -0.147,
+    -0.265,
+    1.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.713,
+    0.137,
+    -140.5
+   ],
+   [
+    -1.28,
+    -0.681,
+    2.5
+   ],
+   [
+    0.018,
+    -2.028,
+    99.9
+   ],
+   [
+    0.779,
+    -0.728,
+    174.6
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R20 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R21",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.047,
+    -0.702,
+    80.0
+   ],
+   [
+    -0.273,
+    -0.584,
+    71.0
+   ],
+   [
+    -0.601,
+    -0.444,
+    96.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R21 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R22",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.61,
+    -0.69,
+    119.0
+   ],
+   [
+    -0.298,
+    -0.585,
+    109.0
+   ],
+   [
+    0.059,
+    -0.457,
+    47.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.694,
+    -0.092,
+    -153.6
+   ],
+   [
+    -0.993,
+    0.371,
+    -53.2
+   ],
+   [
+    -1.51,
+    -1.163,
+    25.5
+   ],
+   [
+    0.3,
+    -1.366,
+    126.5
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R22 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R23",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "due gruppi (2+1)",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.602,
+    -0.3,
+    29.0
+   ],
+   [
+    -0.275,
+    -0.223,
+    90.0
+   ],
+   [
+    -0.134,
+    -0.896,
+    35.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R23 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R24",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "due gruppi (2+1)",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.166,
+    -0.584,
+    14.0
+   ],
+   [
+    -0.061,
+    -0.825,
+    49.0
+   ],
+   [
+    -0.614,
+    -0.444,
+    30.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.528,
+    0.783,
+    -116.5
+   ],
+   [
+    -0.734,
+    0.561,
+    -64.4
+   ],
+   [
+    -0.941,
+    -1.28,
+    40.6
+   ],
+   [
+    -0.01,
+    -1.886,
+    97.2
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R24 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R25",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.365,
+    -0.39,
+    106.0
+   ],
+   [
+    -0.09,
+    -0.609,
+    3.0
+   ],
+   [
+    -0.382,
+    -0.718,
+    49.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R25 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R26",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.288,
+    -0.779,
+    74.0
+   ],
+   [
+    -0.433,
+    -0.46,
+    14.0
+   ],
+   [
+    -0.109,
+    -0.501,
+    47.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.072,
+    0.669,
+    -105.6
+   ],
+   [
+    -1.533,
+    -0.774,
+    8.8
+   ],
+   [
+    -0.938,
+    -1.89,
+    63.2
+   ],
+   [
+    0.631,
+    -1.331,
+    140.4
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R26 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R27",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.002,
+    -0.029,
+    46.0
+   ],
+   [
+    -0.545,
+    -1.103,
+    12.0
+   ],
+   [
+    0.095,
+    -0.785,
+    35.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R27 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R28",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "sparsa",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.272,
+    -0.888,
+    66.0
+   ],
+   [
+    -0.759,
+    -0.553,
+    68.0
+   ],
+   [
+    0.019,
+    -0.179,
+    84.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    -0.44,
+    0.644,
+    -85.1
+   ],
+   [
+    -1.355,
+    -0.161,
+    -20.4
+   ],
+   [
+    -0.892,
+    -1.465,
+    59.1
+   ],
+   [
+    0.736,
+    -0.835,
+    164.6
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R28 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R29",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.406,
+    -0.917,
+    13.0
+   ],
+   [
+    -0.296,
+    -0.562,
+    56.0
+   ],
+   [
+    -0.158,
+    -0.235,
+    18.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R29 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R30",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.076,
+    -0.596,
+    99.0
+   ],
+   [
+    -0.295,
+    -0.583,
+    22.0
+   ],
+   [
+    -0.653,
+    -0.554,
+    80.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.411,
+    0.476,
+    -123.7
+   ],
+   [
+    -0.633,
+    0.442,
+    -71.5
+   ],
+   [
+    -1.154,
+    -0.192,
+    -24.1
+   ],
+   [
+    0.777,
+    -0.885,
+    163.9
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R30 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R31",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "due gruppi (2+1)",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.759,
+    -0.392,
+    52.0
+   ],
+   [
+    -0.427,
+    -0.412,
+    56.0
+   ],
+   [
+    0.03,
+    -0.758,
+    37.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R31 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R32",
+  "day": 2,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "due gruppi (2+1)",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.43,
+    -0.743,
+    108.0
+   ],
+   [
+    -0.484,
+    -1.059,
+    24.0
+   ],
+   [
+    -0.111,
+    -0.265,
+    56.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.221,
+    0.531,
+    -114.8
+   ],
+   [
+    -1.175,
+    0.358,
+    -51.5
+   ],
+   [
+    -1.049,
+    -1.596,
+    52.0
+   ],
+   [
+    0.905,
+    -0.878,
+    171.4
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R32 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R33",
+  "day": 2,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.0",
+  "radius_m": 1.0,
+  "note": "scatole entro 0.45 m dal centro",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.429,
+    -0.719,
+    86.0
+   ],
+   [
+    -0.339,
+    -0.403,
+    72.0
+   ],
+   [
+    -0.093,
+    -0.626,
+    29.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.72,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.42,
+    270.0
+   ],
+   [
+    -1.28,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.58,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R33 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1"
+ },
+ {
+  "id": "R34",
+  "day": 2,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.0",
+  "radius_m": 1.0,
+  "note": "scatole entro 0.45 m dal centro",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.568,
+    -0.608,
+    42.0
+   ],
+   [
+    -0.309,
+    -0.302,
+    31.0
+   ],
+   [
+    -0.061,
+    -0.688,
+    33.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.72,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.42,
+    270.0
+   ],
+   [
+    -1.28,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.58,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R34 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1"
+ },
+ {
+  "id": "R35",
+  "day": 2,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.0",
+  "radius_m": 1.0,
+  "note": "scatole entro 0.45 m dal centro",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.369,
+    -0.632,
+    91.0
+   ],
+   [
+    -0.207,
+    -0.358,
+    119.0
+   ],
+   [
+    -0.046,
+    -0.666,
+    95.0
+   ],
+   [
+    -0.529,
+    -0.346,
+    76.0
+   ],
+   [
+    -0.234,
+    -0.922,
+    34.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.72,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.42,
+    270.0
+   ],
+   [
+    -1.28,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.58,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R35 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1"
+ },
+ {
+  "id": "R36",
+  "day": 2,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.0",
+  "radius_m": 1.0,
+  "note": "scatole entro 0.45 m dal centro",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.043,
+    -0.727,
+    51.0
+   ],
+   [
+    0.005,
+    -0.337,
+    87.0
+   ],
+   [
+    -0.407,
+    -0.328,
+    102.0
+   ],
+   [
+    -0.312,
+    -0.954,
+    109.0
+   ],
+   [
+    -0.641,
+    -0.748,
+    64.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.72,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.42,
+    270.0
+   ],
+   [
+    -1.28,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.58,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R36 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1"
+ },
+ {
+  "id": "R37",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.291,
+    -0.583,
+    45.0
+   ],
+   [
+    0.041,
+    -0.62,
+    117.0
+   ],
+   [
+    -0.09,
+    -0.327,
+    18.0
+   ],
+   [
+    -0.135,
+    -0.874,
+    98.0
+   ],
+   [
+    -0.416,
+    -0.289,
+    73.0
+   ],
+   [
+    -0.473,
+    -0.839,
+    50.0
+   ],
+   [
+    -0.602,
+    -0.561,
+    82.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R37 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R38",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.272,
+    -0.573,
+    40.0
+   ],
+   [
+    -0.021,
+    -0.394,
+    32.0
+   ],
+   [
+    -0.308,
+    -0.241,
+    29.0
+   ],
+   [
+    0.024,
+    -0.735,
+    25.0
+   ],
+   [
+    -0.573,
+    -0.428,
+    23.0
+   ],
+   [
+    -0.255,
+    -0.917,
+    108.0
+   ],
+   [
+    -0.559,
+    -0.755,
+    91.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.179,
+    -0.194,
+    -165.3
+   ],
+   [
+    -0.304,
+    0.888,
+    -89.1
+   ],
+   [
+    -1.407,
+    0.207,
+    -34.8
+   ],
+   [
+    -1.364,
+    -0.776,
+    10.4
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R38 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R39",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.712,
+    -0.189,
+    2.0
+   ],
+   [
+    -0.737,
+    -0.868,
+    45.0
+   ],
+   [
+    0.065,
+    -1.057,
+    77.0
+   ],
+   [
+    0.109,
+    -0.327,
+    113.0
+   ],
+   [
+    -0.344,
+    -0.555,
+    34.0
+   ],
+   [
+    -0.154,
+    0.119,
+    103.0
+   ],
+   [
+    -0.399,
+    -1.263,
+    35.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R39 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R40",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "sparsa",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.187,
+    -0.33,
+    73.0
+   ],
+   [
+    -0.384,
+    -1.163,
+    90.0
+   ],
+   [
+    -0.753,
+    -0.289,
+    45.0
+   ],
+   [
+    -0.271,
+    -0.098,
+    71.0
+   ],
+   [
+    -0.799,
+    -0.805,
+    23.0
+   ],
+   [
+    0.246,
+    -0.869,
+    105.0
+   ],
+   [
+    -0.309,
+    -0.619,
+    27.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.083,
+    -0.266,
+    -166.6
+   ],
+   [
+    0.496,
+    0.747,
+    -120.6
+   ],
+   [
+    -1.837,
+    -0.149,
+    -16.2
+   ],
+   [
+    -0.105,
+    -1.995,
+    97.9
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R40 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R41",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.246,
+    -0.055,
+    23.0
+   ],
+   [
+    -0.564,
+    -0.201,
+    114.0
+   ],
+   [
+    -0.69,
+    -0.515,
+    117.0
+   ],
+   [
+    -0.545,
+    -0.84,
+    58.0
+   ],
+   [
+    -0.229,
+    -0.986,
+    15.0
+   ],
+   [
+    0.108,
+    -0.858,
+    10.0
+   ],
+   [
+    0.244,
+    -0.567,
+    72.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R41 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R42",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.413,
+    -0.074,
+    5.0
+   ],
+   [
+    -0.669,
+    -0.32,
+    29.0
+   ],
+   [
+    -0.688,
+    -0.674,
+    105.0
+   ],
+   [
+    -0.437,
+    -0.932,
+    73.0
+   ],
+   [
+    -0.121,
+    -0.967,
+    49.0
+   ],
+   [
+    0.184,
+    -0.737,
+    37.0
+   ],
+   [
+    0.192,
+    -0.391,
+    4.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    -1.339,
+    0.78,
+    -52.2
+   ],
+   [
+    -1.385,
+    -0.617,
+    1.7
+   ],
+   [
+    -1.298,
+    -1.526,
+    42.7
+   ],
+   [
+    1.199,
+    -0.79,
+    172.1
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R42 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R43",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.442,
+    -1.087,
+    119.0
+   ],
+   [
+    -0.586,
+    -0.78,
+    52.0
+   ],
+   [
+    -0.74,
+    -1.049,
+    22.0
+   ],
+   [
+    -0.246,
+    -0.819,
+    62.0
+   ],
+   [
+    0.087,
+    -0.361,
+    46.0
+   ],
+   [
+    0.008,
+    -0.052,
+    28.0
+   ],
+   [
+    -0.232,
+    -0.269,
+    44.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R43 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R44",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "due gruppi",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica a",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.286,
+    -0.491,
+    2.0
+   ],
+   [
+    -0.025,
+    -0.518,
+    79.0
+   ],
+   [
+    0.16,
+    -0.785,
+    22.0
+   ],
+   [
+    0.084,
+    -0.219,
+    21.0
+   ],
+   [
+    -0.499,
+    -0.691,
+    114.0
+   ],
+   [
+    -0.804,
+    -0.796,
+    51.0
+   ],
+   [
+    -0.75,
+    -0.481,
+    106.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.066,
+    0.001,
+    -156.1
+   ],
+   [
+    -0.312,
+    0.678,
+    -85.8
+   ],
+   [
+    -1.764,
+    0.318,
+    -29.9
+   ],
+   [
+    0.428,
+    -1.888,
+    116.2
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R44 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R45",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.397,
+    -0.617,
+    3.0
+   ],
+   [
+    -0.073,
+    -0.624,
+    77.0
+   ],
+   [
+    -0.217,
+    -0.34,
+    29.0
+   ],
+   [
+    -0.246,
+    -0.901,
+    1.0
+   ],
+   [
+    -0.537,
+    -0.355,
+    42.0
+   ],
+   [
+    0.08,
+    -0.349,
+    37.0
+   ],
+   [
+    -0.562,
+    -0.884,
+    100.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R45 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R46",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.197,
+    -0.681,
+    57.0
+   ],
+   [
+    -0.467,
+    -0.485,
+    2.0
+   ],
+   [
+    -0.186,
+    -0.346,
+    17.0
+   ],
+   [
+    -0.498,
+    -0.835,
+    113.0
+   ],
+   [
+    0.084,
+    -0.538,
+    109.0
+   ],
+   [
+    -0.446,
+    -0.171,
+    24.0
+   ],
+   [
+    -0.247,
+    -1.02,
+    119.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    0.463,
+    0.232,
+    -132.4
+   ],
+   [
+    -1.144,
+    0.067,
+    -36.9
+   ],
+   [
+    -1.398,
+    -1.082,
+    24.1
+   ],
+   [
+    1.342,
+    -0.764,
+    173.6
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R46 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R47",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.22,
+    -0.939,
+    3.0
+   ],
+   [
+    0.236,
+    -0.277,
+    35.0
+   ],
+   [
+    -0.773,
+    -1.057,
+    46.0
+   ],
+   [
+    -0.292,
+    -0.425,
+    28.0
+   ],
+   [
+    -0.739,
+    -0.134,
+    13.0
+   ],
+   [
+    -0.262,
+    0.1,
+    86.0
+   ],
+   [
+    -0.22,
+    -1.238,
+    88.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R47 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R48",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "sparsa",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.075,
+    -0.272,
+    48.0
+   ],
+   [
+    -0.708,
+    -0.928,
+    54.0
+   ],
+   [
+    -0.07,
+    -1.103,
+    112.0
+   ],
+   [
+    -0.429,
+    -0.028,
+    70.0
+   ],
+   [
+    -0.83,
+    -0.434,
+    15.0
+   ],
+   [
+    -0.314,
+    -0.601,
+    54.0
+   ],
+   [
+    0.313,
+    -0.717,
+    40.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    -0.131,
+    0.698,
+    -96.7
+   ],
+   [
+    -1.485,
+    -0.077,
+    -22.8
+   ],
+   [
+    -1.279,
+    -1.285,
+    35.1
+   ],
+   [
+    0.519,
+    -1.588,
+    128.5
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R48 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R49",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.811,
+    -0.658,
+    3.0
+   ],
+   [
+    -0.608,
+    -0.928,
+    104.0
+   ],
+   [
+    -0.255,
+    -1.011,
+    16.0
+   ],
+   [
+    0.05,
+    -0.794,
+    17.0
+   ],
+   [
+    0.138,
+    -0.461,
+    63.0
+   ],
+   [
+    -0.081,
+    -0.154,
+    22.0
+   ],
+   [
+    -0.406,
+    -0.054,
+    106.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R49 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R50",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.469,
+    -0.076,
+    22.0
+   ],
+   [
+    -0.702,
+    -0.327,
+    72.0
+   ],
+   [
+    -0.662,
+    -0.695,
+    59.0
+   ],
+   [
+    -0.448,
+    -0.93,
+    93.0
+   ],
+   [
+    -0.094,
+    -0.948,
+    118.0
+   ],
+   [
+    0.189,
+    -0.683,
+    14.0
+   ],
+   [
+    0.189,
+    -0.342,
+    50.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    0.911,
+    0.384,
+    -141.4
+   ],
+   [
+    -1.404,
+    0.51,
+    -44.0
+   ],
+   [
+    -1.201,
+    -1.667,
+    50.1
+   ],
+   [
+    0.822,
+    -0.996,
+    159.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R50 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R51",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.823,
+    -0.721,
+    112.0
+   ],
+   [
+    -0.524,
+    -0.695,
+    54.0
+   ],
+   [
+    -0.704,
+    -0.444,
+    20.0
+   ],
+   [
+    -0.652,
+    -0.98,
+    35.0
+   ],
+   [
+    0.059,
+    -0.267,
+    13.0
+   ],
+   [
+    0.297,
+    -0.489,
+    72.0
+   ],
+   [
+    -0.011,
+    -0.589,
+    7.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R51 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R52",
+  "day": 3,
+  "block": "A base",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "due gruppi",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "replica b",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.175,
+    -1.143,
+    14.0
+   ],
+   [
+    -0.294,
+    -0.839,
+    34.0
+   ],
+   [
+    0.012,
+    -0.891,
+    90.0
+   ],
+   [
+    -0.482,
+    -1.11,
+    68.0
+   ],
+   [
+    -0.458,
+    -0.291,
+    49.0
+   ],
+   [
+    -0.145,
+    -0.222,
+    53.0
+   ],
+   [
+    -0.368,
+    0.01,
+    104.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    0.98,
+    0.376,
+    -140.9
+   ],
+   [
+    -1.083,
+    0.592,
+    -56.7
+   ],
+   [
+    -1.403,
+    -1.056,
+    20.2
+   ],
+   [
+    0.224,
+    -1.858,
+    112.2
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R52 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R53",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.366,
+    -0.504,
+    86.0
+   ],
+   [
+    -0.26,
+    -0.821,
+    25.0
+   ],
+   [
+    -0.041,
+    -0.562,
+    17.0
+   ],
+   [
+    -0.575,
+    -0.752,
+    86.0
+   ],
+   [
+    -0.153,
+    -0.271,
+    26.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R53 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R54",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.284,
+    -0.655,
+    38.0
+   ],
+   [
+    -0.403,
+    -0.493,
+    59.0
+   ],
+   [
+    -0.088,
+    0.257,
+    94.0
+   ],
+   [
+    0.067,
+    -1.202,
+    21.0
+   ],
+   [
+    -0.954,
+    -0.743,
+    84.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R54 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R55",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.375,
+    -0.886,
+    71.0
+   ],
+   [
+    0.032,
+    -0.724,
+    8.0
+   ],
+   [
+    -0.295,
+    -0.579,
+    33.0
+   ],
+   [
+    -0.612,
+    -0.427,
+    19.0
+   ],
+   [
+    -0.96,
+    -0.274,
+    84.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R55 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R56",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.035,
+    -0.859,
+    56.0
+   ],
+   [
+    -0.084,
+    -1.15,
+    87.0
+   ],
+   [
+    -0.29,
+    -0.883,
+    36.0
+   ],
+   [
+    -0.277,
+    -0.214,
+    20.0
+   ],
+   [
+    -0.587,
+    -0.173,
+    97.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R56 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R57",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.272,
+    -0.581,
+    64.0
+   ],
+   [
+    -0.042,
+    -0.366,
+    24.0
+   ],
+   [
+    0.023,
+    -0.692,
+    31.0
+   ],
+   [
+    -0.337,
+    -0.26,
+    115.0
+   ],
+   [
+    -0.225,
+    -0.904,
+    105.0
+   ],
+   [
+    -0.603,
+    -0.47,
+    18.0
+   ],
+   [
+    -0.52,
+    -0.804,
+    29.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R57 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R58",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.456,
+    -0.63,
+    57.0
+   ],
+   [
+    -0.157,
+    -0.786,
+    112.0
+   ],
+   [
+    -0.898,
+    -0.816,
+    47.0
+   ],
+   [
+    -0.293,
+    -0.193,
+    90.0
+   ],
+   [
+    0.156,
+    -1.346,
+    72.0
+   ],
+   [
+    -0.866,
+    -0.163,
+    38.0
+   ],
+   [
+    0.102,
+    0.119,
+    51.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R58 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R59",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fila/arco",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.114,
+    -0.929,
+    2.0
+   ],
+   [
+    0.176,
+    -0.595,
+    16.0
+   ],
+   [
+    0.016,
+    -0.282,
+    10.0
+   ],
+   [
+    -0.338,
+    -0.206,
+    21.0
+   ],
+   [
+    -0.649,
+    -0.356,
+    3.0
+   ],
+   [
+    -0.751,
+    -0.701,
+    63.0
+   ],
+   [
+    -0.583,
+    -1.003,
+    13.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R59 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R60",
+  "day": 4,
+  "block": "B distanza",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.5",
+  "radius_m": 1.5,
+  "note": "",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.279,
+    -0.485,
+    92.0
+   ],
+   [
+    -0.0,
+    -0.633,
+    50.0
+   ],
+   [
+    0.289,
+    -0.793,
+    98.0
+   ],
+   [
+    0.005,
+    -0.32,
+    11.0
+   ],
+   [
+    -0.828,
+    -0.749,
+    75.0
+   ],
+   [
+    -0.728,
+    -0.441,
+    2.0
+   ],
+   [
+    -0.514,
+    -0.655,
+    109.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.22,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.92,
+    270.0
+   ],
+   [
+    -1.78,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -2.08,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R60 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5"
+ },
+ {
+  "id": "R61",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "1 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.674,
+    -0.729,
+    74.0
+   ],
+   [
+    0.024,
+    -0.387,
+    76.0
+   ],
+   [
+    -0.531,
+    -0.317,
+    7.0
+   ],
+   [
+    -0.023,
+    -0.981,
+    38.0
+   ],
+   [
+    -0.276,
+    -0.634,
+    89.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [
+   [
+    -0.227,
+    0.165,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R61 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R62",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "dev",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "2 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.24,
+    -0.483,
+    29.0
+   ],
+   [
+    -0.497,
+    -0.701,
+    14.0
+   ],
+   [
+    -0.171,
+    -0.802,
+    41.0
+   ],
+   [
+    -0.553,
+    -0.355,
+    120.0
+   ],
+   [
+    0.066,
+    -0.568,
+    92.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.053,
+    -0.137,
+    -161.5
+   ],
+   [
+    -1.25,
+    0.925,
+    -57.2
+   ],
+   [
+    -1.473,
+    -1.257,
+    29.5
+   ],
+   [
+    0.814,
+    -1.898,
+    129.7
+   ]
+  ],
+  "objects": [
+   [
+    0.501,
+    -0.349,
+    "obstacle"
+   ],
+   [
+    -0.665,
+    0.083,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R62 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R63",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "2 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.389,
+    -0.165,
+    40.0
+   ],
+   [
+    -0.087,
+    -0.165,
+    34.0
+   ],
+   [
+    -0.252,
+    -0.449,
+    105.0
+   ],
+   [
+    -0.453,
+    -0.967,
+    109.0
+   ],
+   [
+    -0.161,
+    -0.838,
+    54.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [
+   [
+    -1.07,
+    -0.53,
+    "obstacle"
+   ],
+   [
+    0.515,
+    -0.57,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R63 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R64",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "1 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.12,
+    -1.047,
+    69.0
+   ],
+   [
+    0.027,
+    -0.719,
+    6.0
+   ],
+   [
+    -0.103,
+    -0.39,
+    50.0
+   ],
+   [
+    -0.452,
+    -0.288,
+    39.0
+   ],
+   [
+    -0.754,
+    -0.433,
+    11.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.019,
+    0.246,
+    -147.7
+   ],
+   [
+    -1.445,
+    0.467,
+    -41.8
+   ],
+   [
+    -1.131,
+    -1.826,
+    55.8
+   ],
+   [
+    -0.122,
+    -2.072,
+    96.1
+   ]
+  ],
+  "objects": [
+   [
+    -0.165,
+    -1.435,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R64 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R65",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "1 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.327,
+    -0.604,
+    37.0
+   ],
+   [
+    -0.341,
+    -0.146,
+    50.0
+   ],
+   [
+    -0.17,
+    -1.012,
+    94.0
+   ],
+   [
+    0.095,
+    -0.731,
+    34.0
+   ],
+   [
+    0.097,
+    -0.321,
+    100.0
+   ],
+   [
+    -0.765,
+    -0.564,
+    51.0
+   ],
+   [
+    -0.559,
+    -0.925,
+    5.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [
+   [
+    0.519,
+    -0.596,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R65 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R66",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "due gruppi",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "2 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.647,
+    -0.878,
+    38.0
+   ],
+   [
+    -0.386,
+    -0.717,
+    56.0
+   ],
+   [
+    -0.642,
+    -0.569,
+    43.0
+   ],
+   [
+    -0.382,
+    -1.046,
+    99.0
+   ],
+   [
+    -0.158,
+    -0.225,
+    101.0
+   ],
+   [
+    0.13,
+    -0.312,
+    12.0
+   ],
+   [
+    -0.083,
+    -0.544,
+    14.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    0.433,
+    0.621,
+    -121.1
+   ],
+   [
+    -1.534,
+    0.642,
+    -45.7
+   ],
+   [
+    -1.78,
+    -0.838,
+    8.7
+   ],
+   [
+    -0.108,
+    -2.086,
+    97.8
+   ]
+  ],
+  "objects": [
+   [
+    -1.091,
+    -0.663,
+    "obstacle"
+   ],
+   [
+    -0.181,
+    -1.397,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R66 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R67",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "2 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.329,
+    -0.698,
+    101.0
+   ],
+   [
+    -0.128,
+    -0.429,
+    33.0
+   ],
+   [
+    -0.45,
+    -0.4,
+    108.0
+   ],
+   [
+    -0.004,
+    -0.749,
+    53.0
+   ],
+   [
+    -0.639,
+    -0.651,
+    8.0
+   ],
+   [
+    -0.187,
+    -0.997,
+    37.0
+   ],
+   [
+    -0.254,
+    -0.151,
+    64.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [
+   [
+    -0.322,
+    -1.333,
+    "obstacle"
+   ],
+   [
+    -0.325,
+    0.183,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R67 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R68",
+  "day": 4,
+  "block": "C occlusioni",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "1 ostacoli (cestino, sedia, zaino) tra scatole e robot",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    0.061,
+    -0.228,
+    76.0
+   ],
+   [
+    -0.291,
+    -0.106,
+    93.0
+   ],
+   [
+    -0.579,
+    -0.294,
+    89.0
+   ],
+   [
+    -0.667,
+    -0.64,
+    74.0
+   ],
+   [
+    -0.476,
+    -0.929,
+    114.0
+   ],
+   [
+    -0.132,
+    -0.991,
+    104.0
+   ],
+   [
+    0.156,
+    -0.821,
+    43.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    0.03,
+    0.919,
+    -101.6
+   ],
+   [
+    -1.336,
+    0.777,
+    -51.9
+   ],
+   [
+    -1.643,
+    -0.701,
+    5.3
+   ],
+   [
+    0.679,
+    -1.89,
+    125.9
+   ]
+  ],
+  "objects": [
+   [
+    -0.733,
+    0.006,
+    "obstacle"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R68 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R69",
+  "day": 5,
+  "block": "D falsi positivi",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "1 oggetto bianco che non e' una scatola",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.215,
+    -0.949,
+    51.0
+   ],
+   [
+    0.368,
+    -0.83,
+    56.0
+   ],
+   [
+    -0.155,
+    0.02,
+    88.0
+   ],
+   [
+    -0.647,
+    -0.661,
+    42.0
+   ],
+   [
+    -0.689,
+    -0.156,
+    97.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [
+   [
+    -0.304,
+    -0.444,
+    "white object"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R69 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R70",
+  "day": 5,
+  "block": "D falsi positivi",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "2 oggetti bianchi non scatole",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.098,
+    -0.532,
+    24.0
+   ],
+   [
+    -0.405,
+    -0.441,
+    114.0
+   ],
+   [
+    -0.346,
+    -0.767,
+    20.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    -1.466,
+    -0.097,
+    -22.2
+   ],
+   [
+    -1.297,
+    -1.348,
+    37.1
+   ],
+   [
+    0.098,
+    -1.861,
+    106.6
+   ],
+   [
+    0.789,
+    -1.014,
+    158.0
+   ]
+  ],
+  "objects": [
+   [
+    -0.818,
+    -0.627,
+    "white object"
+   ],
+   [
+    -0.14,
+    -1.036,
+    "white object"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R70 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R71",
+  "day": 5,
+  "block": "D falsi positivi",
+  "split": "test",
+  "n_boxes": 1,
+  "arrangement": "al centro",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "1 scatola + ostacoli e oggetti bianchi sparsi",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.319,
+    -0.589,
+    99.0
+   ]
+  ],
+  "box_ids": [
+   11
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [
+   [
+    -0.305,
+    0.211,
+    "obstacle"
+   ],
+   [
+    -0.485,
+    -0.902,
+    "white object"
+   ],
+   [
+    0.087,
+    -0.919,
+    "white object"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R71 --box 11:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R72",
+  "day": 5,
+  "block": "D falsi positivi",
+  "split": "test",
+  "n_boxes": 1,
+  "arrangement": "al centro",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "1 scatola + oggetti bianchi sparsi",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.293,
+    -0.581,
+    48.0
+   ]
+  ],
+  "box_ids": [
+   11
+  ],
+  "robot_targets": [
+   [
+    -0.397,
+    0.532,
+    -84.7
+   ],
+   [
+    -1.428,
+    -0.723,
+    7.1
+   ],
+   [
+    -0.804,
+    -1.912,
+    69.0
+   ],
+   [
+    0.626,
+    -0.991,
+    155.9
+   ]
+  ],
+  "objects": [
+   [
+    0.212,
+    -0.35,
+    "white object"
+   ],
+   [
+    -0.564,
+    -0.116,
+    "white object"
+   ]
+  ],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R72 --box 11:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R73",
+  "day": 5,
+  "block": "E luce",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "luce diversa (tende aperte o meta' luci spente)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.842,
+    -0.153,
+    91.0
+   ],
+   [
+    -0.538,
+    -1.1,
+    61.0
+   ],
+   [
+    0.095,
+    -0.196,
+    89.0
+   ],
+   [
+    0.348,
+    -0.681,
+    107.0
+   ],
+   [
+    -0.277,
+    -0.664,
+    45.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R73 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R74",
+  "day": 5,
+  "block": "E luce",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "fitta",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "luce diversa (tende aperte o meta' luci spente)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.184,
+    -0.506,
+    32.0
+   ],
+   [
+    -0.498,
+    -0.557,
+    77.0
+   ],
+   [
+    -0.321,
+    -0.794,
+    45.0
+   ],
+   [
+    -0.374,
+    -0.271,
+    111.0
+   ],
+   [
+    -0.002,
+    -0.763,
+    18.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.673,
+    -0.185,
+    -157.5
+   ],
+   [
+    -1.262,
+    -0.213,
+    -20.3
+   ],
+   [
+    -1.474,
+    -1.186,
+    26.9
+   ],
+   [
+    0.136,
+    -1.379,
+    117.2
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R74 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R75",
+  "day": 5,
+  "block": "E luce",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "due gruppi",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "luce diversa (tende aperte o meta' luci spente)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.745,
+    -0.752,
+    67.0
+   ],
+   [
+    -0.658,
+    -0.419,
+    27.0
+   ],
+   [
+    -0.439,
+    -0.658,
+    101.0
+   ],
+   [
+    -0.978,
+    -0.541,
+    46.0
+   ],
+   [
+    -0.021,
+    -0.69,
+    92.0
+   ],
+   [
+    0.306,
+    -0.643,
+    3.0
+   ],
+   [
+    0.124,
+    -0.381,
+    89.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R75 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3"
+ },
+ {
+  "id": "R76",
+  "day": 5,
+  "block": "E luce",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "fila/arco",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "luce diversa (tende aperte o meta' luci spente)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.167,
+    -0.922,
+    82.0
+   ],
+   [
+    -0.277,
+    -0.576,
+    15.0
+   ],
+   [
+    -0.412,
+    -0.249,
+    43.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    -0.598,
+    0.62,
+    -75.5
+   ],
+   [
+    -1.19,
+    -0.529,
+    -3.3
+   ],
+   [
+    0.367,
+    -1.829,
+    117.6
+   ],
+   [
+    1.157,
+    -0.883,
+    168.2
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R76 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58"
+ },
+ {
+  "id": "R77",
+  "day": 5,
+  "block": "F camera girata",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "sparsa",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "--yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.398,
+    -0.934,
+    8.0
+   ],
+   [
+    -0.845,
+    -0.189,
+    115.0
+   ],
+   [
+    0.107,
+    -0.4,
+    118.0
+   ],
+   [
+    0.302,
+    -0.951,
+    59.0
+   ],
+   [
+    -0.218,
+    0.017,
+    42.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R77 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3 --yaw-offsets-deg -20 0 20"
+ },
+ {
+  "id": "R78",
+  "day": 5,
+  "block": "F camera girata",
+  "split": "test",
+  "n_boxes": 7,
+  "arrangement": "fitta",
+  "robots": "cerchio 1.3",
+  "radius_m": 1.3,
+  "note": "--yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.275,
+    -0.573,
+    48.0
+   ],
+   [
+    0.006,
+    -0.717,
+    104.0
+   ],
+   [
+    -0.273,
+    -0.886,
+    13.0
+   ],
+   [
+    -0.023,
+    -0.414,
+    98.0
+   ],
+   [
+    -0.541,
+    -0.743,
+    48.0
+   ],
+   [
+    -0.299,
+    -0.273,
+    108.0
+   ],
+   [
+    -0.552,
+    -0.429,
+    41.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "robot_targets": [
+   [
+    1.02,
+    -0.58,
+    180.0
+   ],
+   [
+    -0.28,
+    0.72,
+    270.0
+   ],
+   [
+    -1.58,
+    -0.58,
+    360.0
+   ],
+   [
+    -0.28,
+    -1.88,
+    450.0
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R78 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3 --yaw-offsets-deg -20 0 20"
+ },
+ {
+  "id": "R79",
+  "day": 5,
+  "block": "F camera girata",
+  "split": "test",
+  "n_boxes": 5,
+  "arrangement": "due gruppi",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "--yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.778,
+    -0.714,
+    76.0
+   ],
+   [
+    -0.815,
+    -0.392,
+    39.0
+   ],
+   [
+    -0.52,
+    -0.516,
+    85.0
+   ],
+   [
+    0.305,
+    -0.632,
+    108.0
+   ],
+   [
+    -0.034,
+    -0.62,
+    14.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13,
+   14,
+   15
+  ],
+  "robot_targets": [
+   [
+    0.086,
+    0.667,
+    -110.1
+   ],
+   [
+    -1.027,
+    -1.334,
+    49.0
+   ],
+   [
+    0.006,
+    -1.976,
+    105.0
+   ],
+   [
+    1.085,
+    -1.14,
+    158.8
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R79 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --yaw-offsets-deg -20 0 20"
+ },
+ {
+  "id": "R80",
+  "day": 5,
+  "block": "F camera girata",
+  "split": "test",
+  "n_boxes": 3,
+  "arrangement": "sparsa",
+  "robots": "casuale",
+  "radius_m": null,
+  "note": "--yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)",
+  "centre": [
+   -0.28,
+   -0.58
+  ],
+  "boxes": [
+   [
+    -0.353,
+    -0.74,
+    87.0
+   ],
+   [
+    0.16,
+    -0.837,
+    28.0
+   ],
+   [
+    -0.715,
+    -0.241,
+    4.0
+   ]
+  ],
+  "box_ids": [
+   11,
+   12,
+   13
+  ],
+  "robot_targets": [
+   [
+    0.955,
+    -0.575,
+    -178.6
+   ],
+   [
+    0.082,
+    0.68,
+    -106.7
+   ],
+   [
+    -1.491,
+    0.189,
+    -33.8
+   ],
+   [
+    -1.173,
+    -1.222,
+    35.3
+   ]
+  ],
+  "objects": [],
+  "command": "python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R80 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --yaw-offsets-deg -20 0 20"
+ }
+]
