@@ -39,7 +39,7 @@ from typing import List
 import cv2
 import numpy as np
 
-from sim.geometry import APOTHEM_M, face_normal
+from sim.geometry import face_normal
 
 ASSETS = os.path.join(os.path.dirname(__file__), "assets")
 OBSTACLE_SHAPES = ("cylinder", "box", "prism", "hexagon", "blob")
@@ -508,7 +508,8 @@ class Renderer:
 
     def render(self, scene, k, rng, style=None):
         """Image of capture k of scene (sim.scene.Scene), the markers drawn in it and the camera settings.
-        Returns (BGR uint8 image, [dict(box, face, u, v, depth)], dict(pitch_deg, roll_deg, height_m))."""
+        Returns (BGR uint8 image, [dict(box, face, u, v, depth)], dict(pitch_deg, roll_deg, height_m)); with
+        mask_only the dict also has box_pixels: per box, how many pixels of it are visible in the image."""
         clean, markers, info = self.render_clean(scene, k, rng, style)
         return self.camera_effects(clean, rng), markers, info
 
@@ -525,11 +526,12 @@ class Renderer:
         img = np.zeros((self.cam.Hi, self.cam.Wi, 3), np.float32) if m else self.background(C, R, style)
         objects = []                       # (depth, kind, data)
         half = a.box_side_m / 2
+        apothem = a.box_side_m / (2 * math.sqrt(3))       # centre to face of the triangle of side box_side_m
         for j, (c, th) in enumerate(zip(scene.boxes, scene.thetas)):
             for f in range(3):
                 nrm = face_normal(th, f)
                 nv = np.array([math.cos(nrm), math.sin(nrm)])
-                fc = np.asarray(c, float) + APOTHEM_M * nv
+                fc = np.asarray(c, float) + apothem * nv
                 if np.dot(nv, np.array([x, y]) - fc) <= 0:          # back face
                     continue
                 t = np.array([-nv[1], nv[0]])
@@ -578,8 +580,8 @@ class Renderer:
                     continue
                 n3 = np.array([nv[0], nv[1], 0.0])
                 shade = style["ambient"] + (1 - style["ambient"]) * max(0.0, float(n3 @ style["light"]))
-                if m:
-                    self.draw_polygon(img, uv, [255.0, 255.0, 255.0])
+                if m:                                      # white, with the box number in the second channel
+                    self.draw_polygon(img, uv, [255.0, float(j + 1), 0.0])
                 else:
                     tex = self.textures[(j * 3 + f) % len(self.textures)]
                     self.draw_textured_quad(img, tex, uv, shade)
@@ -621,8 +623,14 @@ class Renderer:
                                    (255.0, 170.0, 60.0), -1, lineType=cv2.LINE_AA)
         # through the lens
         out = cv2.remap(img, self.cam.map_x, self.cam.map_y, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        box_pixels = None
         if m:
-            out = np.where(out > 127.0, 255.0, 0.0).astype(np.float32)
+            white = out[..., 0] > 127.0
+            ids = cv2.remap(img[..., 1], self.cam.map_x, self.cam.map_y, cv2.INTER_NEAREST,
+                            borderMode=cv2.BORDER_REPLICATE)
+            box_pixels = np.bincount(np.round(ids[white]).astype(int).clip(0, len(scene.boxes)),
+                                     minlength=len(scene.boxes) + 1)[1:].tolist()
+            out = np.repeat(np.where(white, 255.0, 0.0).astype(np.float32)[..., None], 3, axis=2)
         elif a.draw_gripper and self.grip_mask is not None:
             out = out * (1 - self.grip_mask) + self.grip * self.grip_mask
         # where the markers fell in the image
@@ -633,8 +641,11 @@ class Renderer:
                 m["u"], m["v"] = float(p[0]), float(p[1])
                 m.pop("pc")
         markers = [m for m in markers if m["depth"] > 0 and 0 <= m["u"] < self.cam.W and 0 <= m["v"] < self.cam.H]
-        return out, markers, dict(pitch_deg=round(math.degrees(pitch), 2), roll_deg=round(math.degrees(roll), 2),
-                                  height_m=a.camera_height_m)
+        info = dict(pitch_deg=round(math.degrees(pitch), 2), roll_deg=round(math.degrees(roll), 2),
+                    height_m=a.camera_height_m)
+        if box_pixels is not None:
+            info["box_pixels"] = box_pixels
+        return out, markers, info
 
     def camera_effects(self, img, rng):
         a = self.app

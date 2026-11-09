@@ -1,7 +1,8 @@
 """Trains and tests the image-based network (bevnet/model.py) on the sets of bevnet/data.py.
 
 The epoch and the detection threshold are chosen on the validation set (the share of correct scenes: right
-number of boxes and every box within 15 cm, the metric of MHT and the GNN); no test scene is used for anything
+number of boxes and every box within 15 cm, the metric of MHT and the GNN, counted against the boxes some robot
+can see: sets rendered as masks record which ones; see bevnet/data.py); no test scene is used for anything
 but the test. Outputs in --out/<variant>/: model.pt, train_log.csv, variant.json, test_scenes.csv (one row per
 test scene: n_true, n_est, dn, n_matched, rmse, correct, run, set) and summary.csv (per test set: correct, too
 few, too many, misplaced boxes, RMSE). The scenes have the run ids of sim/plan.py, so bevnet/compare.py can put
@@ -50,7 +51,7 @@ def to(batch, device):
 
 
 def predict_iter(model, dl, device):
-    """Per scene: (probability map (G, G), offsets (2, G, G), true boxes, run, set)."""
+    """Per scene: (probability map (G, G), offsets (2, G, G), true boxes, run, set, seen boxes (B,) bool)."""
     model.eval()
     with torch.no_grad():
         for b in dl:
@@ -59,22 +60,32 @@ def predict_iter(model, dl, device):
             heat = torch.sigmoid(heat[:, 0]).float().cpu().numpy()
             off = off.float().cpu().numpy()
             for k in range(b["n_scenes"]):
-                yield heat[k], off[k], b["boxes"][k], b["run"][k], b["set"][k]
+                yield heat[k], off[k], b["boxes"][k], b["run"][k], b["set"][k], b["seen"][k]
 
 
 def predict(model, dl, device):
     return list(predict_iter(model, dl, device))
 
 
-def score_one(heat, off, boxes, run, set_name, threshold, cutoff=MATCH_CUTOFF_M, min_dist_m=0.0):
+def score_one(heat, off, boxes, run, set_name, threshold, cutoff=MATCH_CUTOFF_M, min_dist_m=0.0, seen=None):
+    """correct: against every box. solvable: every box is seen by some robot. correct_seen: against the seen
+    boxes only (what the images allow; the same as correct on a solvable scene)."""
     est = geo.decode(heat, off, threshold, min_dist_m)
+    boxes = np.asarray(boxes)
     m = scene_metrics(list(est), list(boxes), cutoff, 2.0)
     m["correct"] = int(m["dn"] == 0 and m["n_matched"] == m["n_true"])
+    seen = np.ones(len(boxes), bool) if seen is None else np.asarray(seen, bool)
+    m["solvable"] = int(seen.all())
+    if m["solvable"]:
+        m["correct_seen"] = m["correct"]
+    else:
+        ms = scene_metrics(list(est), list(boxes[seen]), cutoff, 2.0)
+        m["correct_seen"] = int(ms["dn"] == 0 and ms["n_matched"] == ms["n_true"])
     return dict(m, run=run, set=set_name)
 
 
 def score(preds, threshold, cutoff=MATCH_CUTOFF_M):
-    return [score_one(*p, threshold, cutoff) for p in preds]
+    return [score_one(h, o, b, r, s, threshold, cutoff, seen=v) for h, o, b, r, s, v in preds]
 
 
 def save_variant(out, a, threshold, best, epoch):
@@ -107,6 +118,8 @@ def main():
     ap.add_argument("--height-noise", type=float, default=0.0, help="sd [m] of the error added to the camera height")
     ap.add_argument("--mask-noise", type=float, default=0.0,
                     help="training on masks: imperfect segmentation (1 = edges, holes, blobs, missed boxes)")
+    ap.add_argument("--min-visible-px", type=int, default=12,
+                    help="a box counts as seen with this many visible pixels in one image (sets rendered as masks)")
     ap.add_argument("--name", default=None, help="variant folder name (default bev_c<channels>_m<message>)")
     ap.add_argument("--message", type=int, default=16, help="channels per floor cell a robot sends to the others")
     ap.add_argument("--epochs", type=int, default=15)
@@ -142,6 +155,7 @@ def main():
     model = BevNet(a.channels, a.message, len(geo.HEIGHTS_M), a.encoder, pretrained=not a.eval_only).to(device)
     print(f"{sum(p.numel() for p in model.parameters()):,} parameters", flush=True)
     val = BevDataset(expand(a.val), a.max_val)
+    val.min_visible_px = a.min_visible_px
     val_dl = loader(val, a.batch, False, a.workers)
 
     if a.eval_only:
@@ -160,6 +174,7 @@ def main():
         train = BevDataset(expand(a.train), a.max_train)
         train.pitch_noise_deg, train.yaw_noise_deg, train.height_noise_m = a.pitch_noise, a.yaw_noise, a.height_noise
         train.mask_noise = a.mask_noise
+        train.min_visible_px = a.min_visible_px
         print(f"{len(train)} training scenes, {len(val)} validation scenes", flush=True)
         train_dl = loader(train, a.batch, True, a.workers, a.seed)
         pre = [p for n, p in model.named_parameters() if n.startswith("encoder.") and a.encoder == "resnet18"
@@ -199,11 +214,11 @@ def main():
                     total += loss.item()
                     nb += 1
                 preds = predict(model, val_dl, device)
-                rates = {t: 100 * np.mean([r["correct"] for r in score(preds, t)]) for t in THRESHOLDS}
+                rates = {t: 100 * np.mean([r["correct_seen"] for r in score(preds, t)]) for t in THRESHOLDS}
                 t_best = max(rates, key=rates.get)
                 log.append(dict(epoch=epoch, loss=round(total / max(nb, 1), 4), val_correct_pct=round(rates[t_best], 2),
                                 threshold=float(t_best), seconds=round(time.time() - t0, 1)))
-                print(f"  epoch {epoch:3d}: loss {log[-1]['loss']:.4f}  validation correct {rates[t_best]:5.1f}% "
+                print(f"  epoch {epoch:3d}: loss {log[-1]['loss']:.4f}  validation correct (seen boxes) {rates[t_best]:5.1f}% "
                       f"(threshold {t_best:.2f})  ({log[-1]['seconds']:.0f} s)", flush=True)
                 write_csv(os.path.join(out, "train_log.csv"), log)
                 if rates[t_best] > best:
@@ -226,9 +241,10 @@ def main():
     rows, summary = [], []
     if dirs:
         ds = BevDataset(dirs)
+        ds.min_visible_px = a.min_visible_px
         by_set, maps, kept = {}, {}, {}
-        for heat, off, boxes, run, set_name in predict_iter(model, loader(ds, a.batch, False, a.workers), device):
-            by_set.setdefault(set_name, []).append(score_one(heat, off, boxes, run, set_name, threshold))
+        for heat, off, boxes, run, set_name, seen in predict_iter(model, loader(ds, a.batch, False, a.workers), device):
+            by_set.setdefault(set_name, []).append(score_one(heat, off, boxes, run, set_name, threshold, seen=seen))
             if a.save_maps and len(maps.setdefault(set_name, [])) < a.save_maps:
                 maps[set_name].append((heat.astype(np.float16), off.astype(np.float16), np.asarray(boxes), run,
                                        geo.decode(heat, off, threshold)))
@@ -243,10 +259,14 @@ def main():
                                 too_few_pct=round(100 * np.mean([x["dn"] < 0 for x in r]), 2),
                                 too_many_pct=round(100 * np.mean([x["dn"] > 0 for x in r]), 2),
                                 misplaced_pct=round(100 * np.mean([x["dn"] == 0 and not x["correct"] for x in r]), 2),
-                                rmse_cm=round(100 * float(np.nanmean([x["rmse"] for x in r])), 2)))
+                                rmse_cm=round(100 * float(np.nanmean([x["rmse"] for x in r])), 2),
+                                solvable_pct=round(100 * np.mean([x["solvable"] for x in r]), 2),
+                                correct_solvable_pct=round(100 * np.mean([x["correct"] for x in r if x["solvable"]]), 2)
+                                if any(x["solvable"] for x in r) else float("nan")))
             print(f"  {set_name:20s} correct {summary[-1]['correct_pct']:5.1f}%  too few "
                   f"{summary[-1]['too_few_pct']:5.1f}%  too many {summary[-1]['too_many_pct']:5.1f}%  "
-                  f"RMSE {summary[-1]['rmse_cm']:.1f} cm", flush=True)
+                  f"RMSE {summary[-1]['rmse_cm']:.1f} cm  solvable {summary[-1]['solvable_pct']:5.1f}%  "
+                  f"correct on solvable {summary[-1]['correct_solvable_pct']:5.1f}%", flush=True)
         write_csv(os.path.join(out, f"test_scenes{sfx}.csv"), rows)
         write_csv(os.path.join(out, f"summary{sfx}.csv"), summary)
         if maps:

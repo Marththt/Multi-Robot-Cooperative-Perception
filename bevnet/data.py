@@ -69,7 +69,7 @@ def render_shard(task):
             add_distractors(scene, distractors, np.random.default_rng(scene_seed + 15_485_863))
         rrng = np.random.default_rng(scene_seed + 7_919)        # as imgsim/generate.py
         style = renderer.scene_style(rrng)
-        jpgs, poses, pitch, roll = [], [], [], []
+        jpgs, poses, pitch, roll, seen_px = [], [], [], [], []
         for k, cap in enumerate(scene.captures):
             img, _markers, info = renderer.render(scene, k, rrng, style)
             if masks:                                           # binary: lossless and small
@@ -80,7 +80,10 @@ def render_shard(task):
             poses.append(cap.pose)
             pitch.append(np.radians(info["pitch_deg"]))
             roll.append(np.radians(info["roll_deg"]))
-        scenes.append(dict(run=scene.run_id, family=family, boxes=np.asarray(scene.boxes, np.float32),
+            if "box_pixels" in info:
+                seen_px.append(info["box_pixels"])
+        extra = dict(box_pixels=np.asarray(seen_px, np.int32)) if seen_px else {}
+        scenes.append(dict(**extra, run=scene.run_id, family=family, boxes=np.asarray(scene.boxes, np.float32),
                            poses=np.asarray(poses, np.float32), pitch=np.asarray(pitch, np.float32),
                            roll=np.asarray(roll, np.float32), height=float(renderer.app.camera_height_m),
                            camera=os.path.basename(calib).split("_")[-1].split(".")[0], jpgs=jpgs,
@@ -187,12 +190,17 @@ def build(argv=None):
 class BevDataset:
     """Scenes of one or more set folders of build(). Item: dict with
     images (N, 3, H, W) float32 in [0, 1], grids (N, len(HEIGHTS_M), G, G, 2), valid (N, len(HEIGHTS_M), G, G),
-    view (N, 3, G, G), heat (G, G), off (2, G, G), mask (G, G), boxes (B, 2), run.
+    view (N, 3, G, G), heat (G, G), off (2, G, G), mask (G, G), boxes (B, 2), seen (B,), run.
+
+    seen: the boxes visible in at least one image (MIN_VISIBLE_PX pixels or more; sets rendered as masks record
+    the visible pixels of every box). The targets hold only those: a box no robot can see is not asked for.
+    Sets without that record (real scenes, older sets) count every box as seen.
 
     The shards are read when needed and only the last CACHE stay in memory (each data loader process keeps its
     own), so the training set never has to fit in memory; ShardSampler keeps the reads few while shuffling."""
 
     CACHE = 8
+    MIN_VISIBLE_PX = 12               # of a 256 x 144 image: a sliver of a far box, a corner of a near one
 
     def __init__(self, set_dirs, max_scenes=None):
         self.index, self.meta, self.shards = [], {}, []
@@ -212,6 +220,7 @@ class BevDataset:
         self.yaw_noise_deg = 0.0          # from those of the image, so that it learns to live with real errors
         self.height_noise_m = 0.0         # same for the camera height (a wrong height scales all floor distances)
         self.mask_noise = 0.0             # training on masks: imperfect segmentation (see noisy_mask)
+        self.min_visible_px = self.MIN_VISIBLE_PX
 
     def __len__(self):
         return len(self.index)
@@ -256,9 +265,19 @@ class BevDataset:
             grids.append(g)
             valid.append(v)
             view.append(w)
-        heat, off, mask = geo.heatmap_targets(s["boxes"])
+        seen = seen_boxes(s, self.min_visible_px)
+        heat, off, mask = geo.heatmap_targets(s["boxes"][seen])
         return dict(images=np.stack(imgs), grids=np.stack(grids), valid=np.stack(valid), view=np.stack(view),
-                    heat=heat, off=off, mask=mask, boxes=s["boxes"], run=s["run"], set=s["set"])
+                    heat=heat, off=off, mask=mask, boxes=s["boxes"], seen=seen, run=s["run"], set=s["set"])
+
+
+def seen_boxes(scene, min_px):
+    """(B,) bool: the boxes with at least min_px visible pixels in at least one image of the scene."""
+    n = len(scene["boxes"])
+    px = scene.get("box_pixels")
+    if px is None or len(px) == 0:
+        return np.ones(n, bool)
+    return np.asarray(px).reshape(-1, n).max(0) >= min_px
 
 
 def noisy_mask(img, rng, level):
@@ -312,7 +331,8 @@ def collate(items):
     import torch
     out = dict(scene=torch.tensor(np.concatenate([np.full(len(it["images"]), k) for k, it in enumerate(items)]),
                                   dtype=torch.long), n_scenes=len(items),
-               boxes=[it["boxes"] for it in items], run=[it["run"] for it in items], set=[it["set"] for it in items])
+               boxes=[it["boxes"] for it in items], seen=[it["seen"] for it in items],
+               run=[it["run"] for it in items], set=[it["set"] for it in items])
     for key in ("images", "grids", "valid", "view"):
         out[key] = torch.from_numpy(np.concatenate([it[key] for it in items]))
     for key in ("heat", "off", "mask"):
