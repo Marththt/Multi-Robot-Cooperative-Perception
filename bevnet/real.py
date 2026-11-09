@@ -192,6 +192,8 @@ def main():
     ap.add_argument("--masks", action="store_true", help="boxes only: segment every frame (bevnet/segment.py)")
     ap.add_argument("--seg-device", default="auto", help="auto | mps | cuda | cpu")
     ap.add_argument("--seg-threshold", type=float, default=0.30, help="detector box threshold")
+    ap.add_argument("--seg-max-area", type=float, default=0.70,
+                    help="largest detector rectangle kept, as a share of the frame (near boxes fill much of it)")
     ap.add_argument("--calibrate", action="store_true",
                     help="pitch and yaw offset per robot from the stored detections, leave one layout out")
     a = ap.parse_args()
@@ -204,7 +206,7 @@ def main():
     seg, overlays, cache = None, [], os.path.join(a.out, "cache")
     if a.masks:
         from bevnet.segment import BoxSegmenter
-        seg = BoxSegmenter(device=a.seg_device, box_threshold=a.seg_threshold)
+        seg = BoxSegmenter(device=a.seg_device, box_threshold=a.seg_threshold, max_area=a.seg_max_area)
     if cal:
         for q in sorted({q for _, q in cal}):
             v = np.array([cal[k] for k in cal if k[1] == q])
