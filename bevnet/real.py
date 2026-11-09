@@ -36,7 +36,17 @@ import numpy as np
 from bevnet import geometry as geo
 
 PITCH_DEG = dict(P0=11.5, P1=11.5, P3=11.5, P5=22.0)      # measured on the real frames (imgsim/render.py)
-CAMERA_HEIGHT_M = 0.29
+CAMERA_HEIGHT_M = 0.25                  # lens above the floor (measured 24-26 cm)
+CAMERA_FORWARD_FIX_M = 0.03             # lens 15 cm ahead of the rigid body; the acquisition moved the pose by 12 cm
+MARKER_CENTRE_M = 0.15                  # marker centre above the floor (faces 30 cm high)
+BOX_SIDE_M = 0.235                      # face width (measured 23-24 cm)
+
+
+
+def camera_pose(rec):
+    """(x, y, yaw) of the lens: the recorded camera pose moved forward by CAMERA_FORWARD_FIX_M."""
+    x, y, yaw = rec["camera_pose"]
+    return (x + CAMERA_FORWARD_FIX_M * math.cos(yaw), y + CAMERA_FORWARD_FIX_M * math.sin(yaw), yaw)
 
 
 def load_run(run_dir):
@@ -62,18 +72,18 @@ def load_run(run_dir):
     return layout, boxes, frames, cams
 
 
-APOTHEM_M = 0.30 / (2 * math.sqrt(3))
+APOTHEM_M = BOX_SIDE_M / (2 * math.sqrt(3))
 
 
 def angle_offsets(runs, pitch):
     """Per (layout, robot): median offsets [deg] between where the marker centres are seen (undistorted) and
-    where the true box puts them (the face towards the camera, 20 cm high), vertical and horizontal."""
+    where the true box puts them (the face towards the camera, at the marker centre height), vertical and horizontal."""
     out = defaultdict(lambda: ([], []))
     for d, layout, boxes, frames, cams in runs:
         for recs in frames.values():
             for q, r in recs.items():
                 K, D = cams[q]
-                x, y, yaw = r["camera_pose"]
+                x, y, yaw = camera_pose(r)
                 Rm = geo.camera_rotation(yaw, math.radians(pitch.get(q, 11.5)), 0.0)
                 for det in r.get("detections", []):
                     p = np.asarray(det["position"], float)
@@ -82,7 +92,7 @@ def angle_offsets(runs, pitch):
                         continue
                     u = (boxes[k] - [x, y]) / np.linalg.norm(boxes[k] - [x, y])
                     face = boxes[k] - APOTHEM_M * u
-                    pc = Rm @ (np.array([face[0], face[1], 0.20]) - [x, y, CAMERA_HEIGHT_M])
+                    pc = Rm @ (np.array([face[0], face[1], MARKER_CENTRE_M]) - [x, y, CAMERA_HEIGHT_M])
                     bx, by, bw, bh = det["bbox"]
                     obs = cv2.undistortPoints(np.array([[[bx + bw / 2, by + bh / 2]]], np.float64), K, D).reshape(2)
                     out[(layout, q)][0].append(math.degrees(math.atan(obs[1]) - math.atan(pc[1] / pc[2])))
@@ -105,7 +115,7 @@ def calibration(runs, pitch):
 def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=None, seg=None, cache=None,
                 overlays=None):
     robots = sorted(recs)
-    poses = np.array([recs[q]["camera_pose"] for q in robots], np.float64)
+    poses = np.array([camera_pose(recs[q]) for q in robots], np.float64)
     pitch_deg = [pitch.get(q, 11.5) for q in robots]
     if cal:
         for n, q in enumerate(robots):
@@ -152,7 +162,7 @@ def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=N
 
 
 def check_figure(scenes, out_path, n=4):
-    """True box centres (green, at 5 / 20 / 35 cm) and the grid cells within 15 cm of them (red dots)."""
+    """True box centres (green, at the heights of bevnet/geometry.py) and the grid cells within 15 cm of them (red dots)."""
     cells = geo.cell_centres()
     tiles = []
     for s in scenes[:n]:
@@ -164,7 +174,7 @@ def check_figure(scenes, out_path, n=4):
             size = (img.shape[1] // 2, img.shape[0] // 2)
             for b in s["boxes"]:
                 near = np.hypot(cells[..., 0] - b[0], cells[..., 1] - b[1]) < 0.15
-                P = np.concatenate([cells[near], np.full((near.sum(), 1), 0.20)], -1)
+                P = np.concatenate([cells[near], np.full((near.sum(), 1), MARKER_CENTRE_M)], -1)
                 uv, ok = geo.project(P, s["poses"][k], float(s["pitch"][k]), 0.0, s["height"], K, D, size)
                 for (u, v), o in zip(uv, ok):
                     if o:

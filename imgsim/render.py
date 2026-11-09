@@ -48,15 +48,15 @@ OBSTACLE_SHAPES = ("cylinder", "box", "prism", "hexagon", "blob")
 @dataclass
 class Appearance:
     """Everything that sets the look of the images. Ranges [lo, hi] are drawn per scene or per capture."""
-    camera_height_m: float = 0.29
+    camera_height_m: float = 0.25                        # lens above the floor (measured 24-26 cm)
     pitch_deg: List[float] = field(default_factory=lambda: [9.0, 14.0])      # downwards, per capture
     roll_deg: List[float] = field(default_factory=lambda: [-1.0, 1.0])
-    box_height_m: float = 0.40
-    box_side_m: float = 0.30
+    box_height_m: float = 0.30                           # measured faces: 23-24 cm wide, 30 cm high
+    box_side_m: float = 0.235
     marker_size_m: float = 0.077
-    marker_centre_height_m: float = 0.20
+    marker_centre_height_m: float = 0.15
     paper_size_m: float = 0.11
-    tape_bands_m: List[List[float]] = field(default_factory=lambda: [[0.005, 0.035], [0.335, 0.365]])
+    tape_bands_m: List[List[float]] = field(default_factory=lambda: [[0.005, 0.035], [0.235, 0.265]])
     tape_bgr: List[float] = field(default_factory=lambda: [200.0, 105.0, 25.0])
     box_bgr: List[float] = field(default_factory=lambda: [236.0, 238.0, 238.0])
     plain_obstacle_height_m: float = 0.55                # grey cylinders of obstacle_style "plain"

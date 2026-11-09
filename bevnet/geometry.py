@@ -14,7 +14,7 @@ import numpy as np
 
 GRID_HALF_M = 2.0
 CELL_M = 0.05
-HEIGHTS_M = (0.05, 0.20, 0.35)
+HEIGHTS_M = (0.05, 0.15, 0.25)          # on the 30 cm boxes: near the floor, the marker, near the top
 MAX_RANGE_M = 3.5                      # beyond this a cell is outside the camera's useful range
 
 
