@@ -1,0 +1,41 @@
+{
+  "train_dir": [
+    "data/plan/train/"
+  ],
+  "val_dir": [
+    "data/plan/val/"
+  ],
+  "sensor_calib": "config/sensor_calib.json",
+  "standard_tests": false,
+  "combined_tests": false,
+  "results_name": "",
+  "out": "results/plan/M4/gnn/",
+  "graph": "detection",
+  "features": "full",
+  "edges": "full",
+  "comm_range": 1.5,
+  "comm_range_train": null,
+  "circle_tests": false,
+  "hops": 2,
+  "skip": "residual",
+  "association": "central",
+  "gate": 1.0,
+  "hidden": 64,
+  "epochs": 40,
+  "patience": 8,
+  "batch": 32,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "seeds": 3,
+  "max_train": null,
+  "cutoff": 0.15,
+  "ospa_p": 2.0,
+  "save_estimates": true,
+  "plan_tests": [
+    "G0_*",
+    "E1_*",
+    "E3_*",
+    "S1_*"
+  ],
+  "plan_dir": "data/plan/"
+}
