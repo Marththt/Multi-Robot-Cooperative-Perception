@@ -16,9 +16,17 @@ computes, from the poses, where each floor cell falls in each image (bevnet/geom
     python -m bevnet.data --sets train,val --obstacles 2 --out data/bev_obst/   # training scenes with the E3 cylinders
     python -m bevnet.data --sets train,val --obstacles 2 --distractors 4 --obstacle-style random \
         --obstacle-shapes cylinder,box,prism --out data/bev_rand/      # obstacles of random shape, colour, pattern
+    python -m bevnet.data --sets train --runs 20000 --obstacles 2 --masks --out data/bev_mask2/   # box silhouettes
+    python -m bevnet.data --sets train --runs 20000 --obstacles 2 --cutout --out data/bev_cut/    # boxes cut out
+
+--cutout: the full rendering (tape, marker, shading, camera effects) inside the box silhouette, black elsewhere,
+as bevnet/real.py --cutout makes of the real frames with the segmentation masks. In the training set the
+silhouette is made imperfect as a real segmentation is (noisy_mask, one draw per image): with edges grown, a
+ring of floor or background is kept around the boxes.
 """
 
 import argparse
+import copy
 import glob
 import json
 import math
@@ -40,7 +48,7 @@ CALIB = dict(P0="config/checkerboard_calib_P0.json", P1="config/checkerboard_cal
 
 def render_shard(task):
     (name, spec_dict, runs, start, seed, out_path, model_path, calib, scale, app_path, quality, no_markers, obstacles,
-     obstacle_style, obstacle_shapes, distractors, visual, masks) = task
+     obstacle_style, obstacle_shapes, distractors, visual, masks, cutout) = task
     from imgsim.render import Appearance, Renderer
     from sim.model import SensorModel
     from sim.plan import PlanSpec, plan_scene, run_model
@@ -71,7 +79,16 @@ def render_shard(task):
         style = renderer.scene_style(rrng)
         jpgs, poses, pitch, roll, seen_px = [], [], [], [], []
         for k, cap in enumerate(scene.captures):
+            same = copy.deepcopy(rrng) if cutout else None       # the silhouette: same pitch and roll
             img, _markers, info = renderer.render(scene, k, rrng, style)
+            if cutout:
+                app.mask_only = True
+                sil, _m, sil_info = renderer.render(scene, k, same, style)
+                app.mask_only = False
+                if name == "train":
+                    sil = noisy_mask(sil, np.random.default_rng(scene_seed + 31 * (k + 1)), 1.0)
+                img = np.where(sil[..., :1] > 127, img, 0).astype(np.uint8)
+                info["box_pixels"] = sil_info["box_pixels"]
             if masks:                                           # binary: lossless and small
                 ok, buf = cv2.imencode(".png", img[..., 0])
             else:
@@ -131,6 +148,8 @@ def build(argv=None):
     ap.add_argument("--distractors", type=int, default=0, help="0..N free-standing objects per scene (any set)")
     ap.add_argument("--masks", action="store_true",
                     help="boxes only: white box silhouettes on black, as a segmentation of the real frames gives")
+    ap.add_argument("--cutout", action="store_true",
+                    help="boxes only, as rendered: the image inside the box silhouettes, black elsewhere")
     ap.add_argument("--visual", choices=["plain", "random"], default="plain",
                     help="random: robots with wheels and arm, windows, light spots, desks and screens, wider greys")
     ap.add_argument("--obstacles", type=int, default=0,
@@ -139,6 +158,8 @@ def build(argv=None):
     ap.add_argument("--seed", type=int, default=1, help="as sim.plan --seed (same seeds = same scenes)")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     a = ap.parse_args(argv)
+    if a.cutout and a.masks:
+        raise SystemExit("--masks and --cutout: choose one")
     if sys.platform == "win32":
         a.jobs = min(a.jobs, 60)
     big = 10 ** 9
@@ -166,14 +187,14 @@ def build(argv=None):
                            camera=a.camera, K=cam.K.tolist(), D=cam.D.tolist(), size=[cam.W, cam.H],
                            scale=a.scale, obstacles=a.obstacles if sid in ('train', 'gate', 'val') else 0,
                            obstacle_style=a.obstacle_style, obstacle_shapes=shapes, distractors=a.distractors,
-                           visual=a.visual, masks=a.masks,
+                           visual=a.visual, masks=a.masks, cutout=a.cutout,
                            appearance=dict(asdict(Appearance.load(a.appearance)),
                                                           draw_markers=not a.no_markers)), f, indent=2)
         for k, start in enumerate(range(0, runs, SHARD)):
             tasks.append((name, asdict(spec), min(SHARD, runs - start), start, a.seed * 1000 + seed,
                           os.path.join(d, f"shard_{k:04d}.pkl"), a.model, CALIB[a.camera], a.scale, a.appearance,
                           a.jpeg_quality, a.no_markers, a.obstacles if sid in ('train', 'gate', 'val') else 0,
-                          a.obstacle_style, shapes, a.distractors, a.visual, a.masks))
+                          a.obstacle_style, shapes, a.distractors, a.visual, a.masks, a.cutout))
     print(f"{len(chosen)} set(s), {sum(t[2] for t in tasks)} scenes in {len(tasks)} shards on "
           f"{min(a.jobs, len(tasks))} process(es)", flush=True)
     with multiprocessing.Pool(min(a.jobs, len(tasks))) as pool:

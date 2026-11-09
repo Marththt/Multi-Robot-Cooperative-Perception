@@ -19,6 +19,9 @@ that poses, pitch and lens put them on the boxes.
     python -m bevnet.real --runs "data/survey_rounds/*" --out data/bev_real_masks/ --readings 0,1,2,3,4 --calibrate --masks
       (--masks: the boxes cut out of every frame by bevnet/segment.py, as the boxes-only simulation; the full-size
        masks are cached in <out>/cache/ and an overlay figure is written to <out>/fig_REAL-masks.png)
+    python -m bevnet.real --runs "data/survey_rounds/*" --out data/bev_real_cut/ --readings 0,1,2,3,4 --calibrate --cutout \
+        --mask-cache data/bev_real_masks/cache
+      (--cutout: the frame itself inside the mask, black elsewhere, as bevnet.data --cutout)
     python -m bevnet.train --eval-only --out results/bev_obst/ --tests "data/bev_real/*" --results-name real
 """
 
@@ -113,7 +116,7 @@ def calibration(runs, pitch):
 
 
 def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=None, seg=None, cache=None,
-                overlays=None):
+                overlays=None, cutout=False):
     robots = sorted(recs)
     poses = np.array([camera_pose(recs[q]) for q in robots], np.float64)
     pitch_deg = [pitch.get(q, 11.5) for q in robots]
@@ -143,7 +146,12 @@ def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=N
                     from bevnet.segment import overlay
                     overlays.append(cv2.resize(overlay(img, mask, rects), (640, 360)))
             small = (cv2.resize(mask, (w, h), interpolation=cv2.INTER_AREA) > 127).astype(np.uint8) * 255
-            ok, buf = cv2.imencode(".png", small)
+            if cutout:                                      # the frame inside the mask, black elsewhere
+                frame = cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
+                frame[small == 0] = 0
+                ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
+            else:
+                ok, buf = cv2.imencode(".png", small)
         else:
             small = cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
             ok, buf = cv2.imencode(".jpg", small, [cv2.IMWRITE_JPEG_QUALITY, quality])
@@ -200,6 +208,10 @@ def main():
     ap.add_argument("--pitch", default=None, help="per robot pitch in degrees, e.g. P0=11,P1=12,P3=11,P5=22")
     ap.add_argument("--check", action="store_true", help="write fig_REAL-0.png with the true boxes drawn in")
     ap.add_argument("--masks", action="store_true", help="boxes only: segment every frame (bevnet/segment.py)")
+    ap.add_argument("--cutout", action="store_true",
+                    help="boxes only, as seen: the frame inside the segmentation mask, black elsewhere")
+    ap.add_argument("--mask-cache", default=None,
+                    help="folder of the segmentation masks (default <out>/cache; reuse the one of a --masks run)")
     ap.add_argument("--seg-device", default="auto", help="auto | mps | cuda | cpu")
     ap.add_argument("--seg-threshold", type=float, default=0.30, help="detector box threshold")
     ap.add_argument("--seg-max-area", type=float, default=0.70,
@@ -213,8 +225,8 @@ def main():
     run_dirs = sorted({d for p in a.runs for d in glob.glob(p) if os.path.isdir(os.path.join(d, "raw"))})
     runs = [(d, *load_run(d)) for d in run_dirs]
     cal = calibration(runs, pitch) if a.calibrate else None
-    seg, overlays, cache = None, [], os.path.join(a.out, "cache")
-    if a.masks:
+    seg, overlays, cache = None, [], a.mask_cache or os.path.join(a.out, "cache")
+    if a.masks or a.cutout:
         from bevnet.segment import BoxSegmenter
         seg = BoxSegmenter(device=a.seg_device, box_threshold=a.seg_threshold, max_area=a.seg_max_area)
     if cal:
@@ -228,7 +240,7 @@ def main():
             for (rnd, reading), recs in sorted(frames.items()):
                 if reading == k:
                     s = build_scene(d, layout, boxes, recs, cams, a.scale, a.jpeg_quality, pitch, cal, seg, cache,
-                                    overlays)
+                                    overlays, a.cutout)
                     if s is not None:
                         s["round"] = rnd
                         scenes.append(s)
