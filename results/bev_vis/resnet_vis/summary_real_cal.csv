@@ -1,6 +1,0 @@
-set,scenes,correct_pct,too_few_pct,too_many_pct,misplaced_pct,rmse_cm
-real_k0,56,0.0,25.0,69.64,5.36,8.26
-real_k1,56,0.0,26.79,67.86,5.36,8.27
-real_k2,56,0.0,26.79,67.86,5.36,8.23
-real_k3,56,0.0,26.79,67.86,5.36,8.23
-real_k4,56,0.0,25.0,67.86,7.14,8.17
