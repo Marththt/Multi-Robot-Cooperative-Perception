@@ -150,7 +150,7 @@ def sd_se(v):
 # Figures
 # ====================================================================
 
-def plot_position(err, model, path, plt):
+def plot_position(err, model, path, plt, points="simulated", title="Fig. M1-1: position error of the simulated reports against the sensor file"):
     edges = np.arange(0.25, 3.01, 0.25)
     mids = (edges[:-1] + edges[1:]) / 2
     fig, ax = plt.subplots(1, 2, figsize=(11, 4))
@@ -158,7 +158,7 @@ def plot_position(err, model, path, plt):
     cosv = binned(err[:, 0], err[:, 3], edges, mean_se)
     m0, m1, m2 = model.along_mean
     spec_mean = [m0 + m1 * d + m2 * cv[0] for d, cv in zip(mids, cosv)]
-    ax[0].errorbar(mids, [100 * v[0] for v in m_along], [300 * v[1] for v in m_along], fmt="o", label="simulated")
+    ax[0].errorbar(mids, [100 * v[0] for v in m_along], [300 * v[1] for v in m_along], fmt="o", label=points)
     ax[0].plot(mids, [100 * v for v in spec_mean], "-", label="sensor file")
     ax[0].set(xlabel="distance to the box centre [m]", ylabel="mean error along the line of sight [cm]",
               title="Mean along (bars: 3 standard errors)")
@@ -171,20 +171,20 @@ def plot_position(err, model, path, plt):
         sims = binned(err[:, 0], err[:, col], edges, sd_se)
         spec = np.sqrt((s0 + s1 * mids) ** 2 + (bias * mids) ** 2 + extra)
         ax[1].errorbar(mids, [100 * v[0] for v in sims], [300 * v[1] for v in sims], fmt="o", color=colour,
-                       label=f"{name}, simulated")
+                       label=f"{name}, {points}")
         ax[1].plot(mids, 100 * spec, "-", color=colour, label=f"{name}, sensor file")
     ax[1].set(xlabel="distance to the box centre [m]", ylabel="standard deviation [cm]",
               title="Spread (noise and per-robot bias)")
     for a in ax:
         a.grid(alpha=0.3)
         a.legend(fontsize=8)
-    fig.suptitle("Fig. M1-1: position error of the simulated reports against the sensor file")
+    fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(path, dpi=120)
     plt.close(fig)
 
 
-def plot_detection(pairs, path, plt):
+def plot_detection(pairs, path, plt, points="simulated", title="Fig. M1-2: detection probability of the (robot, box) pairs in range and field of view"):
     fig, ax = plt.subplots(1, 2, figsize=(11, 4))
     for k, (col, edges, label) in enumerate([(0, np.radians(np.arange(0, 91, 10)), "viewing angle of the best face [deg]"),
                                              (1, np.arange(0.0, 3.01, 0.25), "distance [m]")]):
@@ -193,12 +193,12 @@ def plot_detection(pairs, path, plt):
         spec = binned(x, pairs[:, 2], edges, mean_se)
         mids = (edges[:-1] + edges[1:]) / 2
         mids = np.degrees(mids) if col == 0 else mids
-        ax[k].errorbar(mids, [v[0] for v in sim], [3 * v[1] for v in sim], fmt="o", label="simulated")
+        ax[k].errorbar(mids, [v[0] for v in sim], [3 * v[1] for v in sim], fmt="o", label=points)
         ax[k].plot(mids, [v[0] for v in spec], "-", label="sensor file (mean of the sigmoid)")
         ax[k].set(xlabel=label, ylabel="P(box reported)", ylim=(0, 1.02))
         ax[k].grid(alpha=0.3)
         ax[k].legend(fontsize=8)
-    fig.suptitle("Fig. M1-2: detection probability of the (robot, box) pairs in range and field of view")
+    fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(path, dpi=120)
     plt.close(fig)

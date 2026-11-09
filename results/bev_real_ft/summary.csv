@@ -1,0 +1,2 @@
+scenes,layouts,zero_shot_correct_pct,finetuned_correct_pct,finetuned_too_few_pct,finetuned_too_many_pct,finetuned_rmse_cm,init,sim_scenes,epochs,lr
+280,8,0.0,51.43,19.29,25.71,3.45,results/bev_obst/bev_c64_m16,500,15,0.0002

@@ -1,0 +1,9 @@
+set,scenes,correct_pct,too_few_pct,too_many_pct,misplaced_pct,rmse_cm
+E3_h0_circle,1000,100.0,0.0,0.0,0.0,0.3
+E3_h0_random,1000,99.8,0.0,0.2,0.0,0.45
+E3_h1_circle,1000,99.6,0.0,0.4,0.0,0.41
+E3_h1_random,1000,99.6,0.2,0.2,0.0,0.65
+E3_h2_circle,1000,98.9,0.2,0.9,0.0,0.71
+E3_h2_random,1000,95.2,0.7,4.1,0.0,1.03
+G0_nominal_circle,1000,100.0,0.0,0.0,0.0,0.3
+G0_nominal_random,1000,99.9,0.0,0.1,0.0,0.45

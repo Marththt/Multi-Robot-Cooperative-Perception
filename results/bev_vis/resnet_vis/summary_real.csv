@@ -1,0 +1,6 @@
+set,scenes,correct_pct,too_few_pct,too_many_pct,misplaced_pct,rmse_cm
+real_k0,56,0.0,26.79,71.43,1.79,8.05
+real_k1,56,0.0,26.79,69.64,3.57,8.64
+real_k2,56,0.0,26.79,67.86,5.36,8.13
+real_k3,56,0.0,26.79,69.64,3.57,8.03
+real_k4,56,0.0,26.79,71.43,1.79,7.62

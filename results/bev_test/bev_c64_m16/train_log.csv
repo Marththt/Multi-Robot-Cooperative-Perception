@@ -1,0 +1,3 @@
+epoch,loss,val_correct_pct,threshold,seconds
+1,0.689,83.3,0.25,161.1
+2,0.1991,84.45,0.4,135.1
