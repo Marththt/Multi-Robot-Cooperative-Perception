@@ -202,3 +202,85 @@ M4, GNN and oracle selector (pipeline/plan_oracle.py): detection-node GNN traine
 
     python -m gnn.train_sim --train-dir data/plan/train/ --val-dir data/plan/val/ --sensor-calib config/sensor_calib.json --graph detection --features full --edges full --hops 2 --seeds 3 --plan-tests "G0_*" "E1_*" "E3_*" "S1_*" --save-estimates --out results/plan/M4/gnn/
     python -m pipeline.plan_oracle --sets "G0_*" "E1_*" "E3_*" "S1_*" --mht results/plan/M3/ --gnn results/plan/M4/gnn/detection_full_full_h2/ --out results/plan/M4/
+
+
+## Image-level simulator (imgsim/)
+
+imgsim/render.py renders the camera image of every robot in a scene of sim/plan.py (same seeds: scene i of data/imgsim/<set>/ is scene i of data/plan/<set>/), with the real camera calibration, the camera height and pitch measured on the real frames, the real boxes (white, blue tape, ArUco 4X4_50 id 0, 77 mm), obstacles, the other robots, the room and the robot's own gripper (imgsim/assets, from the real frames of P5). imgsim/generate.py runs the real detector (vf/perception/aruco_detector.py) on 5 frames per stop and keeps one detection per group closer than 0.2 m, as acquisition/static_trial.capture_trial does on the robots, and writes the reports in the format of the real runs. imgsim/compare.py fits the range / bearing calibration of an image set (as pipeline/calibrate.py) and compares the image reports with the sensor file fitted on the real runs (Fig. IMG-1 to IMG-3, table_IMG.csv). Needs OpenCV with cv2.aruco (opencv-python >= 4.7 or opencv-contrib-python).
+
+E1 and E2 multiply rates of the sensor file, which the renderer does not use: in the images false detections and second faces come from the detector itself, so only G0, E3 and S1 are rendered.
+
+    python -m imgsim.generate --sets G0,E3,S1 --runs 1000 --save-images 20
+    python -m imgsim.compare --set-dir data/imgsim/G0_nominal_circle/ --save-calib config/sensor_calib_imgsim.json
+    python -m imgsim.compare --set-dir data/imgsim/G0_nominal_random/
+    python -m pipeline.plan_mht --sets "data/imgsim/G0_*" "data/imgsim/E3_*" "data/imgsim/S1_*" --sensor-calib config/sensor_calib_imgsim.json --hypotheses 100 --out results/imgsim/M3/
+
+GNN trained on the measurement-level sets (M4), tested on the image sets, then the oracle on the image sets:
+
+    python -m gnn.train_sim --train-dir data/plan/train/ --val-dir data/plan/val/ --sensor-calib config/sensor_calib_imgsim.json --graph detection --features full --edges full --hops 2 --seeds 3 --eval-only --plan-dir data/imgsim/ --plan-tests "G0_*" "E3_*" "S1_*" --save-estimates --results-name imgsim --out results/plan/M4/gnn/
+    python -m pipeline.plan_oracle --sets "G0_*" "E3_*" "S1_*" --data data/imgsim/ --mht results/imgsim/M3/ --gnn results/plan/M4/gnn/detection_full_full_h2/ --estimates-dir estimates_imgsim --sensor-calib config/sensor_calib_imgsim.json --out results/imgsim/M4/
+
+Appearance settings (imgsim/render.py Appearance) can be changed with --appearance <json> on imgsim.generate; --save-images -1 saves every image (for an image-based model).
+
+## Image-based network (bevnet/)
+
+bevnet/ learns the boxes from the camera images and the robot poses only (no ArUco, no solvePnP, no sensor file). Each robot encodes its image with a small CNN; the features are read where every cell of a 4 x 4 m floor grid (5 cm cells), lifted to 0.05, 0.20 and 0.35 m, falls in the image (known pose, pitch and lens) and turned into a message of --message channels per cell it sees; the team fuses the messages (mean, maximum, number of robots per cell) and a U-Net on the floor grid gives the probability of a box centre per cell and its offset. Boxes = local maxima above a threshold chosen on the validation set; same "correct scene" metric as MHT and the GNN (count right, every box within 15 cm). The scenes are those of sim/plan.py (same seeds), rendered by imgsim/render.py at 256 x 144 (--scale 0.2). Needs PyTorch (pip install torch; a CUDA GPU makes training minutes instead of hours).
+
+Render the sets (about 80 kB per scene: 4 GB for the 50,000 training scenes):
+
+    python -m bevnet.data --sets train,val,G0,E3,S1
+    python -m bevnet.data --sets train,val,G0,E3,S1 --no-markers --out data/bev_nomarkers/   # same scenes, boxes without paper and marker
+
+Train, choose epoch and threshold on val, test (results/bev/bev_c64_m16/: model.pt, train_log.csv, test_scenes.csv, summary.csv); on a CPU only, start with --max-train 10000 --workers 4:
+
+    python -m bevnet.train --train data/bev/train --val data/bev/val --tests "data/bev/G0_*" "data/bev/E3_*" "data/bev/S1_*"
+    python -m bevnet.train --message 4 ...           # smaller message per cell (bandwidth study)
+    python -m bevnet.train ... --eval-only           # test the saved model again
+    python -m bevnet.train --train data/bev_nomarkers/train --val data/bev_nomarkers/val --tests "data/bev_nomarkers/G0_*" "data/bev_nomarkers/E3_*" "data/bev_nomarkers/S1_*" --out results/bev_nomarkers/
+
+Occluders and other objects in the training scenes. --obstacles 2 puts the E3 cylinders (0, 1 or 2 per box, drawn per scene) in the training and validation scenes; --distractors N adds 0..N free-standing objects to any set; --obstacle-style random gives every obstacle its own shape (--obstacle-shapes from cylinder, box, prism, hexagon, blob), height (15-100 cm), colour (a quarter white or light grey) and pattern (plain, noise, stripes, bands, checker). Training on three shapes and testing on the two others measures how the network copes with objects it has never seen:
+
+    python -m bevnet.data --sets train --runs 20000 --obstacles 2 --distractors 4 --obstacle-style random --obstacle-shapes cylinder,box,prism --out data/bev_rand/
+    python -m bevnet.data --sets val --obstacles 2 --distractors 4 --obstacle-style random --obstacle-shapes cylinder,box,prism --out data/bev_rand/
+    python -m bevnet.data --sets G0,E3 --distractors 4 --obstacle-style random --obstacle-shapes hexagon,blob --out data/bev_unseen/
+    python -m bevnet.train --train data/bev_rand/train --val data/bev_rand/val --tests "data/bev/G0_*" "data/bev/E3_*" "data/bev/S1_*" --out results/bev_rand/
+    python -m bevnet.train --eval-only --out results/bev_rand/ --tests "data/bev_unseen/*" --results-name unseen
+
+Real frames (bevnet/real.py): the 56 real scenes (data/survey_rounds, 8 layouts x 7 rounds, 4 robots) in the same format, one set per reading k = 0..4 of each stop: each robot's frame resized to 256 x 144, its OptiTrack camera pose, its own camera matrix and distortion, pitch 11.5 deg (P5 22 deg), true boxes from ground_truth.json, all shifted to the centre of the robots. --check writes fig_REAL-0.png with the true box centres projected into the frames. Then any model trained in simulation is tested on them without retraining (results in summary_real.csv):
+
+    python -m bevnet.real --runs "data/survey_rounds/*" --out data/bev_real/ --readings 0,1,2,3,4 --check
+    python -m bevnet.train --eval-only --out results/bev/ --tests "data/bev_real/*" --results-name real
+    python -m bevnet.train --eval-only --out results/bev_obst/ --tests "data/bev_real/*" --results-name real
+
+Twins of the real scenes (bevnet/twin.py: same poses, pitch and boxes, rendered) and fine-tuning on the real frames, leave-one-layout-out (bevnet/finetune.py):
+
+    python -m bevnet.twin --real data/bev_real/real_k0 --out data/bev_real_twin/ --figure
+    python -m bevnet.train --eval-only --out results/bev_obst/ --tests data/bev_real_twin/twin_k0 --results-name twin
+    python -m bevnet.finetune --init results/bev_obst/bev_c64_m16 --real "data/bev_real/real_k*" --sim data/bev_obst/train --sim-scenes 500 --out results/bev_real_ft/
+
+Towards real frames: --visual random renders robots with wheels and arm, windows, light spots on the floor, desks with screens and wider greys; --encoder resnet18 uses an ImageNet-pretrained ResNet-18 (pip install torchvision); --jitter changes colour and brightness of the training images:
+
+    python -m bevnet.data --sets train --runs 20000 --obstacles 2 --distractors 4 --obstacle-style random --obstacle-shapes cylinder,box,prism --visual random --out data/bev_vis/
+    python -m bevnet.data --sets val --obstacles 2 --distractors 4 --obstacle-style random --obstacle-shapes cylinder,box,prism --visual random --out data/bev_vis/
+    python -m bevnet.train --encoder resnet18 --jitter 0.3 --name resnet_vis --train data/bev_vis/train --val data/bev_vis/val --tests "data/bev/G0_*" "data/bev/E3_*" "data/bev/S1_*" --out results/bev_vis/
+    python -m bevnet.train --eval-only --name resnet_vis --out results/bev_vis/ --tests "data/bev_real/*" --results-name real
+    python -m bevnet.train --jitter 0.3 --name small_vis --train data/bev_vis/train --val data/bev_vis/val --tests "data/bev/G0_*" "data/bev/E3_*" "data/bev/S1_*" --out results/bev_vis/
+
+Camera pitch of the real robots: the camera is 29 cm above the floor, so a pitch error of 1 deg moves the middle of a box at 1.5 m by about 60 cm along the ray. --calibrate fits the pitch and a yaw offset per robot from the ArUco detections stored with the frames (camera calibration only), leave one layout out. --pitch-noise / --yaw-noise train the network with errors on the given pitch and yaw:
+
+    python -m bevnet.real --runs "data/survey_rounds/*" --out data/bev_real_cal/ --readings 0,1,2,3,4 --calibrate --check
+    python -m bevnet.train --eval-only --out results/bev_obst/ --tests "data/bev_real_cal/*" --results-name real_cal
+    python -m bevnet.train --pitch-noise 1.5 --yaw-noise 1.0 --name pitchnoise --train data/bev_obst/train --val data/bev_obst/val --tests "data/bev/G0_*" "data/bev/E3_*" "data/bev/S1_*" --out results/bev_pn/
+
+Side by side with MHT and the GNN on the same scenes (table_BEV.csv, fig_BEV-1):
+
+    python -m bevnet.compare --method "MHT=results/plan/M3/summary.csv" "GNN=results/plan/M4/gnn/detection_full_full_h2/summary.csv" "MHT (images, ArUco)=results/imgsim/M3/summary.csv" "Image network=results/bev/bev_c64_m16/summary.csv" --out results/bev/
+
+Boxes only. --masks renders only the box silhouettes (white on black; obstacles and robots hide boxes but are not drawn, no room, no gripper, no camera effects). The real frames get the same treatment from bevnet/segment.py (Grounding DINO "a white box." + SAM, pip install transformers; full-size masks cached in <out>/cache/, overlay check in <out>/fig_REAL-masks.png). Training relaxes the conditions: --mask-noise 1 makes the training masks imperfect (edges, holes, false blobs, missed boxes), --pitch-noise / --yaw-noise / --height-noise put errors on the given camera geometry:
+
+    python -m bevnet.real --runs "data/survey_rounds/*" --out data/bev_real_masks/ --readings 0,1,2,3,4 --calibrate --masks
+    python -m bevnet.data --sets train --runs 20000 --obstacles 2 --masks --out data/bev_mask/
+    python -m bevnet.data --sets val --obstacles 2 --masks --out data/bev_mask/
+    python -m bevnet.data --sets G0,E3,S1 --masks --out data/bev_mask/
+    python -m bevnet.train --pitch-noise 1.5 --yaw-noise 1.0 --height-noise 0.025 --mask-noise 1.0 --name masks --train data/bev_mask/train --val data/bev_mask/val --tests "data/bev_mask/G0_*" "data/bev_mask/E3_*" "data/bev_mask/S1_*" --out results/bev_mask/
+    python -m bevnet.train --eval-only --name masks --out results/bev_mask/ --tests "data/bev_real_masks/*" --results-name real

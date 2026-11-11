@@ -377,9 +377,10 @@ def main():
         for seed, m in enumerate(models):
             ests = [] if a.save_estimates else None
             rows = evaluate_scenes(m, scenes, enc, a, ests) + [dict(r) for r in empties]
-            if ests is not None:
-                os.makedirs(os.path.join(out, "estimates"), exist_ok=True)
-                with open(os.path.join(out, "estimates", f"{name}_seed{seed}.jsonl"), "w") as f:
+            if ests is not None:                 # estimates/ or estimates_<results-name>/
+                est_dir = os.path.join(out, "estimates" + (f"_{a.results_name}" if a.results_name else ""))
+                os.makedirs(est_dir, exist_ok=True)
+                with open(os.path.join(est_dir, f"{name}_seed{seed}.jsonl"), "w") as f:
                     for est in ests:
                         f.write(json.dumps(est) + "\n")
             for r in rows:

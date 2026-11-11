@@ -98,6 +98,8 @@ def main():
     ap.add_argument("--mht", default="results/plan/M3/", help="pipeline.plan_mht output with one folder per set")
     ap.add_argument("--mht-h", type=int, default=100)
     ap.add_argument("--gnn", required=True, help="gnn.train_sim variant folder (with estimates/)")
+    ap.add_argument("--estimates-dir", default="estimates",
+                    help="sub-folder of --gnn with the GNN boxes (estimates_<results-name> for an --eval-only run)")
     ap.add_argument("--sensor-calib", default="config/sensor_calib.json")
     ap.add_argument("--link", type=float, default=LINK_M)
     ap.add_argument("--cutoff", type=float, default=MATCH_CUTOFF_M)
@@ -116,7 +118,7 @@ def main():
     for name in names:
         sid, level, family = name.split("_")
         mht_path = os.path.join(a.mht, name, f"estimates_H{a.mht_h}_o0.jsonl")
-        gnn_paths = sorted(glob.glob(os.path.join(a.gnn, "estimates", f"{name}_seed*.jsonl")))
+        gnn_paths = sorted(glob.glob(os.path.join(a.gnn, a.estimates_dir, f"{name}_seed*.jsonl")))
         if not os.path.exists(mht_path) or not gnn_paths:
             print(f"  {name}: missing {'MHT' if not os.path.exists(mht_path) else 'GNN'} estimates, skipped")
             continue

@@ -20,3 +20,9 @@ data/sim_*/
 
 # Real scenes with combined rounds (regenerated with python -m pipeline.combine_rounds)
 data/real_combined/
+
+# Image datasets (regenerated with python -m bevnet.data / bevnet.real / bevnet.twin)
+data/bev*/
+
+# Files set aside for deletion
+_to_delete/

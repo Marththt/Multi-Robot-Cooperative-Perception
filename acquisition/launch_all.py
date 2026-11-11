@@ -164,8 +164,11 @@ def box_rigid_bodies(box_specs, gt_path, layout_id):
 
 def record_boxes(objects, server, local, seconds=2.0):
     """Positions of the boxes NOW from OptiTrack (average over `seconds`):
-    [dict(class_name, x, y, rb_id)], or raises SystemExit if a box is not
-    tracked."""
+    [dict(class_name, x, y, yaw, rb_id)], or raises SystemExit if a box is
+    not tracked. yaw [rad] is the planar yaw of the box rigid body as Motive
+    gives it (circular mean): its zero is wherever the rigid body was
+    defined, so the face directions follow from it up to one fixed offset
+    per box."""
     from tools.record_ground_truth import average_positions
     from vf.localization.mocap_pose import MocapHub
     hub = MocapHub([rb for rb, _ in objects], server, local)
@@ -180,7 +183,7 @@ def record_boxes(objects, server, local, seconds=2.0):
             for rb, _ in objects:
                 q = hub.get_pose(rb)
                 if q is not None:
-                    samples[rb].append((q[0], q[1]))
+                    samples[rb].append((q[0], q[1], q[2]))
             time.sleep(0.02)
     finally:
         hub.close()
@@ -188,7 +191,10 @@ def record_boxes(objects, server, local, seconds=2.0):
     missing = [rb for rb, _ in objects if rb not in avg]
     if missing:
         raise SystemExit(f"BOXES | no OptiTrack reading for the box rigid bodies {missing}: check them in Motive")
-    return [dict(class_name=cls, x=round(avg[rb][0], 4), y=round(avg[rb][1], 4), rb_id=rb) for rb, cls in objects]
+    yaw = {rb: math.atan2(sum(math.sin(p[2]) for p in pts), sum(math.cos(p[2]) for p in pts))
+           for rb, pts in samples.items() if pts}
+    return [dict(class_name=cls, x=round(avg[rb][0], 4), y=round(avg[rb][1], 4), yaw=round(yaw[rb], 4), rb_id=rb)
+            for rb, cls in objects]
 
 
 def boxes_for_this_run(a, rest, layout_id, run_id, gt_out):
@@ -215,7 +221,8 @@ def boxes_for_this_run(a, rest, layout_id, run_id, gt_out):
     for e in entries:
         o = old.get(e["rb_id"])
         moved = "" if o is None else f"  ({math.hypot(e['x'] - o['x'], e['y'] - o['y']):.2f} m from {layout_id} in the file)"
-        print(f"BOXES |   rb {e['rb_id']:>3} {e['class_name']:<6} x={e['x']:+.3f} y={e['y']:+.3f}{moved}", flush=True)
+        print(f"BOXES |   rb {e['rb_id']:>3} {e['class_name']:<6} x={e['x']:+.3f} y={e['y']:+.3f} "
+              f"yaw={math.degrees(e['yaw']):+6.1f} deg{moved}", flush=True)
     data = {layout_id: entries}
     if run_id:
         data[run_id] = entries

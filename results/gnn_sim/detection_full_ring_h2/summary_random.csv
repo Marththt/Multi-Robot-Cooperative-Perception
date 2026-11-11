@@ -1,2 +1,0 @@
-test,method,scenes,viewpoints,pd_pct,pd_pct_sd,rmse_all_cm,rmse_all_cm_sd,false_per_scene,false_per_scene_sd,exact_pct,exact_pct_sd,correct_pct,correct_pct_sd,too_few_pct,too_few_pct_sd,too_many_pct,too_many_pct_sd,rmse_median_cm,rmse_median_cm_sd,ospa_mean,ospa_mean_sd
-R0,gnn,1000,4.9,88.454,0.75,7.044,0.101,0.047,0.005,54.06,1.865,52.42,1.843,44.5,2.22,1.44,0.408,4.826,0.027,0.066,0.001
