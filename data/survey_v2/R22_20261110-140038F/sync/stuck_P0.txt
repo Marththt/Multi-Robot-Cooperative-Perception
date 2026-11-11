@@ -1,0 +1,24 @@
+--- 14:01:05 driving to R22/P0/000/+0
+--- 14:01:06 arrived at R22/P0/000/+0, settling
+--- 14:01:07 capturing R22/P0/000/+0 (camera + marker detection)
+--- 14:01:07 saving R22/P0/000/+0
+--- 14:01:07 writing R22/P0/000/+0
+--- 14:01:07 driving to R22/P0/001/+0
+--- 14:01:09 arrived at R22/P0/001/+0, settling
+--- 14:01:10 capturing R22/P0/001/+0 (camera + marker detection)
+--- 14:01:11 saving R22/P0/001/+0
+--- 14:01:11 writing R22/P0/001/+0
+--- 14:01:11 driving to R22/P0/002/+0 (leg 1/3)
+--- 14:01:13 driving to R22/P0/002/+0 (leg 2/3)
+--- 14:01:14 driving to R22/P0/002/+0 (leg 3/3)
+--- 14:01:15 arrived at R22/P0/002/+0, settling
+--- 14:01:16 capturing R22/P0/002/+0 (camera + marker detection)
+--- 14:01:17 saving R22/P0/002/+0
+--- 14:01:17 writing R22/P0/002/+0
+--- 14:01:17 driving to R22/P0/003/+0 (leg 1/3)
+--- 14:01:18 driving to R22/P0/003/+0 (leg 2/3)
+--- 14:01:19 driving to R22/P0/003/+0 (leg 3/3)
+--- 14:01:20 arrived at R22/P0/003/+0, settling
+--- 14:01:21 capturing R22/P0/003/+0 (camera + marker detection)
+--- 14:01:22 saving R22/P0/003/+0
+--- 14:01:22 writing R22/P0/003/+0

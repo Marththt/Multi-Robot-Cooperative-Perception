@@ -1,0 +1,13 @@
+--- 16:24:26 driving to R15/P1/000/+0 (leg 1/4)
+--- 16:24:28 driving to R15/P1/000/+0 (leg 2/4)
+--- 16:24:29 driving to R15/P1/000/+0 (leg 3/4)
+--- 16:24:31 driving to R15/P1/000/+0 (leg 4/4)
+--- 16:24:32 arrived at R15/P1/000/+0, settling
+--- 16:24:33 capturing R15/P1/000/+0 (camera + marker detection)
+--- 16:24:33 saving R15/P1/000/+0
+--- 16:24:33 writing R15/P1/000/+0
+--- 16:24:33 driving to R15/P1/001/+0
+--- 16:24:36 arrived at R15/P1/001/+0, settling
+--- 16:24:37 capturing R15/P1/001/+0 (camera + marker detection)
+--- 16:24:37 saving R15/P1/001/+0
+--- 16:24:37 writing R15/P1/001/+0

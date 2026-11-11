@@ -1,0 +1,5 @@
+--- 15:45:04 driving to R27/P1/000/+0
+--- 15:45:06 arrived at R27/P1/000/+0, settling
+--- 15:45:07 capturing R27/P1/000/+0 (camera + marker detection)
+--- 15:45:08 saving R27/P1/000/+0
+--- 15:45:08 writing R27/P1/000/+0
