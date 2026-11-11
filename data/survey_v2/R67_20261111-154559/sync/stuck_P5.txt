@@ -1,0 +1,10 @@
+--- 15:46:15 driving to R67/P5/000/+0
+--- 15:46:19 arrived at R67/P5/000/+0, settling
+--- 15:46:20 capturing R67/P5/000/+0 (camera + marker detection)
+--- 15:46:21 saving R67/P5/000/+0
+--- 15:46:21 writing R67/P5/000/+0
+--- 15:46:25 driving to R67/P5/002/+0 (leg 1/6)
+--- 15:46:26 driving to R67/P5/002/+0 (leg 2/6)
+--- 15:46:28 driving to R67/P5/002/+0 (leg 3/6)
+--- 15:46:29 driving to R67/P5/002/+0 (leg 4/6)
+--- 15:46:31 driving to R67/P5/002/+0 (leg 5/6)

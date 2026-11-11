@@ -1,0 +1,3 @@
+--- 12:57:26 driving to R39/P3/000/+0
+--- 12:57:29 arrived at R39/P3/000/+0, settling
+--- 12:57:30 capturing R39/P3/000/+0 (camera + marker detection)
