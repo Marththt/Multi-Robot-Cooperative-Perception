@@ -105,13 +105,26 @@ def angle_offsets(runs, pitch):
     return out
 
 
-def calibration(runs, pitch):
-    """(layout, robot) -> (pitch [deg], yaw offset [deg]) fitted on the other layouts."""
+def calibration(runs, pitch, scope="other-layouts", neighbours=2):
+    """(layout, robot) -> (pitch [deg], yaw offset [deg]) of each camera, from the marker detections.
+    scope "other-layouts": fitted on all the other layouts (the camera mounting is the same throughout).
+    scope "neighbours": fitted on the `neighbours` layouts captured just before and just after (capture
+    order = order of the run folders), not on the layout itself: for a campaign in which the cameras were
+    moved now and then. scope "same-run": fitted on the layout itself (the camera calibrated in the
+    session it is used in; the detections only set the camera angles, never the boxes)."""
     off = angle_offsets(runs, pitch)
+    order = [layout for _, layout, *_ in runs]
     cal = {}
     for (layout, q) in off:
-        dv = [v for (l2, q2), (vs, _) in off.items() if q2 == q and l2 != layout for v in vs]
-        du = [v for (l2, q2), (_, us) in off.items() if q2 == q and l2 != layout for v in us]
+        if scope == "same-run":
+            use = {layout}
+        elif scope == "neighbours":
+            k = order.index(layout)
+            use = set(order[max(0, k - neighbours):k] + order[k + 1:k + 1 + neighbours])
+        else:
+            use = set(order) - {layout}
+        dv = [v for (l2, q2), (vs, _) in off.items() if q2 == q and l2 in use for v in vs]
+        du = [v for (l2, q2), (_, us) in off.items() if q2 == q and l2 in use for v in us]
         if dv:
             cal[(layout, q)] = (pitch.get(q, 11.5) - float(np.median(dv)), float(np.median(du)))
     return cal
@@ -245,6 +258,10 @@ def main():
                     help="largest detector rectangle kept, as a share of the frame (near boxes fill much of it)")
     ap.add_argument("--calibrate", action="store_true",
                     help="pitch and yaw offset per robot from the stored detections, leave one layout out")
+    ap.add_argument("--calibrate-scope", choices=["other-layouts", "neighbours", "same-run"],
+                    default="other-layouts",
+                    help="which detections calibrate the camera of a layout (see calibration()): the other "
+                         "layouts, the 2 layouts captured before and after, or the layout itself")
     a = ap.parse_args()
     pitch = dict(PITCH_DEG)
     if a.pitch:
@@ -255,7 +272,7 @@ def main():
         print(f"  {len(run_dirs)} layouts: " + " ".join(os.path.basename(os.path.normpath(d)) for d in run_dirs),
               flush=True)
     runs = [(d, *load_run(d)) for d in run_dirs]
-    cal = calibration(runs, pitch) if a.calibrate else None
+    cal = calibration(runs, pitch, a.calibrate_scope) if a.calibrate else None
     seg, overlays, cache = None, [], a.mask_cache or os.path.join(a.out, "cache")
     if a.masks or a.cutout:
         from bevnet.segment import BoxSegmenter
