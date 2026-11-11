@@ -195,7 +195,7 @@ def command(row, n_boxes):
               "--out data/survey_v2/", "--aruco-marker-size 0.077", "--range-fit 1.064 -0.080",
               "--camera-offset-forward-m 0.12", "--instance-threshold-m 0.2",
               f"--step-deg {STEP_DEG:g} --sweep-deg {SWEEP_DEG:g}",
-              f"--circle-center {CENTRE[0]:g} {CENTRE[1]:g}"]
+              f"--circle-center {CENTRE[0]:g} {CENTRE[1]:g}", "--no-robot-avoidance"]
     r = RADIUS[row["robots"]]
     if r:
         parts.append(f"--radius {r:g}")

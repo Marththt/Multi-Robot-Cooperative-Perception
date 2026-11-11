@@ -747,7 +747,7 @@ class RobotHandle:
                                      offset_right_m=a.camera_offset_right_m)
         self.body_pose = body_pose
         self.camera_pose = localizer.pose
-        self.others = others if a.others else None
+        self.others = others if (a.others and not getattr(a, "no_robot_avoidance", False)) else None
         cm, dc = load_calibration(a.camera_calib) if a.camera_calib else (None, None)
         raw_detector = ArucoDetector(
             marker_size_m=a.aruco_marker_size, camera_matrix=cm, dist_coeffs=dc,
@@ -943,6 +943,10 @@ def add_survey_arguments(p):
     p.add_argument("--instance-threshold-m", type=float, default=0.5)
     p.add_argument("--stop-distance", type=float, default=0.6,
                    help="stand still while another robot is closer than this and in the way [m]")
+    p.add_argument("--no-robot-avoidance", action="store_true",
+                   help="ignore the other robots: no standing still when one is in the way, no clearance "
+                        "between robots in the paths and in the rotating formation (faster; only when the "
+                        "formation keeps the robots apart, as on the circle)")
     p.add_argument("--plan-only", action="store_true", help="print the plan and exit")
     p.add_argument("--plan-png", default=None, help="with --plan-only: also draw the plan in this PNG")
     p.add_argument("--sim", action="store_true", help="fake robot + synthetic observations, no hardware")
@@ -1032,6 +1036,8 @@ def team_arcs(starts, team, center, boxes, arena, a, min_sep_m=0.7, radial_searc
     n = int(round(a.sweep_deg / a.step_deg))
     r0 = {r: math.hypot(starts[r][0] - cx, starts[r][1] - cy) for r in team}
     th0 = {r: math.atan2(starts[r][1] - cy, starts[r][0] - cx) for r in team}
+    if getattr(a, "no_robot_avoidance", False):
+        min_sep_m = 0.0
     # two robots never get closer than min_sep_m, or than 90% of how close
     # they were placed if that was already less
     sep = {(p, q): min(min_sep_m, 0.9 * math.hypot(starts[p][0] - starts[q][0], starts[p][1] - starts[q][1]))
@@ -1419,6 +1425,9 @@ def main():
                         "prints where the process is stuck (0 = never)")
     add_survey_arguments(p)
     a = p.parse_args()
+    if a.no_robot_avoidance:              # see --no-robot-avoidance
+        a.stop_distance = 0.0
+        a.robot_clearance = 0.0
 
     if a.ignore_ctrl_c:
         signal.signal(signal.SIGINT, signal.SIG_IGN)

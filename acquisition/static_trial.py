@@ -112,6 +112,13 @@ def write_live_state(path, robot_id, pose, detections_state, p_d=1.0):
               f"excluding the folder from the antivirus.")
 
 
+def draw_triangle(img, x, y, w, h, colour):
+    """Outline of a box in the preview: a triangle in the detection rectangle (apex at the top centre)."""
+    pts = [(int(x + w / 2), y), (x, y + h), (x + w, y + h)]
+    for p, q in zip(pts, pts[1:] + pts[:1]):
+        cv2.line(img, p, q, colour, 2)
+
+
 def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
                  debug=False, p_d=1.0, seed=0):
     """Video window with the detected markers drawn on top, in real time
@@ -225,7 +232,7 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
             if dropped:
                 n_dropped_total += 1
                 grey = (128, 128, 128)
-                cv2.rectangle(display, (x, y), (x + w, y + h), grey, 2)
+                draw_triangle(display, x, y, w, h, grey)
                 cx_badge, cy_badge = x + 14, y + 14
                 cv2.circle(display, (cx_badge, cy_badge), 13, grey, -1)
                 cv2.circle(display, (cx_badge, cy_badge), 13, (0, 0, 0), 2)
@@ -236,7 +243,7 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
                      f"{class_name} DROPPED (interference p_D={p_d:.2f})"))
                 continue
             colour = MARKER_PALETTE[i % len(MARKER_PALETTE)]
-            cv2.rectangle(display, (x, y), (x + w, y + h), colour, 2)
+            draw_triangle(display, x, y, w, h, colour)
             position = None
             # PIXEL offset of the bbox centre from the centre used by the
             # computation (cx), and the bearing that THIS offset alone
