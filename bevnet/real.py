@@ -22,6 +22,8 @@ that poses, pitch and lens put them on the boxes.
     python -m bevnet.real --runs "data/survey_rounds/*" --out data/bev_real_cut/ --readings 0,1,2,3,4 --calibrate --cutout \
         --mask-cache data/bev_real_masks/cache
       (--cutout: the frame itself inside the mask, black elsewhere, as bevnet.data --cutout)
+    python -m bevnet.real --runs "data/survey_v2/*" --best-run-per-layout --out data/bev_real_v2_masks/ \
+        --readings 0,1,2,3,4 --calibrate --masks          # second campaign: one run per layout (R01, R02, ...)
     python -m bevnet.train --eval-only --out results/bev_obst/ --tests "data/bev_real/*" --results-name real
 """
 
@@ -198,11 +200,36 @@ def check_figure(scenes, out_path, n=4):
     cv2.imwrite(out_path, np.vstack(tiles))
 
 
+def best_runs(run_dirs):
+    """One run folder per layout (the folder name up to the first '_'): among the runs with the most
+    stored frames, the one marked as the good capture (name ending in 'F'), otherwise the latest. Aborted
+    and repeated attempts of the same layout are left out."""
+    by_layout = defaultdict(list)
+    for d in run_dirs:
+        n = 0
+        for path in glob.glob(os.path.join(d, "raw", "*.jsonl")):
+            with open(path) as f:
+                n += sum(1 for _ in f)
+        by_layout[os.path.basename(os.path.normpath(d)).split("_")[0]].append((n, d))
+    out = []
+    for layout, cand in sorted(by_layout.items()):
+        top = max(n for n, _ in cand)
+        if top == 0:
+            continue
+        full = [d for n, d in cand if n >= 0.9 * top]
+        marked = [d for d in full if os.path.basename(os.path.normpath(d)).endswith("F")]
+        out.append(sorted(marked or full)[-1])
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--runs", nargs="+", default=["data/survey_rounds/*"])
     ap.add_argument("--out", default="data/bev_real/")
     ap.add_argument("--readings", default="0", help="comma list of readings (0-4): one set each")
+    ap.add_argument("--best-run-per-layout", action="store_true",
+                    help="several runs of one layout (repeated captures, data/survey_v2): keep one per layout, "
+                         "the complete run whose folder name ends in F, otherwise the latest complete one")
     ap.add_argument("--scale", type=float, default=0.2)
     ap.add_argument("--jpeg-quality", type=int, default=92)
     ap.add_argument("--pitch", default=None, help="per robot pitch in degrees, e.g. P0=11,P1=12,P3=11,P5=22")
@@ -223,6 +250,10 @@ def main():
     if a.pitch:
         pitch.update({k: float(v) for k, v in (p.split("=") for p in a.pitch.split(","))})
     run_dirs = sorted({d for p in a.runs for d in glob.glob(p) if os.path.isdir(os.path.join(d, "raw"))})
+    if a.best_run_per_layout:
+        run_dirs = best_runs(run_dirs)
+        print(f"  {len(run_dirs)} layouts: " + " ".join(os.path.basename(os.path.normpath(d)) for d in run_dirs),
+              flush=True)
     runs = [(d, *load_run(d)) for d in run_dirs]
     cal = calibration(runs, pitch) if a.calibrate else None
     seg, overlays, cache = None, [], a.mask_cache or os.path.join(a.out, "cache")
