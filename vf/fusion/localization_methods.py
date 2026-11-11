@@ -39,7 +39,7 @@ from itertools import permutations
 import numpy as np
 
 from vf.fusion.data_association import mht
-from vf.fusion.phd import cphd, phd
+from vf.fusion.phd import cphd, cphd_avg, phd, phd_avg
 from vf.fusion.sensor_aware_mht import mht_sensor
 from vf.perception.object_position import global_position
 
@@ -93,7 +93,8 @@ def union(order, reports, poses, sensor, zones=None, threshold_m=0.5):
     return dict(objects=[tuple(float(v) for v in c) for c in kept], n=len(kept), extra={})
 
 
-METHODS = dict(zone_class=zone_class, union=union, mht=mht, phd=phd, cphd=cphd, mht_sensor=mht_sensor)
+METHODS = dict(zone_class=zone_class, union=union, mht=mht, phd=phd, cphd=cphd, mht_sensor=mht_sensor,
+               phd_avg=phd_avg, cphd_avg=cphd_avg)
 _TAKE_ZONES = ("zone_class", "union")
 _TAKE_META = ("mht_sensor",)
 

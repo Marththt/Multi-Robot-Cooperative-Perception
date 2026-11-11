@@ -306,10 +306,15 @@ def noisy_mask(img, rng, level):
     pixels, small holes, small false blobs, and now and then a whole box missed. level 1 = the default amounts."""
     m = (img[..., 0] > 127).astype(np.uint8)
     H, W = m.shape
+    # 1-pixel gaps between two white pixels: the lines between touching boxes (imgsim instance_borders),
+    # kept when the edges are grown, as the real masks keep them (bevnet/real.py --instances)
+    pad = np.pad(m, 1)
+    thin = (m == 0) & (((pad[1:-1, :-2] > 0) & (pad[1:-1, 2:] > 0)) | ((pad[:-2, 1:-1] > 0) & (pad[2:, 1:-1] > 0)))
     k = int(rng.integers(0, 3))
     if k:
         kernel = np.ones((2 * k + 1, 2 * k + 1), np.uint8)
         m = cv2.dilate(m, kernel) if rng.random() < 0.5 else cv2.erode(m, kernel)
+        m[thin] = 0
     n, lab, stats, _ = cv2.connectedComponentsWithStats(m)
     for c in range(1, n):                                  # a single small box missed (not a group of boxes)
         if stats[c, cv2.CC_STAT_AREA] < 0.02 * H * W and rng.random() < 0.05 * level:

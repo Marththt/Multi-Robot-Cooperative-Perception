@@ -40,7 +40,8 @@ from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions, se
                                     zones_from_arguments)
 
 METHOD_LABELS = dict(zone_class="zone + class", union="union", mht="MHT", phd="PHD", cphd="CPHD",
-                     mht_sensor="MHT with sensor model")
+                     mht_sensor="MHT with sensor model", phd_avg="PHD (order average)",
+                     cphd_avg="CPHD (order average)")
 
 # Bearing correction (k, b0): measured = k * true + b0. Set by --bearing-fit (here or by
 # pipeline/evaluate_runs.py); None = bearings used as measured. The distance correction (--range-fit)

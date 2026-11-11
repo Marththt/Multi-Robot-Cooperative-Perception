@@ -72,8 +72,8 @@ from vf.fusion.sensor_model import (add_sensor_arguments, arena_from_regions, se
                                     zones_from_arguments)
 
 # categorical palette (fixed order, validated for adjacent pairs), one per method
-COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#7a4fc9"]
-MARKERS = ["o", "s", "^", "D", "v", "P"]
+COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#7a4fc9", "#5b8f1f", "#a8541c"]
+MARKERS = ["o", "s", "^", "D", "v", "P", "X", "*"]
 TEXT, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 ORDER = {}          # layout name -> sort key (its run id), so the figures follow L1, L2, ...
 

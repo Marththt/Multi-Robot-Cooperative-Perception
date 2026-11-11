@@ -1,0 +1,5 @@
+{
+  "pitch_deg": [8.0, 32.0],
+  "instance_borders": true,
+  "border_merge_prob": 0.15
+}

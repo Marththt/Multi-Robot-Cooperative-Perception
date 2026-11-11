@@ -22,6 +22,8 @@ that poses, pitch and lens put them on the boxes.
     python -m bevnet.real --runs "data/survey_rounds/*" --out data/bev_real_cut/ --readings 0,1,2,3,4 --calibrate --cutout \
         --mask-cache data/bev_real_masks/cache
       (--cutout: the frame itself inside the mask, black elsewhere, as bevnet.data --cutout)
+    python -m bevnet.real --runs "data/survey_v2/*" --best-run-per-layout --out data/bev_real_v2_masks/ \
+        --readings 0,1,2,3,4 --calibrate --masks          # second campaign: one run per layout (R01, R02, ...)
     python -m bevnet.train --eval-only --out results/bev_obst/ --tests "data/bev_real/*" --results-name real
 """
 
@@ -103,20 +105,33 @@ def angle_offsets(runs, pitch):
     return out
 
 
-def calibration(runs, pitch):
-    """(layout, robot) -> (pitch [deg], yaw offset [deg]) fitted on the other layouts."""
+def calibration(runs, pitch, scope="other-layouts", neighbours=2):
+    """(layout, robot) -> (pitch [deg], yaw offset [deg]) of each camera, from the marker detections.
+    scope "other-layouts": fitted on all the other layouts (the camera mounting is the same throughout).
+    scope "neighbours": fitted on the `neighbours` layouts captured just before and just after (capture
+    order = order of the run folders), not on the layout itself: for a campaign in which the cameras were
+    moved now and then. scope "same-run": fitted on the layout itself (the camera calibrated in the
+    session it is used in; the detections only set the camera angles, never the boxes)."""
     off = angle_offsets(runs, pitch)
+    order = [layout for _, layout, *_ in runs]
     cal = {}
     for (layout, q) in off:
-        dv = [v for (l2, q2), (vs, _) in off.items() if q2 == q and l2 != layout for v in vs]
-        du = [v for (l2, q2), (_, us) in off.items() if q2 == q and l2 != layout for v in us]
+        if scope == "same-run":
+            use = {layout}
+        elif scope == "neighbours":
+            k = order.index(layout)
+            use = set(order[max(0, k - neighbours):k] + order[k + 1:k + 1 + neighbours])
+        else:
+            use = set(order) - {layout}
+        dv = [v for (l2, q2), (vs, _) in off.items() if q2 == q and l2 in use for v in vs]
+        du = [v for (l2, q2), (_, us) in off.items() if q2 == q and l2 in use for v in us]
         if dv:
             cal[(layout, q)] = (pitch.get(q, 11.5) - float(np.median(dv)), float(np.median(du)))
     return cal
 
 
 def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=None, seg=None, cache=None,
-                overlays=None, cutout=False):
+                overlays=None, cutout=False, instances=False):
     robots = sorted(recs)
     poses = np.array([camera_pose(recs[q]) for q in robots], np.float64)
     pitch_deg = [pitch.get(q, 11.5) for q in robots]
@@ -137,15 +152,23 @@ def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=N
         if seg is not None:                                 # boxes only
             key = os.path.join(cache, os.path.basename(os.path.normpath(run_dir)),
                                os.path.basename(recs[q]["image"].replace("\\", "/"))[:-4] + ".png")
+            key_ids = key[:-4] + "_ids.png"                 # one label per box (--instances)
             mask = cv2.imread(key, cv2.IMREAD_GRAYSCALE) if os.path.exists(key) else None
-            if mask is None:
-                mask, rects = seg(img)
+            labels = cv2.imread(key_ids, cv2.IMREAD_GRAYSCALE) if os.path.exists(key_ids) else None
+            if mask is None or (instances and labels is None):
+                mask, rects, labels = seg(img)
                 os.makedirs(os.path.dirname(key), exist_ok=True)
                 cv2.imwrite(key, mask)
+                cv2.imwrite(key_ids, labels)
                 if overlays is not None and len(overlays) < 16:
                     from bevnet.segment import overlay
-                    overlays.append(cv2.resize(overlay(img, mask, rects), (640, 360)))
-            small = (cv2.resize(mask, (w, h), interpolation=cv2.INTER_AREA) > 127).astype(np.uint8) * 255
+                    overlays.append(cv2.resize(overlay(img, mask, rects, labels if instances else None),
+                                               (640, 360)))
+            if instances:                                   # boxes that touch in the image stay apart
+                from imgsim.render import separate_instances
+                small = separate_instances(cv2.resize(labels, (w, h), interpolation=cv2.INTER_NEAREST))
+            else:
+                small = (cv2.resize(mask, (w, h), interpolation=cv2.INTER_AREA) > 127).astype(np.uint8) * 255
             if cutout:                                      # the frame inside the mask, black elsewhere
                 frame = cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
                 frame[small == 0] = 0
@@ -198,16 +221,45 @@ def check_figure(scenes, out_path, n=4):
     cv2.imwrite(out_path, np.vstack(tiles))
 
 
+def best_runs(run_dirs):
+    """One run folder per layout (the folder name up to the first '_'): among the runs with the most
+    stored frames, the one marked as the good capture (name ending in 'F'), otherwise the latest. Aborted
+    and repeated attempts of the same layout are left out."""
+    by_layout = defaultdict(list)
+    for d in run_dirs:
+        n = 0
+        for path in glob.glob(os.path.join(d, "raw", "*.jsonl")):
+            with open(path) as f:
+                n += sum(1 for _ in f)
+        by_layout[os.path.basename(os.path.normpath(d)).split("_")[0]].append((n, d))
+    out = []
+    for layout, cand in sorted(by_layout.items()):
+        top = max(n for n, _ in cand)
+        if top == 0:
+            continue
+        full = [d for n, d in cand if n >= 0.9 * top]
+        marked = [d for d in full if os.path.basename(os.path.normpath(d)).endswith("F")]
+        out.append(sorted(marked or full)[-1])
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--runs", nargs="+", default=["data/survey_rounds/*"])
     ap.add_argument("--out", default="data/bev_real/")
     ap.add_argument("--readings", default="0", help="comma list of readings (0-4): one set each")
+    ap.add_argument("--best-run-per-layout", action="store_true",
+                    help="several runs of one layout (repeated captures, data/survey_v2): keep one per layout, "
+                         "the complete run whose folder name ends in F, otherwise the latest complete one")
     ap.add_argument("--scale", type=float, default=0.2)
     ap.add_argument("--jpeg-quality", type=int, default=92)
     ap.add_argument("--pitch", default=None, help="per robot pitch in degrees, e.g. P0=11,P1=12,P3=11,P5=22")
     ap.add_argument("--check", action="store_true", help="write fig_REAL-0.png with the true boxes drawn in")
     ap.add_argument("--masks", action="store_true", help="boxes only: segment every frame (bevnet/segment.py)")
+    ap.add_argument("--instances", action="store_true",
+                    help="with --masks: a 1-pixel black line where two segmented boxes touch (as imgsim "
+                         "instance_borders); needs the per-box labels, so frames cached without them are "
+                         "segmented again")
     ap.add_argument("--cutout", action="store_true",
                     help="boxes only, as seen: the frame inside the segmentation mask, black elsewhere")
     ap.add_argument("--mask-cache", default=None,
@@ -218,13 +270,21 @@ def main():
                     help="largest detector rectangle kept, as a share of the frame (near boxes fill much of it)")
     ap.add_argument("--calibrate", action="store_true",
                     help="pitch and yaw offset per robot from the stored detections, leave one layout out")
+    ap.add_argument("--calibrate-scope", choices=["other-layouts", "neighbours", "same-run"],
+                    default="other-layouts",
+                    help="which detections calibrate the camera of a layout (see calibration()): the other "
+                         "layouts, the 2 layouts captured before and after, or the layout itself")
     a = ap.parse_args()
     pitch = dict(PITCH_DEG)
     if a.pitch:
         pitch.update({k: float(v) for k, v in (p.split("=") for p in a.pitch.split(","))})
     run_dirs = sorted({d for p in a.runs for d in glob.glob(p) if os.path.isdir(os.path.join(d, "raw"))})
+    if a.best_run_per_layout:
+        run_dirs = best_runs(run_dirs)
+        print(f"  {len(run_dirs)} layouts: " + " ".join(os.path.basename(os.path.normpath(d)) for d in run_dirs),
+              flush=True)
     runs = [(d, *load_run(d)) for d in run_dirs]
-    cal = calibration(runs, pitch) if a.calibrate else None
+    cal = calibration(runs, pitch, a.calibrate_scope) if a.calibrate else None
     seg, overlays, cache = None, [], a.mask_cache or os.path.join(a.out, "cache")
     if a.masks or a.cutout:
         from bevnet.segment import BoxSegmenter
@@ -240,7 +300,7 @@ def main():
             for (rnd, reading), recs in sorted(frames.items()):
                 if reading == k:
                     s = build_scene(d, layout, boxes, recs, cams, a.scale, a.jpeg_quality, pitch, cal, seg, cache,
-                                    overlays, a.cutout)
+                                    overlays, a.cutout, a.instances)
                     if s is not None:
                         s["round"] = rnd
                         scenes.append(s)

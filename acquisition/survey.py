@@ -943,6 +943,9 @@ def add_survey_arguments(p):
     p.add_argument("--instance-threshold-m", type=float, default=0.5)
     p.add_argument("--stop-distance", type=float, default=0.6,
                    help="stand still while another robot is closer than this and in the way [m]")
+    p.add_argument("--keep-heading", action="store_true",
+                   help="free placement: every robot captures once (round 0) exactly where and as it was placed, "
+                        "without turning towards the boxes and without further rounds (one scene per launch)")
     p.add_argument("--no-robot-avoidance", action="store_true",
                    help="ignore the other robots: no standing still when one is in the way, no clearance "
                         "between robots in the paths and in the rotating formation (faster; only when the "
@@ -1145,6 +1148,8 @@ def team_plan(starts, team, boxes, box_center, arena, a, n_stations=None):
     team), at the same distance and angles for every layout;
     the robots rotate on the circle and always face its centre."""
     if a.radius is None:
+        if getattr(a, "keep_heading", False):
+            a.sweep_deg = 0.0                 # one round only, where the robots were placed
         if a.sweep_deg is None:
             a.sweep_deg = 180.0
         r0 = {r: tuple(starts[r][:2]) for r in team}
@@ -1361,6 +1366,8 @@ def run_rounds(a, rh, center, boxes, arena, sync, path):
     rounds = [start_captures(start_xy, face, a.yaw_offsets_deg, 0)] + arcs[a.robot_id]
     for c in rounds[0]:
         c["stop"] = 0
+        if getattr(a, "keep_heading", False) and not fixed:     # as placed, not turned to the boxes
+            c["yaw"] = wrap_pi(here[2] + math.radians(c["yaw_offset_deg"]))
     n_rounds = len(rounds)                    # the same for every robot (same sweep and step)
     holds = sum(1 for r in rounds[1:] if not r)
     where = (f"fixed position ({start_xy[0]:+.2f}, {start_xy[1]:+.2f}) on the circle r={a.radius:g} m"
