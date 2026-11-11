@@ -1,0 +1,43 @@
+{
+  "train": [
+    "data/bev_mask_ib/train"
+  ],
+  "val": [
+    "data/bev_mask_ib/val"
+  ],
+  "tests": [
+    "data/bev_mask_ib/G0_*",
+    "data/bev_mask_ib/E3_*",
+    "data/bev_mask_ib/S1_*"
+  ],
+  "out": "results/bev_mask_ib/",
+  "channels": 64,
+  "encoder": "small",
+  "encoder_lr": 0.2,
+  "jitter": 0.0,
+  "pitch_noise": 1.5,
+  "yaw_noise": 1.0,
+  "height_noise": 0.025,
+  "mask_noise": 1.0,
+  "min_visible_px": 12,
+  "name": "masks_ib",
+  "message": 16,
+  "epochs": 15,
+  "patience": 4,
+  "batch": 16,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "offset_weight": 1.0,
+  "max_train": null,
+  "max_val": 2000,
+  "workers": 8,
+  "device": "cuda",
+  "seed": 0,
+  "eval_only": false,
+  "save_maps": 0,
+  "diagnose": false,
+  "results_name": "",
+  "threshold": 0.3,
+  "best_val_correct_pct": 85.65,
+  "best_epoch": 9
+}
