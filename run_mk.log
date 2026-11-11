@@ -1,0 +1,84 @@
+1 set(s), 20000 scenes in 80 shards on 60 process(es)
+  20/80 shards (train)
+  40/80 shards (train)
+  60/80 shards (train)
+  80/80 shards (train)
+done
+1 set(s), 2000 scenes in 8 shards on 8 process(es)
+  8/8 shards (val)
+done
+16 set(s), 16000 scenes in 64 shards on 60 process(es)
+  20/64 shards (S1_b4_circle)
+  40/64 shards (E3_h2_random)
+  60/64 shards (S1_b12_circle)
+  64/64 shards (S1_b16_circle)
+done
+W1111 18:59:54.184000 27776 .venv\Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+Loading weights:   0%|          | 0/978 [00:00<?, ?it/s]Loading weights:  11%|#1        | 110/978 [00:00<00:00, 1005.87it/s]Loading weights:  26%|##5       | 254/978 [00:00<00:00, 1188.80it/s]Loading weights:  38%|###8      | 373/978 [00:00<00:00, 781.60it/s] Loading weights:  47%|####7     | 463/978 [00:00<00:00, 520.12it/s]Loading weights: 100%|##########| 978/978 [00:00<00:00, 1276.37it/s]
+Loading weights:   0%|          | 0/314 [00:00<?, ?it/s]Loading weights:  22%|##1       | 68/314 [00:00<00:00, 654.76it/s]Loading weights:  43%|####2     | 134/314 [00:00<00:00, 395.01it/s]Loading weights: 100%|##########| 314/314 [00:00<00:00, 806.94it/s]
+  P0: pitch 11.57 deg (assumed 11.5), yaw offset -0.77 deg, over the 8 leave-one-out fits
+  P1: pitch 15.04 deg (assumed 11.5), yaw offset -1.01 deg, over the 8 leave-one-out fits
+  P3: pitch 11.97 deg (assumed 11.5), yaw offset +0.69 deg, over the 8 leave-one-out fits
+  P5: pitch 22.86 deg (assumed 22.0), yaw offset +0.91 deg, over the 8 leave-one-out fits
+  real_k0: 56 scenes, 224 images -> data/bev_real_mk/real_k0
+W1111 19:00:12.536000 7432 .venv\Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+Loading weights:   0%|          | 0/978 [00:00<?, ?it/s]Loading weights:  19%|#9        | 188/978 [00:00<00:00, 1719.25it/s]Loading weights:  37%|###6      | 360/978 [00:00<00:00, 1506.59it/s]Loading weights:  52%|#####2    | 512/978 [00:00<00:00, 588.95it/s] Loading weights: 100%|##########| 978/978 [00:00<00:00, 1339.12it/s]
+Loading weights:   0%|          | 0/314 [00:00<?, ?it/s]Loading weights:  31%|###       | 96/314 [00:00<00:00, 900.45it/s]Loading weights:  60%|#####9    | 187/314 [00:00<00:00, 455.95it/s]Loading weights: 100%|##########| 314/314 [00:00<00:00, 817.84it/s]
+  P0: pitch 13.17 deg (assumed 11.5), yaw offset -0.21 deg, over the 73 leave-one-out fits
+  P1: pitch 21.86 deg (assumed 11.5), yaw offset +0.07 deg, over the 73 leave-one-out fits
+  P3: pitch 25.78 deg (assumed 11.5), yaw offset -1.21 deg, over the 71 leave-one-out fits
+  P5: pitch 20.87 deg (assumed 22.0), yaw offset -0.48 deg, over the 73 leave-one-out fits
+  real_k0: 292 scenes, 1163 images -> data/bev_real_v2_mk/real_k0
+device cuda, variant results/bev_mask_mk/masks_mk
+588,019 parameters
+20000 training scenes, 2000 validation scenes
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\bevnet\train.py:219: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  sched.step()
+  epoch   1: loss 1.0599  validation correct (seen boxes)  57.0% (threshold 0.40)  (409 s)
+  epoch   2: loss 0.6370  validation correct (seen boxes)  63.8% (threshold 0.40)  (366 s)
+  epoch   3: loss 0.5647  validation correct (seen boxes)  63.5% (threshold 0.35)  (362 s)
+  epoch   4: loss 0.5261  validation correct (seen boxes)  65.8% (threshold 0.45)  (355 s)
+  epoch   5: loss 0.4978  validation correct (seen boxes)  68.7% (threshold 0.45)  (348 s)
+  epoch   6: loss 0.4790  validation correct (seen boxes)  70.9% (threshold 0.35)  (342 s)
+  epoch   7: loss 0.4610  validation correct (seen boxes)  70.5% (threshold 0.40)  (342 s)
+  epoch   8: loss 0.4445  validation correct (seen boxes)  76.6% (threshold 0.25)  (336 s)
+  epoch   9: loss 0.4327  validation correct (seen boxes)  73.5% (threshold 0.35)  (332 s)
+  epoch  10: loss 0.4204  validation correct (seen boxes)  78.1% (threshold 0.35)  (327 s)
+  epoch  11: loss 0.4090  validation correct (seen boxes)  76.6% (threshold 0.35)  (325 s)
+  epoch  12: loss 0.3998  validation correct (seen boxes)  77.6% (threshold 0.40)  (323 s)
+  epoch  13: loss 0.3945  validation correct (seen boxes)  76.8% (threshold 0.40)  (323 s)
+  epoch  14: loss 0.3899  validation correct (seen boxes)  77.5% (threshold 0.40)  (322 s)
+kept epoch 10 (validation correct 78.1%, threshold 0.35)
+  E3_h0_circle         correct 100.0%  too few   0.0%  too many   0.0%  RMSE 1.1 cm  solvable 100.0%  correct on solvable 100.0%
+  E3_h0_random         correct 100.0%  too few   0.0%  too many   0.0%  RMSE 1.5 cm  solvable 100.0%  correct on solvable 100.0%
+  E3_h1_circle         correct  99.1%  too few   0.8%  too many   0.0%  RMSE 1.7 cm  solvable 100.0%  correct on solvable  99.1%
+  E3_h1_random         correct  95.9%  too few   3.8%  too many   0.1%  RMSE 2.2 cm  solvable  99.9%  correct on solvable  96.0%
+  E3_h2_circle         correct  85.5%  too few  14.0%  too many   0.4%  RMSE 2.6 cm  solvable  97.2%  correct on solvable  88.0%
+  E3_h2_random         correct  68.9%  too few  28.5%  too many   0.5%  RMSE 3.2 cm  solvable  95.4%  correct on solvable  72.2%
+  G0_nominal_circle    correct 100.0%  too few   0.0%  too many   0.0%  RMSE 1.1 cm  solvable 100.0%  correct on solvable 100.0%
+  G0_nominal_random    correct 100.0%  too few   0.0%  too many   0.0%  RMSE 1.5 cm  solvable 100.0%  correct on solvable 100.0%
+  S1_b12_circle        correct  93.4%  too few   6.4%  too many   0.1%  RMSE 1.8 cm  solvable  99.6%  correct on solvable  93.8%
+  S1_b12_random        correct  79.2%  too few  17.2%  too many   2.8%  RMSE 2.6 cm  solvable  99.5%  correct on solvable  79.6%
+  S1_b16_circle        correct  64.9%  too few  33.0%  too many   1.1%  RMSE 2.3 cm  solvable  93.7%  correct on solvable  68.8%
+  S1_b16_random        correct  42.1%  too few  49.3%  too many   4.1%  RMSE 3.3 cm  solvable  91.1%  correct on solvable  45.8%
+  S1_b4_circle         correct 100.0%  too few   0.0%  too many   0.0%  RMSE 1.0 cm  solvable 100.0%  correct on solvable 100.0%
+  S1_b4_random         correct  99.6%  too few   0.4%  too many   0.0%  RMSE 1.5 cm  solvable 100.0%  correct on solvable  99.6%
+  S1_b8_circle         correct  99.6%  too few   0.4%  too many   0.0%  RMSE 1.4 cm  solvable 100.0%  correct on solvable  99.6%
+  S1_b8_random         correct  97.0%  too few   2.6%  too many   0.4%  RMSE 2.0 cm  solvable 100.0%  correct on solvable  97.0%
+written in results/bev_mask_mk/masks_mk
+device cuda, variant results/bev_mask_mk/masks_mk
+588,019 parameters
+  real_k0              correct  89.3%  too few   5.4%  too many   5.4%  RMSE 2.2 cm  solvable 100.0%  correct on solvable  89.3%
+written in results/bev_mask_mk/masks_mk
+device cuda, variant results/bev_mask_mk/masks_mk
+588,019 parameters
+  real_k0              correct  70.5%  too few  20.9%  too many   5.5%  RMSE 3.1 cm  solvable 100.0%  correct on solvable  70.5%
+written in results/bev_mask_mk/masks_mk
+device cuda, variant results/bev_mask_mk/masks_mk
+588,019 parameters
+  real_k0              correct  12.3%  too few  80.1%  too many   2.7%  RMSE 3.9 cm  solvable 100.0%  correct on solvable  12.3%
+written in results/bev_mask_mk/masks_mk
+device cuda, variant results/bev_mask_mk/masks_mk
+588,019 parameters
+  real_k0              correct  16.1%  too few  82.1%  too many   0.0%  RMSE 2.7 cm  solvable 100.0%  correct on solvable  16.1%
+written in results/bev_mask_mk/masks_mk
