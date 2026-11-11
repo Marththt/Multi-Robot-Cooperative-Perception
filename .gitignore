@@ -26,3 +26,6 @@ data/bev*/
 
 # Files set aside for deletion
 _to_delete/
+
+# One run per layout of a campaign (python -m tools.select_runs)
+data/survey_v2_best/

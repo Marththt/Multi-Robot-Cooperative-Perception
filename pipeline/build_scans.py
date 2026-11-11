@@ -93,6 +93,28 @@ def band(d):
 # Loading
 # ====================================================================
 
+def best_runs(run_dirs):
+    """One run folder per layout (the folder name up to the first '_'): among the runs with the most
+    stored frames, the one marked as the good capture (name ending in 'F'), otherwise the latest. Aborted
+    and repeated attempts of the same layout are left out."""
+    by_layout = defaultdict(list)
+    for d in run_dirs:
+        n = 0
+        for path in glob.glob(os.path.join(d, "raw", "*.jsonl")):
+            with open(path) as f:
+                n += sum(1 for _ in f)
+        by_layout[os.path.basename(os.path.normpath(d)).split("_")[0]].append((n, d))
+    out = []
+    for layout, cand in sorted(by_layout.items()):
+        top = max(n for n, _ in cand)
+        if top == 0:
+            continue
+        full = [d for n, d in cand if n >= 0.9 * top]
+        marked = [d for d in full if os.path.basename(os.path.normpath(d)).endswith("F")]
+        out.append(sorted(marked or full)[-1])
+    return out
+
+
 def load_points(survey_dir, range_fit=None):
     """All the observation points of the survey: {key: point}, point =
     dict(trial_id, layout, run, robot, stop, yaw_offset, radius, angle, pose,

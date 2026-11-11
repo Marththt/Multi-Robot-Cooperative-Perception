@@ -39,6 +39,7 @@ import cv2
 import numpy as np
 
 from bevnet import geometry as geo
+from pipeline.build_scans import best_runs
 
 PITCH_DEG = dict(P0=11.5, P1=11.5, P3=11.5, P5=22.0)      # measured on the real frames (imgsim/render.py)
 CAMERA_HEIGHT_M = 0.25                  # lens above the floor (measured 24-26 cm)
@@ -57,7 +58,7 @@ def camera_pose(rec):
 def load_run(run_dir):
     with open(os.path.join(run_dir, "ground_truth.json")) as f:
         gt = json.load(f)
-    frames = defaultdict(dict)                     # (round, reading) -> robot -> record
+    frames = defaultdict(dict)                     # (round, reading, yaw offset) -> robot -> record
     cams = {}
     layout = None
     for path in sorted(glob.glob(os.path.join(run_dir, "raw", "*.jsonl"))):
@@ -67,7 +68,8 @@ def load_run(run_dir):
                 if r.get("round") is None:
                     continue
                 layout = r["layout_id"]
-                frames[(int(r["round"]), int(r["reading"]))][r["robot_id"]] = r
+                off = int(round(float(r["trial_id"].rsplit("/", 1)[-1])))   # --yaw-offsets-deg captures
+                frames[(int(r["round"]), int(r["reading"]), off)][r["robot_id"]] = r
     for path in glob.glob(os.path.join(run_dir, "raw", "meta_*.json")):
         with open(path) as f:
             m = json.load(f)
@@ -221,28 +223,6 @@ def check_figure(scenes, out_path, n=4):
     cv2.imwrite(out_path, np.vstack(tiles))
 
 
-def best_runs(run_dirs):
-    """One run folder per layout (the folder name up to the first '_'): among the runs with the most
-    stored frames, the one marked as the good capture (name ending in 'F'), otherwise the latest. Aborted
-    and repeated attempts of the same layout are left out."""
-    by_layout = defaultdict(list)
-    for d in run_dirs:
-        n = 0
-        for path in glob.glob(os.path.join(d, "raw", "*.jsonl")):
-            with open(path) as f:
-                n += sum(1 for _ in f)
-        by_layout[os.path.basename(os.path.normpath(d)).split("_")[0]].append((n, d))
-    out = []
-    for layout, cand in sorted(by_layout.items()):
-        top = max(n for n, _ in cand)
-        if top == 0:
-            continue
-        full = [d for n, d in cand if n >= 0.9 * top]
-        marked = [d for d in full if os.path.basename(os.path.normpath(d)).endswith("F")]
-        out.append(sorted(marked or full)[-1])
-    return out
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--runs", nargs="+", default=["data/survey_rounds/*"])
@@ -297,12 +277,14 @@ def main():
     for k in [int(v) for v in a.readings.split(",")]:
         scenes = []
         for d, layout, boxes, frames, cams in runs:
-            for (rnd, reading), recs in sorted(frames.items()):
+            for (rnd, reading, off), recs in sorted(frames.items()):
                 if reading == k:
                     s = build_scene(d, layout, boxes, recs, cams, a.scale, a.jpeg_quality, pitch, cal, seg, cache,
                                     overlays, a.cutout, a.instances)
                     if s is not None:
                         s["round"] = rnd
+                        if off:                     # the cameras turned by `off` degrees at every stop
+                            s["run"] += f"_y{off:+d}"
                         scenes.append(s)
         name = f"real_k{k}"
         out = os.path.join(a.out, name)
