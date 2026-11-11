@@ -1,0 +1,99 @@
+{
+  "robot_id": "P5",
+  "layout_id": "R58",
+  "written": "2026-11-11 15:08:17",
+  "camera_resolution": "720",
+  "camera_matrix": [
+    [
+      664.8202930314716,
+      0.0,
+      640.622841437227
+    ],
+    [
+      0.0,
+      665.183032816675,
+      364.3572210278712
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "dist_coeffs": [
+    [
+      -0.05100588988975071,
+      -0.0004892984709638901,
+      -0.0009122749425730488,
+      -0.0005144545585493005,
+      -0.01847347447187403
+    ]
+  ],
+  "camera_calib_file": "config/checkerboard_calib_P1.json",
+  "aruco_marker_size_m": 0.077,
+  "aruco_dict": "4X4_50",
+  "aruco_classes_file": null,
+  "camera_offset_forward_m": 0.12,
+  "camera_offset_right_m": 0.0,
+  "frame_correction_file": null,
+  "yaw_offset_deg": 0.0,
+  "optitrack_rb_id": 6,
+  "n_readings": 5,
+  "instance_threshold_m": 0.2,
+  "settle_s": 1.0,
+  "jpeg_quality": 95,
+  "ground_truth_file": "data/survey_v2/R58_20261111-150805\\ground_truth.json",
+  "true_boxes": [
+    {
+      "class_name": "box",
+      "x": 0.6534,
+      "y": -0.0777,
+      "yaw": 0.1429,
+      "rb_id": 11
+    },
+    {
+      "class_name": "box",
+      "x": -0.5041,
+      "y": 0.1753,
+      "yaw": -0.2332,
+      "rb_id": 12
+    },
+    {
+      "class_name": "box",
+      "x": 0.1049,
+      "y": -1.1018,
+      "yaw": 2.0339,
+      "rb_id": 13
+    },
+    {
+      "class_name": "box",
+      "x": -0.0796,
+      "y": -0.1954,
+      "yaw": -0.2514,
+      "rb_id": 14
+    },
+    {
+      "class_name": "box",
+      "x": -0.5548,
+      "y": -1.2986,
+      "yaw": 1.8586,
+      "rb_id": 15
+    },
+    {
+      "class_name": "box",
+      "x": 0.5125,
+      "y": -0.6118,
+      "yaw": -1.5348,
+      "rb_id": 16
+    },
+    {
+      "class_name": "box",
+      "x": -0.7323,
+      "y": -0.4049,
+      "yaw": 1.9533,
+      "rb_id": 17
+    }
+  ],
+  "pose_convention": "(x, y, yaw_rad) in the OptiTrack planar frame; camera_pose = body pose moved by the camera offsets",
+  "detection_convention": "distance = camera->marker [m]; bearing_rad positive to the right of the optical axis; viewing_angle_rad 0 = marker facing the camera"
+}
