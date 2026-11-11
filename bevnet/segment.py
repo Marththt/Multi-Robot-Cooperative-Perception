@@ -71,6 +71,7 @@ class BoxSegmenter:
         pil = Image.fromarray(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
         rects = self.rectangles(pil)
         mask = np.zeros((H, W), np.uint8)
+        labels = np.zeros((H, W), np.uint8)                 # 0 = background, k = box k (see real.py)
         if rects:
             inputs = self.sam_proc(pil, input_boxes=[rects], return_tensors="pt")
             inputs = {k: (v.to(self.device, dtype=torch.float32) if v.dtype == torch.float64 else v.to(self.device))
@@ -79,19 +80,33 @@ class BoxSegmenter:
                 out = self.sam(**inputs, multimask_output=False)
             masks = self.sam_proc.image_processor.post_process_masks(
                 out.pred_masks.cpu(), inputs["original_sizes"].cpu(), inputs["reshaped_input_sizes"].cpu())[0]
-            mask = (masks.numpy().reshape(len(rects), H, W).any(0) * 255).astype(np.uint8)
+            per_box = masks.numpy().reshape(len(rects), H, W)
+            mask = (per_box.any(0) * 255).astype(np.uint8)
+            # one label per box; where two masks overlap the smaller one wins: an overlap is mostly the
+            # mask of one box spilling onto the box next to it, and the smaller mask is the tighter one
+            for k in np.argsort([-m.sum() for m in per_box]):
+                labels[per_box[k]] = k + 1
         if self.gripper is not None:
             g = cv2.resize(self.gripper, (W, H)) > 127
             mask[g] = 0
-        return mask, rects
+            labels[g] = 0
+        return mask, rects, labels
 
 
-def overlay(bgr, mask, rects=()):
-    """The frame darkened outside the mask, mask contours in green, detector rectangles in red."""
+def overlay(bgr, mask, rects=(), labels=None):
+    """The frame darkened outside the mask, mask contours in green (with labels: the contour of every box
+    in its own colour), detector rectangles in red."""
     out = (bgr * 0.35).astype(np.uint8)
     out[mask > 0] = bgr[mask > 0]
-    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(out, cnts, -1, (0, 255, 0), 2)
+    if labels is None:
+        cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(out, cnts, -1, (0, 255, 0), 2)
+    else:
+        colours = [(0, 255, 0), (255, 255, 0), (0, 255, 255), (255, 0, 255), (255, 128, 0), (0, 128, 255)]
+        for k in range(1, int(labels.max()) + 1):
+            cnts, _ = cv2.findContours((labels == k).astype(np.uint8), cv2.RETR_EXTERNAL,
+                                       cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(out, cnts, -1, colours[(k - 1) % len(colours)], 2)
     for x0, y0, x1, y1 in rects:
         cv2.rectangle(out, (int(x0), int(y0)), (int(x1), int(y1)), (0, 0, 255), 2)
     return out

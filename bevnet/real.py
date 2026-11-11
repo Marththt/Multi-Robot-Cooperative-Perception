@@ -131,7 +131,7 @@ def calibration(runs, pitch, scope="other-layouts", neighbours=2):
 
 
 def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=None, seg=None, cache=None,
-                overlays=None, cutout=False):
+                overlays=None, cutout=False, instances=False):
     robots = sorted(recs)
     poses = np.array([camera_pose(recs[q]) for q in robots], np.float64)
     pitch_deg = [pitch.get(q, 11.5) for q in robots]
@@ -152,15 +152,23 @@ def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=N
         if seg is not None:                                 # boxes only
             key = os.path.join(cache, os.path.basename(os.path.normpath(run_dir)),
                                os.path.basename(recs[q]["image"].replace("\\", "/"))[:-4] + ".png")
+            key_ids = key[:-4] + "_ids.png"                 # one label per box (--instances)
             mask = cv2.imread(key, cv2.IMREAD_GRAYSCALE) if os.path.exists(key) else None
-            if mask is None:
-                mask, rects = seg(img)
+            labels = cv2.imread(key_ids, cv2.IMREAD_GRAYSCALE) if os.path.exists(key_ids) else None
+            if mask is None or (instances and labels is None):
+                mask, rects, labels = seg(img)
                 os.makedirs(os.path.dirname(key), exist_ok=True)
                 cv2.imwrite(key, mask)
+                cv2.imwrite(key_ids, labels)
                 if overlays is not None and len(overlays) < 16:
                     from bevnet.segment import overlay
-                    overlays.append(cv2.resize(overlay(img, mask, rects), (640, 360)))
-            small = (cv2.resize(mask, (w, h), interpolation=cv2.INTER_AREA) > 127).astype(np.uint8) * 255
+                    overlays.append(cv2.resize(overlay(img, mask, rects, labels if instances else None),
+                                               (640, 360)))
+            if instances:                                   # boxes that touch in the image stay apart
+                from imgsim.render import separate_instances
+                small = separate_instances(cv2.resize(labels, (w, h), interpolation=cv2.INTER_NEAREST))
+            else:
+                small = (cv2.resize(mask, (w, h), interpolation=cv2.INTER_AREA) > 127).astype(np.uint8) * 255
             if cutout:                                      # the frame inside the mask, black elsewhere
                 frame = cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
                 frame[small == 0] = 0
@@ -248,6 +256,10 @@ def main():
     ap.add_argument("--pitch", default=None, help="per robot pitch in degrees, e.g. P0=11,P1=12,P3=11,P5=22")
     ap.add_argument("--check", action="store_true", help="write fig_REAL-0.png with the true boxes drawn in")
     ap.add_argument("--masks", action="store_true", help="boxes only: segment every frame (bevnet/segment.py)")
+    ap.add_argument("--instances", action="store_true",
+                    help="with --masks: a 1-pixel black line where two segmented boxes touch (as imgsim "
+                         "instance_borders); needs the per-box labels, so frames cached without them are "
+                         "segmented again")
     ap.add_argument("--cutout", action="store_true",
                     help="boxes only, as seen: the frame inside the segmentation mask, black elsewhere")
     ap.add_argument("--mask-cache", default=None,
@@ -288,7 +300,7 @@ def main():
             for (rnd, reading), recs in sorted(frames.items()):
                 if reading == k:
                     s = build_scene(d, layout, boxes, recs, cams, a.scale, a.jpeg_quality, pitch, cal, seg, cache,
-                                    overlays, a.cutout)
+                                    overlays, a.cutout, a.instances)
                     if s is not None:
                         s["round"] = rnd
                         scenes.append(s)

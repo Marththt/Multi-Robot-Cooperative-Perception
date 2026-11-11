@@ -39,6 +39,7 @@ Same sensor model as MHT (sensor_model.py): uniform prior with
 n_prior expected objects, uniform clutter, p_D(x), R.
 """
 
+import itertools
 import math
 
 import numpy as np
@@ -89,8 +90,8 @@ def _likelihoods(sensor, pose, Z, grid):
     return [gauss2(np.asarray(z, float), grid.X, R) for z in Z]
 
 
-def phd(order, reports, poses, sensor, step=0.05):
-    grid = Grid(sensor, [poses.get(r) for r in order], step)
+def _phd_intensity(order, reports, poses, sensor, grid):
+    """PHD intensity on the grid after the robots of `order`, one at a time (iterated corrector)."""
     v = np.full(len(grid.X), sensor.n_prior / grid.area)
     kappa = sensor.clutter_density()
     for rid in order:
@@ -102,6 +103,10 @@ def phd(order, reports, poses, sensor, step=0.05):
             w = pd * g * v
             updated += w / (kappa + w.sum() * grid.dA)
         v = updated
+    return v
+
+
+def _phd_result(v, grid, sensor):
     n_expected = float(v.sum() * grid.dA)
     # one object = one peak with mass >= 0.5 (the standard GM-PHD rule:
     # components with weight > 0.5), not round(n_expected): the diffuse
@@ -111,6 +116,32 @@ def phd(order, reports, poses, sensor, step=0.05):
     return dict(objects=objects, n=len(objects),
                 extra=dict(n_expected=n_expected, masses=[round(m, 2) for m in masses]),
                 intensity=(grid, v))
+
+
+def phd(order, reports, poses, sensor, step=0.05):
+    grid = Grid(sensor, [poses.get(r) for r in order], step)
+    return _phd_result(_phd_intensity(order, reports, poses, sensor, grid), grid, sensor)
+
+
+def robot_orders(order, n_max=24, seed=0):
+    """Orders in which the iterated corrector takes the robots: all of them up to 4 robots (24), otherwise
+    n_max orders drawn at random (fixed seed, so that a scene always gives the same result)."""
+    order = list(order)
+    if math.factorial(len(order)) <= n_max:
+        return [list(p) for p in itertools.permutations(order)]
+    rng = np.random.default_rng(seed)
+    return [list(rng.permutation(order)) for _ in range(n_max)]
+
+
+def phd_avg(order, reports, poses, sensor, step=0.05):
+    """PHD with the intensity averaged over the robot orders (robot_orders): the iterated corrector
+    weighs a missed detection more when it comes after the detections of the same box (a box missed by
+    the LAST robot loses most of its mass, one missed by the first does not); the average removes that
+    dependence on an arbitrary order."""
+    grid = Grid(sensor, [poses.get(r) for r in order], step)
+    orders = robot_orders(order)
+    v = sum(_phd_intensity(o, reports, poses, sensor, grid) for o in orders) / len(orders)
+    return _phd_result(v, grid, sensor)
 
 
 # ====================================================================
@@ -155,8 +186,9 @@ def _upsilon(u, e, m, a, pK, n_max):
     return out
 
 
-def cphd(order, reports, poses, sensor, step=0.05, n_max=12):
-    grid = Grid(sensor, [poses.get(r) for r in order], step)
+def _cphd_state(order, reports, poses, sensor, grid, n_max):
+    """Cardinality distribution rho(n) and normalised spatial density s on the grid after the robots of
+    `order`, one at a time (iterated corrector)."""
     area = grid.area
     s = np.full(len(grid.X), 1.0 / area)          # spatial density, integrates to 1
     rho = _poisson(sensor.n_prior, n_max)
@@ -185,11 +217,33 @@ def cphd(order, reports, poses, sensor, step=0.05, n_max=12):
         rho /= rho.sum()
         mass = float(updated.sum() * grid.dA)
         s = updated / mass if mass > 0 else s
+    return rho, s
+
+
+def _cphd_result(rho, v, grid, sensor, n_max):
     n_map = int(np.argmax(rho))
     n_mean = float(np.arange(n_max + 1) @ rho)
-    v = s * n_mean
     objects, masses = extract_peaks(v, grid, n_map, radius=3 * sensor.sigma_pos)
     return dict(objects=objects, n=n_map,
                 extra=dict(p_n=round(float(rho[n_map]), 3), n_mean=round(n_mean, 2),
                            masses=[round(mm, 2) for mm in masses]),
                 intensity=(grid, v))
+
+
+def cphd(order, reports, poses, sensor, step=0.05, n_max=12):
+    grid = Grid(sensor, [poses.get(r) for r in order], step)
+    rho, s = _cphd_state(order, reports, poses, sensor, grid, n_max)
+    return _cphd_result(rho, s * float(np.arange(n_max + 1) @ rho), grid, sensor, n_max)
+
+
+def cphd_avg(order, reports, poses, sensor, step=0.05, n_max=12):
+    """CPHD with the cardinality distribution and the intensity averaged over the robot orders
+    (robot_orders), for the same reason as phd_avg."""
+    grid = Grid(sensor, [poses.get(r) for r in order], step)
+    orders = robot_orders(order)
+    rho_sum, v_sum = np.zeros(n_max + 1), np.zeros(len(grid.X))
+    for o in orders:
+        rho, s = _cphd_state(o, reports, poses, sensor, grid, n_max)
+        rho_sum += rho
+        v_sum += s * float(np.arange(n_max + 1) @ rho)
+    return _cphd_result(rho_sum / len(orders), v_sum / len(orders), grid, sensor, n_max)

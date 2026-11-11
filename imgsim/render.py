@@ -83,6 +83,8 @@ class Appearance:
     obstacle_height_m: List[float] = field(default_factory=lambda: [0.15, 1.0])       # with "random"
     light_obstacle_share: float = 0.25                   # with "random": share of white / light grey obstacles
     mask_only: bool = False                              # boxes only: white boxes on black, everything else black
+    instance_borders: bool = False                       # mask_only: a 1-pixel black line where two boxes touch
+    border_merge_prob: float = 0.15                      # ... left out for this share of the touching pairs
                                                          # (obstacles and robots still hide the boxes), no effects
     visual_style: str = "plain"                          # "random": robots with wheels and arm, windows, light
                                                          # spots on the floor, desks and screens, wider greys
@@ -152,6 +154,36 @@ def camera_rotation(yaw, pitch, roll):
 # ====================================================================
 # Textures
 # ====================================================================
+
+def separate_instances(labels, rng=None, merge_prob=0.0):
+    """Binary box mask (uint8 0/255) from a label image (0 = background, k > 0 = box k), with a 1-pixel
+    black line wherever two different boxes touch, so that boxes side by side in the image remain separate
+    shapes. merge_prob: share of the touching pairs left without the line (drawn with rng), as when a
+    segmentation takes two touching boxes for one. Used on the rendered masks (imgsim) and on the
+    segmentation of the real frames (bevnet/real.py), at the resolution the network sees."""
+    lab = np.asarray(labels)
+    mask = lab > 0
+    border = np.zeros_like(mask)
+    pairs = []
+    for a, b, where in ((lab[:, :-1], lab[:, 1:], (slice(None), slice(None, -1))),
+                        (lab[:-1, :], lab[1:, :], (slice(None, -1), slice(None)))):
+        touch = (a > 0) & (b > 0) & (a != b)
+        if touch.any():
+            pairs.append((a[touch], b[touch], where, touch))
+    if not pairs:
+        return (mask * 255).astype(np.uint8)
+    merged = set()
+    if merge_prob > 0 and rng is not None:
+        found = {tuple(sorted(p)) for a, b, _, _ in pairs for p in zip(a.tolist(), b.tolist())}
+        merged = {p for p in sorted(found) if rng.random() < merge_prob}
+    for a, b, where, touch in pairs:
+        keep = np.array([tuple(sorted(p)) not in merged for p in zip(a.tolist(), b.tolist())], bool)
+        sub = border[where]
+        idx = np.nonzero(touch)
+        sub[idx[0][keep], idx[1][keep]] = True
+        border[where] = sub
+    return ((mask & ~border) * 255).astype(np.uint8)
+
 
 def face_textures(app, rng, n=6):
     """Front views of a box face (texture px per metre), a few variants of tape and paper placement."""
@@ -630,6 +662,9 @@ class Renderer:
                             borderMode=cv2.BORDER_REPLICATE)
             box_pixels = np.bincount(np.round(ids[white]).astype(int).clip(0, len(scene.boxes)),
                                      minlength=len(scene.boxes) + 1)[1:].tolist()
+            if a.instance_borders:                         # boxes that touch in the image stay apart
+                labels = np.where(white, np.round(ids).astype(np.int32).clip(0, len(scene.boxes)), 0)
+                white = separate_instances(labels, rng, a.border_merge_prob) > 0
             out = np.repeat(np.where(white, 255.0, 0.0).astype(np.float32)[..., None], 3, axis=2)
         elif a.draw_gripper and self.grip_mask is not None:
             out = out * (1 - self.grip_mask) + self.grip * self.grip_mask
