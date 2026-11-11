@@ -8,7 +8,7 @@ scaled to the image size), the downward pitch measured on the real frames (--pit
 (ground_truth.json). Poses and boxes are shifted so that the centre of the robots is the origin of the floor
 grid. One set per reading: data/bev_real/real_k<k>/ (shard_*.pkl, meta.json); run ids <layout>_r<round>.
 --calibrate fits, per robot, the camera pitch and a yaw offset from the ArUco detections stored with the
-frames (the detections are used only for this camera calibration, never as network input), leave one layout
+frames (without --marker-channel the detections are used only for this calibration, never as network input), leave one layout
 out: the frames of a layout use the values fitted on the other layouts. A low camera (29 cm) makes the floor
 geometry very sensitive to the pitch: at 1.5 m, 1 degree moves the middle of a box by about 60 cm along the ray.
 --check draws the true box centres and the grid's sampling points into a few frames (fig_REAL-0.png), to see
@@ -133,7 +133,7 @@ def calibration(runs, pitch, scope="other-layouts", neighbours=2):
 
 
 def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=None, seg=None, cache=None,
-                overlays=None, cutout=False, instances=False):
+                overlays=None, cutout=False, instances=False, marker_channel=False):
     robots = sorted(recs)
     poses = np.array([camera_pose(recs[q]) for q in robots], np.float64)
     pitch_deg = [pitch.get(q, 11.5) for q in robots]
@@ -175,6 +175,13 @@ def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=N
                 frame = cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
                 frame[small == 0] = 0
                 ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
+            elif marker_channel:                            # mask, markers, mask (B, G, R), as imgsim
+                mk = np.zeros_like(small)
+                for det in recs[q].get("detections", []):   # the ArUco markers detected in this frame
+                    bx, by, bw, bh = det["bbox"]
+                    cv2.rectangle(mk, (int(round(bx * w / W)), int(round(by * h / H))),
+                                  (int(round((bx + bw) * w / W)), int(round((by + bh) * h / H))), 255, -1)
+                ok, buf = cv2.imencode(".png", np.dstack([small, mk, small]))
             else:
                 ok, buf = cv2.imencode(".png", small)
         else:
@@ -240,6 +247,9 @@ def main():
                     help="with --masks: a 1-pixel black line where two segmented boxes touch (as imgsim "
                          "instance_borders); needs the per-box labels, so frames cached without them are "
                          "segmented again")
+    ap.add_argument("--marker-channel", action="store_true",
+                    help="with --masks: second image channel = the ArUco markers detected in the frame (filled "
+                         "rectangles), as imgsim marker_channel")
     ap.add_argument("--cutout", action="store_true",
                     help="boxes only, as seen: the frame inside the segmentation mask, black elsewhere")
     ap.add_argument("--mask-cache", default=None,
@@ -280,7 +290,7 @@ def main():
             for (rnd, reading, off), recs in sorted(frames.items()):
                 if reading == k:
                     s = build_scene(d, layout, boxes, recs, cams, a.scale, a.jpeg_quality, pitch, cal, seg, cache,
-                                    overlays, a.cutout, a.instances)
+                                    overlays, a.cutout, a.instances, a.marker_channel)
                     if s is not None:
                         s["round"] = rnd
                         if off:                     # the cameras turned by `off` degrees at every stop
@@ -298,6 +308,7 @@ def main():
         K0 = scenes[0]["K"][0]
         with open(os.path.join(out, "meta.json"), "w") as f:
             json.dump(dict(set=name, scenario="real", level=f"k{k}", scenes=len(scenes), camera="real", K=K0,
+                           marker_channel=bool(a.marker_channel and a.masks),
                            D=scenes[0]["D"][0], size=[int(round(1280 * a.scale)), int(round(720 * a.scale))],
                            scale=a.scale, pitch_deg=pitch, runs=[os.path.basename(r[0]) for r in runs],
                            calibration={f"{l}/{q}": v for (l, q), v in cal.items()} if cal else None), f, indent=2)

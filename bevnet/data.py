@@ -89,7 +89,9 @@ def render_shard(task):
                     sil = noisy_mask(sil, np.random.default_rng(scene_seed + 31 * (k + 1)), 1.0)
                 img = np.where(sil[..., :1] > 127, img, 0).astype(np.uint8)
                 info["box_pixels"] = sil_info["box_pixels"]
-            if masks:                                           # binary: lossless and small
+            if masks and app.marker_channel:                    # mask, markers, mask (B, G, R)
+                ok, buf = cv2.imencode(".png", img)
+            elif masks:                                         # binary: lossless and small
                 ok, buf = cv2.imencode(".png", img[..., 0])
             else:
                 ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, quality])
@@ -241,6 +243,8 @@ class BevDataset:
         self.yaw_noise_deg = 0.0          # from those of the image, so that it learns to live with real errors
         self.height_noise_m = 0.0         # same for the camera height (a wrong height scales all floor distances)
         self.mask_noise = 0.0             # training on masks: imperfect segmentation (see noisy_mask)
+        self.marker_dropout = 0.0         # masks with a marker channel: missed and false detections (noisy_markers)
+        self.drop_markers = False         # test without markers: the marker channel emptied
         self.min_visible_px = self.MIN_VISIBLE_PX
 
     def __len__(self):
@@ -269,11 +273,17 @@ class BevDataset:
         K, D, size = np.array(meta["K"]), np.array(meta["D"]), tuple(meta["size"])
         imgs, grids, valid, view = [], [], [], []
         rng = np.random.default_rng() if (self.pitch_noise_deg or self.yaw_noise_deg or self.height_noise_m
-                                          or self.mask_noise) else None
+                                          or self.mask_noise or self.marker_dropout) else None
+        markers = marker_channel(meta)
         for k, jpg in enumerate(s["jpgs"]):
             img = cv2.imdecode(np.frombuffer(jpg, np.uint8), cv2.IMREAD_COLOR)
+            mk = img[..., 1].copy() if markers else None
             if self.mask_noise and rng is not None:
                 img = noisy_mask(img, rng, self.mask_noise)
+            if markers:
+                if self.marker_dropout and rng is not None:
+                    mk = noisy_markers(mk, rng, self.marker_dropout)
+                img[..., 1] = 0 if self.drop_markers else mk
             imgs.append(cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose(2, 0, 1).astype(np.float32) / 255.0)
             Kk = np.array(s["K"][k]) if "K" in s else K              # real frames: each robot its own camera
             Dk = np.array(s["D"][k]) if "D" in s else D
@@ -299,6 +309,30 @@ def seen_boxes(scene, min_px):
     if px is None or len(px) == 0:
         return np.ones(n, bool)
     return np.asarray(px).reshape(-1, n).max(0) >= min_px
+
+
+def marker_channel(meta):
+    """True for sets whose second image channel holds the detected markers (imgsim marker_channel,
+    bevnet/real.py --marker-channel); the other channels hold the box mask."""
+    return bool(meta.get("marker_channel", (meta.get("appearance") or {}).get("marker_channel", False)))
+
+
+def noisy_markers(mk, rng, level):
+    """The marker channel made imperfect, so that the network does not rely on it: now and then all the
+    markers of the image gone (a robot whose marker detection fails), each marker missed with some
+    probability, and a few false detections (small squares). level 1 = the default amounts."""
+    if rng.random() < 0.25 * level:
+        return np.zeros_like(mk)
+    m = (mk > 127).astype(np.uint8)
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(m)
+    for c in range(1, n):
+        if rng.random() < 0.15 * level:
+            m[lab == c] = 0
+    H, W = m.shape
+    for _ in range(rng.poisson(0.1 * level)):
+        x, y, a = int(rng.integers(0, W)), int(rng.integers(0, H)), int(rng.integers(1, 5))
+        m[y:y + a, x:x + a] = 1
+    return (m * 255).astype(np.uint8)
 
 
 def noisy_mask(img, rng, level):

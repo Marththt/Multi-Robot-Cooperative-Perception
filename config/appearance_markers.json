@@ -1,0 +1,5 @@
+{
+  "pitch_deg": [8.0, 32.0],
+  "marker_channel": true,
+  "white_obstacle_share": 0.5
+}

@@ -1,0 +1,63 @@
+IMAGE NETWORK WITH THE MARKER CHANNEL (masks_mk)
+=================================================
+Input per image: B = box mask, G = ArUco detections (filled rectangles), R = box mask.
+Sim: markers detected only if the centre is visible, p = 0.93, falling with viewing angle (55->75 deg)
+and distance (1.8->2.6 m, as measured on the real campaigns); half of the obstacles/distractors are white
+(they appear in the mask like a box, but carry no marker).
+Training: --marker-dropout 1.0 (25% of images without any marker, 15% of markers missed, a few false ones),
+so the network must still work from the mask alone.
+
+------------------------------------------------------------------
+0) MAC: commit and push (files already in place)
+------------------------------------------------------------------
+cd ~/Desktop/Tesi/"tesi_codice "/Multi-Robot-Cooperative-Perception
+git add imgsim/render.py bevnet/data.py bevnet/train.py bevnet/real.py config/appearance_markers.json config/appearance_markers_test.json docs/commands_markers.txt
+git commit -m "bevnet: marker channel (mask + ArUco detections), white distractors, marker dropout"
+git pull --no-rebase
+git push
+
+------------------------------------------------------------------
+1) PC1 (lab, cmd): pull and venv
+------------------------------------------------------------------
+cd <repo>
+.venv\Scripts\activate
+git pull --no-rebase
+
+------------------------------------------------------------------
+2) PC1: simulated data (same scenes as masks_wp, plus the marker channel)
+------------------------------------------------------------------
+python -m bevnet.data --sets train --runs 20000 --obstacles 2 --distractors 3 --obstacle-style random --masks --appearance config/appearance_markers.json --out data/bev_mask_mk/
+python -m bevnet.data --sets val --runs 2000 --obstacles 2 --distractors 3 --obstacle-style random --masks --appearance config/appearance_markers.json --out data/bev_mask_mk/
+python -m bevnet.data --sets G0,E3,S1 --masks --appearance config/appearance_markers_test.json --out data/bev_mask_mk/
+
+------------------------------------------------------------------
+3) PC1: real data with the marker channel (reuses the mask caches: no new segmentation)
+------------------------------------------------------------------
+October (56 scenes):
+python -m bevnet.real --runs "data/survey_rounds/*" --masks --calibrate --mask-cache data/bev_real_masks/cache --marker-channel --out data/bev_real_mk/
+
+November (292 scenes; survey_v2_best already made by tools.select_runs):
+python -m bevnet.real --runs "data/survey_v2_best/*" --masks --calibrate --calibrate-scope same-run --mask-cache data/bev_real_v2_masks/cache --marker-channel --out data/bev_real_v2_mk/
+
+Check: both print the number of scenes (56 and 292).
+
+------------------------------------------------------------------
+4) PC1: training (same settings as masks_wp + marker dropout)
+------------------------------------------------------------------
+python -m bevnet.train --train data/bev_mask_mk/train --val data/bev_mask_mk/val --tests "data/bev_mask_mk/G0_*" "data/bev_mask_mk/E3_*" "data/bev_mask_mk/S1_*" --out results/bev_mask_mk/ --name masks_mk --channels 64 --encoder small --pitch-noise 1.5 --yaw-noise 1.0 --height-noise 0.025 --mask-noise 1.0 --marker-dropout 1.0 --max-val 2000 --workers 8
+
+------------------------------------------------------------------
+5) PC1: real tests, with markers and with the marker channel emptied
+------------------------------------------------------------------
+python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --tests "data/bev_real_mk/real_k*" --results-name real_oct
+python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --tests "data/bev_real_v2_mk/real_k*" --results-name real_nov
+python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --tests "data/bev_real_v2_mk/real_k*" --results-name real_nov_nomk --drop-markers
+python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --tests "data/bev_real_mk/real_k*" --results-name real_oct_nomk --drop-markers
+
+------------------------------------------------------------------
+6) PC1: push the results (model.pt is small)
+------------------------------------------------------------------
+git add -f results/bev_mask_mk
+git commit -m "masks_mk results"
+git pull --no-rebase
+git push

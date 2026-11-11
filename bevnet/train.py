@@ -118,6 +118,11 @@ def main():
     ap.add_argument("--height-noise", type=float, default=0.0, help="sd [m] of the error added to the camera height")
     ap.add_argument("--mask-noise", type=float, default=0.0,
                     help="training on masks: imperfect segmentation (1 = edges, holes, blobs, missed boxes)")
+    ap.add_argument("--marker-dropout", type=float, default=0.0,
+                    help="sets with a marker channel: missed, dropped and false marker detections in training "
+                         "(1 = default amounts, see bevnet/data.noisy_markers)")
+    ap.add_argument("--drop-markers", action="store_true",
+                    help="test with the marker channel emptied (what if the marker detection fails)")
     ap.add_argument("--min-visible-px", type=int, default=12,
                     help="a box counts as seen with this many visible pixels in one image (sets rendered as masks)")
     ap.add_argument("--name", default=None, help="variant folder name (default bev_c<channels>_m<message>)")
@@ -175,6 +180,7 @@ def main():
         train.pitch_noise_deg, train.yaw_noise_deg, train.height_noise_m = a.pitch_noise, a.yaw_noise, a.height_noise
         train.mask_noise = a.mask_noise
         train.min_visible_px = a.min_visible_px
+        train.marker_dropout = a.marker_dropout
         print(f"{len(train)} training scenes, {len(val)} validation scenes", flush=True)
         train_dl = loader(train, a.batch, True, a.workers, a.seed)
         pre = [p for n, p in model.named_parameters() if n.startswith("encoder.") and a.encoder == "resnet18"
@@ -242,6 +248,7 @@ def main():
     if dirs:
         ds = BevDataset(dirs)
         ds.min_visible_px = a.min_visible_px
+        ds.drop_markers = a.drop_markers
         by_set, maps, kept = {}, {}, {}
         for heat, off, boxes, run, set_name, seen in predict_iter(model, loader(ds, a.batch, False, a.workers), device):
             by_set.setdefault(set_name, []).append(score_one(heat, off, boxes, run, set_name, threshold, seen=seen))

@@ -84,6 +84,8 @@ class Appearance:
     light_obstacle_share: float = 0.25                   # with "random": share of white / light grey obstacles
     mask_only: bool = False                              # boxes only: white boxes on black, everything else black
     instance_borders: bool = False                       # mask_only: a 1-pixel black line where two boxes touch
+    marker_channel: bool = False                         # mask_only: second channel = the ArUco markers detected
+    white_obstacle_share: float = 0.0                    # mask_only: share of the obstacles that look like boxes
     border_merge_prob: float = 0.15                      # ... left out for this share of the touching pairs
                                                          # (obstacles and robots still hide the boxes), no effects
     visual_style: str = "plain"                          # "random": robots with wheels and arm, windows, light
@@ -538,6 +540,30 @@ class Renderer:
                 shade = style["ambient"] + (1 - style["ambient"]) * max(0.0, float(style["light"][2]))
                 self.draw_polygon(img, uv, look["top"] * shade)
 
+    def marker_map(self, markers, ids, rng):
+        """The markers a robot detects in this image, as filled rectangles (255) on black: the second channel of
+        the masks with marker_channel, as bevnet/real.py draws the ArUco detections of the real frames. A
+        marker is detected only if its centre is not hidden by something in front, with a probability that
+        falls with the viewing angle (0.93 up to 55 degrees, 0 at 75) and beyond 1.8 m (0 at 2.6 m): in the
+        real campaigns no marker was detected farther than about 2.5 m."""
+        a = self.app
+        out = np.zeros((self.cam.H, self.cam.W), np.float32)
+        c55, c75 = math.cos(math.radians(55)), math.cos(math.radians(75))
+        for mk in markers:
+            u, v = int(round(mk["u"])), int(round(mk["v"]))
+            if not (0 <= u < self.cam.W and 0 <= v < self.cam.H):
+                continue
+            if ids is not None and int(round(float(ids[v, u]))) != mk["box"] + 1:
+                continue                                    # the marker centre is hidden
+            p = 0.93 * min(max((mk["cos"] - c75) / (c55 - c75), 0.0), 1.0) * min(max((2.6 - mk["depth"]) / 0.8, 0.0), 1.0)
+            if rng.random() >= p:
+                continue
+            side = self.cam.K[0, 0] * a.marker_size_m / mk["depth"]
+            hw, hh = max(0.5 * side * mk["cos"], 0.5), max(0.5 * side, 0.5)
+            cv2.rectangle(out, (int(round(u - hw)), int(round(v - hh))), (int(round(u + hw)), int(round(v + hh))),
+                          255.0, -1)
+        return out
+
     def render(self, scene, k, rng, style=None):
         """Image of capture k of scene (sim.scene.Scene), the markers drawn in it and the camera settings.
         Returns (BGR uint8 image, [dict(box, face, u, v, depth)], dict(pitch_deg, roll_deg, height_m)); with
@@ -571,16 +597,19 @@ class Renderer:
                 quad = np.array([[*left, a.box_height_m], [*right, a.box_height_m], [*right, 0.0], [*left, 0.0]])
                 depth = float(np.hypot(*(np.asarray(c) - [x, y])))
                 objects.append((depth + 0.01 * f, "face", (j, f, quad, nv, fc)))
+        white = style.setdefault("white_obstacles", {})  # mask_only: obstacles a segmentation takes for boxes
         for q, poly in enumerate(scene.obstacles):
             poly = np.asarray(poly, float)
             oc, r = poly.mean(0), float(np.max(np.hypot(*(poly - poly.mean(0)).T)))
+            if q not in white:                              # decided once per scene, the same for every robot
+                white[q] = bool(a.white_obstacle_share > 0 and rng.random() < a.white_obstacle_share)
             if "obstacle_seed" in style:                   # the same look from every robot of the scene
                 looks = style["obstacle_looks"]
                 if q not in looks:
                     looks[q] = obstacle_look(a, style["obstacle_seed"] + 7_919 * q, oc, r)
-                objects.append((float(np.hypot(*(oc - [x, y]))), "solid", looks[q]))
+                objects.append((float(np.hypot(*(oc - [x, y]))), "solid", dict(looks[q], white=white[q])))
             else:
-                objects.append((float(np.hypot(*(oc - [x, y]))), "cylinder", (oc, r)))
+                objects.append((float(np.hypot(*(oc - [x, y]))), "cylinder", (oc, r, white[q])))
         for part in style.get("clutter", []):
             objects.append((float(np.hypot(*(part["footprint"].mean(0) - [x, y]))), "solid", part))
         if a.draw_robots and "robot_seed" in style:
@@ -619,9 +648,11 @@ class Renderer:
                     self.draw_textured_quad(img, tex, uv, shade)
                 mc = np.array([[fc[0], fc[1], a.marker_centre_height_m]])
                 _, mz, mpc = self.project(mc, C, R)
-                markers.append(dict(box=j, face=f, pc=mpc[0], depth=float(mz[0])))
+                to_cam = np.array([x, y]) - fc
+                markers.append(dict(box=j, face=f, pc=mpc[0], depth=float(mz[0]),
+                                    cos=float(nv @ to_cam / max(np.linalg.norm(to_cam), 1e-9))))
             elif kind == "cylinder":
-                oc, r = data
+                oc, r, is_white = data
                 ang = np.linspace(0, 2 * math.pi, 32, endpoint=False)
                 ring = np.stack([oc[0] + r * np.cos(ang), oc[1] + r * np.sin(ang)], 1)
                 pts = np.vstack([np.column_stack([ring, np.zeros(32)]),
@@ -629,8 +660,18 @@ class Renderer:
                 uv, z, _ = self.project(pts, C, R)
                 if (z < 0.05).any():
                     continue
-                self.draw_polygon(img, uv, np.zeros(3) if m else np.array([150.0, 155.0, 160.0]) * style["ambient"] * 1.1)
+                self.draw_polygon(img, uv, ([255.0, 0.0, 0.0] if is_white else np.zeros(3)) if m
+                                  else np.array([150.0, 155.0, 160.0]) * style["ambient"] * 1.1)
             elif kind == "solid":
+                if m and data.get("white"):                # its whole outline white, no box number
+                    F = np.asarray(data["footprint"], float)
+                    z0 = data.get("z0", 0.0)
+                    pts = np.vstack([np.column_stack([F, np.full(len(F), z0)]),
+                                     np.column_stack([F, np.full(len(F), z0 + data["height"])])])
+                    uv, z, _ = self.project(pts, C, R)
+                    if (z > 0.05).all():
+                        self.draw_polygon(img, uv, [255.0, 0.0, 0.0])
+                    continue
                 if m:
                     data = dict(data, tex=np.zeros_like(data["tex"]), top=np.zeros(3))
                 self.draw_solid(img, data, C, R, style)
@@ -656,6 +697,7 @@ class Renderer:
         # through the lens
         out = cv2.remap(img, self.cam.map_x, self.cam.map_y, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
         box_pixels = None
+        ids = None
         if m:
             white = out[..., 0] > 127.0
             ids = cv2.remap(img[..., 1], self.cam.map_x, self.cam.map_y, cv2.INTER_NEAREST,
@@ -664,7 +706,7 @@ class Renderer:
                                      minlength=len(scene.boxes) + 1)[1:].tolist()
             if a.instance_borders:                         # boxes that touch in the image stay apart
                 labels = np.where(white, np.round(ids).astype(np.int32).clip(0, len(scene.boxes)), 0)
-                white = separate_instances(labels, rng, a.border_merge_prob) > 0
+                white = (separate_instances(labels, rng, a.border_merge_prob) > 0) | (white & (labels == 0))
             out = np.repeat(np.where(white, 255.0, 0.0).astype(np.float32)[..., None], 3, axis=2)
         elif a.draw_gripper and self.grip_mask is not None:
             out = out * (1 - self.grip_mask) + self.grip * self.grip_mask
@@ -676,6 +718,8 @@ class Renderer:
                 m["u"], m["v"] = float(p[0]), float(p[1])
                 m.pop("pc")
         markers = [m for m in markers if m["depth"] > 0 and 0 <= m["u"] < self.cam.W and 0 <= m["v"] < self.cam.H]
+        if a.mask_only and a.marker_channel:
+            out[..., 1] = self.marker_map(markers, ids, rng)
         info = dict(pitch_deg=round(math.degrees(pitch), 2), roll_deg=round(math.degrees(roll), 2),
                     height_m=a.camera_height_m)
         if box_pixels is not None:
