@@ -1,0 +1,360 @@
+CAPTURE COMMANDS - second real data set (80 layouts, R01-R80)
+Run everything from the project folder on the lab PC.
+
+=== ONCE, BEFORE STARTING ===
+git pull
+
+Arena centre: Motive x = -0.28, y = -0.58 (mark it with tape, plus arrows for +x and +y).
+
+=== FOR EACH LAYOUT ===
+Option A (faster): live placement check; Enter starts the capture of that layout
+    python -m tools.place_check --layout Rxx
+Option B: the full capture command (listed below for every layout)
+
+=== END OF EACH DAY ===
+git add data/survey_v2 docs/capture_plan_v2.csv
+git commit -m "captures day N"
+git push
+
+Day 1: after the first 2-3 layouts, commit and push, and wait for the check before going on.
+
+
+====================================================================================================
+DAY 1: R01-R16
+====================================================================================================
+
+R01  (test)  5 boxes, fitta, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R01
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R01 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R02  (test)  5 boxes, fitta, robots casuale | replica a
+    python -m tools.place_check --layout R02
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R02 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R03  (test)  5 boxes, sparsa, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R03
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R03 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R04  (test)  5 boxes, sparsa, robots casuale | replica a
+    python -m tools.place_check --layout R04
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R04 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R05  (test)  5 boxes, fila/arco, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R05
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R05 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R06  (test)  5 boxes, fila/arco, robots casuale | replica a
+    python -m tools.place_check --layout R06
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R06 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R07  (test)  5 boxes, due gruppi, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R07
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R07 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R08  (test)  5 boxes, due gruppi, robots casuale | replica a
+    python -m tools.place_check --layout R08
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R08 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R09  (dev)  5 boxes, fitta, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R09
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R09 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R10  (dev)  5 boxes, fitta, robots casuale | replica b
+    python -m tools.place_check --layout R10
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R10 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R11  (dev)  5 boxes, sparsa, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R11
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R11 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R12  (dev)  5 boxes, sparsa, robots casuale | replica b
+    python -m tools.place_check --layout R12
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R12 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R13  (dev)  5 boxes, fila/arco, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R13
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R13 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R14  (dev)  5 boxes, fila/arco, robots casuale | replica b
+    python -m tools.place_check --layout R14
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R14 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R15  (dev)  5 boxes, due gruppi, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R15
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R15 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R16  (dev)  5 boxes, due gruppi, robots casuale | replica b
+    python -m tools.place_check --layout R16
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R16 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+====================================================================================================
+DAY 2: R17-R36
+====================================================================================================
+
+R17  (test)  3 boxes, fitta, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R17
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R17 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R18  (test)  3 boxes, fitta, robots casuale | replica a
+    python -m tools.place_check --layout R18
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R18 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R19  (test)  3 boxes, sparsa, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R19
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R19 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R20  (test)  3 boxes, sparsa, robots casuale | replica a
+    python -m tools.place_check --layout R20
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R20 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R21  (test)  3 boxes, fila/arco, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R21
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R21 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R22  (test)  3 boxes, fila/arco, robots casuale | replica a
+    python -m tools.place_check --layout R22
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R22 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R23  (test)  3 boxes, due gruppi (2+1), robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R23
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R23 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R24  (test)  3 boxes, due gruppi (2+1), robots casuale | replica a
+    python -m tools.place_check --layout R24
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R24 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R25  (test)  3 boxes, fitta, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R25
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R25 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R26  (test)  3 boxes, fitta, robots casuale | replica b
+    python -m tools.place_check --layout R26
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R26 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R27  (test)  3 boxes, sparsa, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R27
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R27 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R28  (test)  3 boxes, sparsa, robots casuale | replica b
+    python -m tools.place_check --layout R28
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R28 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R29  (test)  3 boxes, fila/arco, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R29
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R29 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R30  (test)  3 boxes, fila/arco, robots casuale | replica b
+    python -m tools.place_check --layout R30
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R30 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R31  (test)  3 boxes, due gruppi (2+1), robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R31
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R31 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R32  (test)  3 boxes, due gruppi (2+1), robots casuale | replica b
+    python -m tools.place_check --layout R32
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R32 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R33  (test)  3 boxes, fitta, robots cerchio 1.0 | scatole entro 0.45 m dal centro
+    python -m tools.place_check --layout R33
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R33 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1
+
+R34  (test)  3 boxes, sparsa, robots cerchio 1.0 | scatole entro 0.45 m dal centro
+    python -m tools.place_check --layout R34
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R34 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1
+
+R35  (test)  5 boxes, fitta, robots cerchio 1.0 | scatole entro 0.45 m dal centro
+    python -m tools.place_check --layout R35
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R35 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1
+
+R36  (test)  5 boxes, sparsa, robots cerchio 1.0 | scatole entro 0.45 m dal centro
+    python -m tools.place_check --layout R36
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R36 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1
+
+====================================================================================================
+DAY 3: R37-R52
+====================================================================================================
+
+R37  (test)  7 boxes, fitta, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R37
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R37 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R38  (test)  7 boxes, fitta, robots casuale | replica a
+    python -m tools.place_check --layout R38
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R38 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R39  (test)  7 boxes, sparsa, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R39
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R39 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R40  (test)  7 boxes, sparsa, robots casuale | replica a
+    python -m tools.place_check --layout R40
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R40 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R41  (test)  7 boxes, fila/arco, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R41
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R41 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R42  (test)  7 boxes, fila/arco, robots casuale | replica a
+    python -m tools.place_check --layout R42
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R42 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R43  (test)  7 boxes, due gruppi, robots cerchio 1.3 | replica a
+    python -m tools.place_check --layout R43
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R43 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R44  (test)  7 boxes, due gruppi, robots casuale | replica a
+    python -m tools.place_check --layout R44
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R44 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R45  (test)  7 boxes, fitta, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R45
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R45 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R46  (test)  7 boxes, fitta, robots casuale | replica b
+    python -m tools.place_check --layout R46
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R46 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R47  (test)  7 boxes, sparsa, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R47
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R47 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R48  (test)  7 boxes, sparsa, robots casuale | replica b
+    python -m tools.place_check --layout R48
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R48 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R49  (test)  7 boxes, fila/arco, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R49
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R49 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R50  (test)  7 boxes, fila/arco, robots casuale | replica b
+    python -m tools.place_check --layout R50
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R50 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R51  (test)  7 boxes, due gruppi, robots cerchio 1.3 | replica b
+    python -m tools.place_check --layout R51
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R51 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R52  (test)  7 boxes, due gruppi, robots casuale | replica b
+    python -m tools.place_check --layout R52
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R52 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+====================================================================================================
+DAY 4: R53-R68
+====================================================================================================
+
+R53  (test)  5 boxes, fitta, robots cerchio 1.5
+    python -m tools.place_check --layout R53
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R53 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R54  (test)  5 boxes, sparsa, robots cerchio 1.5
+    python -m tools.place_check --layout R54
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R54 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R55  (test)  5 boxes, fila/arco, robots cerchio 1.5
+    python -m tools.place_check --layout R55
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R55 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R56  (test)  5 boxes, due gruppi, robots cerchio 1.5
+    python -m tools.place_check --layout R56
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R56 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R57  (test)  7 boxes, fitta, robots cerchio 1.5
+    python -m tools.place_check --layout R57
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R57 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R58  (test)  7 boxes, sparsa, robots cerchio 1.5
+    python -m tools.place_check --layout R58
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R58 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R59  (test)  7 boxes, fila/arco, robots cerchio 1.5
+    python -m tools.place_check --layout R59
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R59 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R60  (test)  7 boxes, due gruppi, robots cerchio 1.5
+    python -m tools.place_check --layout R60
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R60 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.5
+
+R61  (test)  5 boxes, sparsa, robots cerchio 1.3 | 1 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R61
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R61 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R62  (dev)  5 boxes, fitta, robots casuale | 2 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R62
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R62 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R63  (test)  5 boxes, due gruppi, robots cerchio 1.3 | 2 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R63
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R63 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R64  (test)  5 boxes, fila/arco, robots casuale | 1 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R64
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R64 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R65  (test)  7 boxes, sparsa, robots cerchio 1.3 | 1 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R65
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R65 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R66  (test)  7 boxes, due gruppi, robots casuale | 2 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R66
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R66 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R67  (test)  7 boxes, fitta, robots cerchio 1.3 | 2 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R67
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R67 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R68  (test)  7 boxes, fila/arco, robots casuale | 1 ostacoli (cestino, sedia, zaino) tra scatole e robot
+    python -m tools.place_check --layout R68
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R68 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+====================================================================================================
+DAY 5: R69-R80
+====================================================================================================
+
+R69  (test)  5 boxes, sparsa, robots cerchio 1.3 | 1 oggetto bianco che non e' una scatola
+    python -m tools.place_check --layout R69
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R69 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R70  (test)  3 boxes, fitta, robots casuale | 2 oggetti bianchi non scatole
+    python -m tools.place_check --layout R70
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R70 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R71  (test)  1 boxes, al centro, robots cerchio 1.3 | 1 scatola + ostacoli e oggetti bianchi sparsi
+    python -m tools.place_check --layout R71
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R71 --box 11:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R72  (test)  1 boxes, al centro, robots casuale | 1 scatola + oggetti bianchi sparsi
+    python -m tools.place_check --layout R72
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R72 --box 11:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R73  (test)  5 boxes, sparsa, robots cerchio 1.3 | luce diversa (tende aperte o meta' luci spente)
+    python -m tools.place_check --layout R73
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R73 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R74  (test)  5 boxes, fitta, robots casuale | luce diversa (tende aperte o meta' luci spente)
+    python -m tools.place_check --layout R74
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R74 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R75  (test)  7 boxes, due gruppi, robots cerchio 1.3 | luce diversa (tende aperte o meta' luci spente)
+    python -m tools.place_check --layout R75
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R75 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3
+
+R76  (test)  3 boxes, fila/arco, robots casuale | luce diversa (tende aperte o meta' luci spente)
+    python -m tools.place_check --layout R76
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R76 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58
+
+R77  (test)  5 boxes, sparsa, robots cerchio 1.3 | --yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)
+    python -m tools.place_check --layout R77
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R77 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3 --yaw-offsets-deg -20 0 20
+
+R78  (test)  7 boxes, fitta, robots cerchio 1.3 | --yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)
+    python -m tools.place_check --layout R78
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R78 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --radius 1.3 --yaw-offsets-deg -20 0 20
+
+R79  (test)  5 boxes, due gruppi, robots casuale | --yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)
+    python -m tools.place_check --layout R79
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R79 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --yaw-offsets-deg -20 0 20
+
+R80  (test)  3 boxes, sparsa, robots casuale | --yaw-offsets-deg -20 0 20 (scatole anche ai bordi dell'immagine)
+    python -m tools.place_check --layout R80
+    python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R80 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --yaw-offsets-deg -20 0 20

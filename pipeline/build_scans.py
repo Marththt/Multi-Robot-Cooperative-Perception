@@ -165,8 +165,8 @@ def bind_run_truth(points, truth):
 def load_truth(path):
     with open(path) as f:
         data = json.load(f)
-    return {k: [dict(class_name=b["class_name"], xy=np.array([b["x"], b["y"]], float)) for b in v]
-            for k, v in data.items()}
+    return {k: [dict(class_name=b["class_name"], xy=np.array([b["x"], b["y"]], float), yaw=b.get("yaw"))
+                for b in v] for k, v in data.items()}
 
 
 # ====================================================================

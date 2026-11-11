@@ -157,6 +157,8 @@ def draw_scene(path, title, members, points, truth, poses, per_class, results, m
     import matplotlib.pyplot as plt
     from matplotlib.patches import Wedge
 
+    from acquisition.survey import box_outline
+
     x0, x1, y0, y1 = arena
     n_panels = 1 + len(methods)
     cols = 3
@@ -184,8 +186,7 @@ def draw_scene(path, title, members, points, truth, poses, per_class, results, m
     def base(ax):
         ax.add_patch(plt.Rectangle((x0, y0), x1 - x0, y1 - y0, fill=False, color="0.5", lw=0.8))
         for b in truth:
-            ax.add_patch(plt.Rectangle((b["xy"][0] - 0.1, b["xy"][1] - 0.1), 0.2, 0.2,
-                                       color="0.75", zorder=1))
+            ax.add_patch(plt.Polygon(box_outline(b), closed=True, color="0.75", zorder=1))
         for k in members:
             x, y, yaw = poses[k]
             col = rcol[points[k]["robot"]]

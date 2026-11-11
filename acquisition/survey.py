@@ -264,6 +264,22 @@ CONNECTED_MSG = "robot connected"
 # Plan
 # ====================================================================
 
+BOX_SIDE_M = 0.235                      # face width of the triangular boxes
+
+
+def box_outline(b):
+    """Corners [(x, y)] * 3 of a box seen from above: an equilateral triangle
+    of side BOX_SIDE_M around its centre, turned by the yaw recorded for the
+    box (launch_all.py; 0 if there is none). The zero of that yaw is where
+    the rigid body was defined in Motive: the drawing turns with the box,
+    up to one fixed angle per box. b: dict with x, y (or xy) and yaw."""
+    x, y = (b["xy"][0], b["xy"][1]) if "xy" in b else (b["x"], b["y"])
+    yaw = b.get("yaw") or 0.0
+    r = BOX_SIDE_M / math.sqrt(3)
+    return [(x + r * math.cos(yaw + math.pi / 3 + k * 2 * math.pi / 3),
+             y + r * math.sin(yaw + math.pi / 3 + k * 2 * math.pi / 3)) for k in range(3)]
+
+
 def layout_from_ground_truth(path, layout_id):
     with open(path) as f:
         data = json.load(f)
@@ -501,7 +517,7 @@ def draw_plan(path, arena, margin, boxes, center, plan, legs):
     import matplotlib
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
-    from matplotlib.patches import Rectangle
+    from matplotlib.patches import Polygon, Rectangle
     x0, x1, y0, y1 = arena
     fig = Figure(figsize=(7, 7 * (y1 - y0) / (x1 - x0)))
     FigureCanvasAgg(fig)
@@ -510,7 +526,7 @@ def draw_plan(path, arena, margin, boxes, center, plan, legs):
     ax.add_patch(Rectangle((x0 + margin, y0 + margin), x1 - x0 - 2 * margin, y1 - y0 - 2 * margin,
                                fill=False, color="0.6", ls="--"))
     for b in boxes:
-        ax.add_patch(Rectangle((b["x"] - 0.1, b["y"] - 0.1), 0.2, 0.2, color="tab:orange"))
+        ax.add_patch(Polygon(box_outline(b), closed=True, color="tab:orange"))
     ax.plot(*center, "k+")
     for pts in legs:
         ax.plot([q[0] for q in pts], [q[1] for q in pts], color="tab:blue", lw=0.8)
@@ -1254,7 +1270,7 @@ def draw_sectors(path, arena, margin, boxes, groups, names, paths, circle=None, 
     import matplotlib
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
-    from matplotlib.patches import Rectangle
+    from matplotlib.patches import Polygon, Rectangle
     x0, x1, y0, y1 = arena
     fig = Figure(figsize=(7, 7 * (y1 - y0) / (x1 - x0)))
     FigureCanvasAgg(fig)
@@ -1263,7 +1279,7 @@ def draw_sectors(path, arena, margin, boxes, groups, names, paths, circle=None, 
     ax.add_patch(Rectangle((x0 + margin, y0 + margin), x1 - x0 - 2 * margin, y1 - y0 - 2 * margin,
                                fill=False, color="0.6", ls="--"))
     for b in boxes:
-        ax.add_patch(Rectangle((b["x"] - 0.1, b["y"] - 0.1), 0.2, 0.2, color="0.3"))
+        ax.add_patch(Polygon(box_outline(b), closed=True, color="0.3"))
     if circle is not None:
         from matplotlib.patches import Circle
         ax.add_patch(Circle(circle[0], circle[1], fill=False, color="0.5", ls=":", lw=1))
