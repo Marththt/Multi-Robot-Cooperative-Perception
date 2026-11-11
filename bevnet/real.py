@@ -6,7 +6,7 @@ resized to the network's image size (--scale of 1280 x 720, as in bevnet/data.py
 OptiTrack (raw/<robot>.jsonl, camera_pose), its own camera matrix and distortion (raw/meta_<layout>_<robot>.json,
 scaled to the image size), the downward pitch measured on the real frames (--pitch), and the true boxes
 (ground_truth.json). Poses and boxes are shifted so that the centre of the robots is the origin of the floor
-grid. One set per reading: data/bev_real/real_k<k>/ (shard_0000.pkl, meta.json); run ids <layout>_r<round>.
+grid. One set per reading: data/bev_real/real_k<k>/ (shard_*.pkl, meta.json); run ids <layout>_r<round>.
 --calibrate fits, per robot, the camera pitch and a yaw offset from the ArUco detections stored with the
 frames (the detections are used only for this camera calibration, never as network input), leave one layout
 out: the frames of a layout use the values fitted on the other layouts. A low camera (29 cm) makes the floor
@@ -291,8 +291,10 @@ def main():
         os.makedirs(out, exist_ok=True)
         for old in glob.glob(os.path.join(out, "shard_*.pkl")):
             os.replace(old, old + ".old")
-        with open(os.path.join(out, "shard_0000.pkl"), "wb") as f:
-            pickle.dump(scenes, f, protocol=pickle.HIGHEST_PROTOCOL)
+        from bevnet.data import SHARD
+        for j, start in enumerate(range(0, len(scenes), SHARD)):   # the loader reads SHARD scenes per file
+            with open(os.path.join(out, f"shard_{j:04d}.pkl"), "wb") as f:
+                pickle.dump(scenes[start:start + SHARD], f, protocol=pickle.HIGHEST_PROTOCOL)
         K0 = scenes[0]["K"][0]
         with open(os.path.join(out, "meta.json"), "w") as f:
             json.dump(dict(set=name, scenario="real", level=f"k{k}", scenes=len(scenes), camera="real", K=K0,
