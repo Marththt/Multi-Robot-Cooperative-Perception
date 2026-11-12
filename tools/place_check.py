@@ -1,4 +1,5 @@
-"""Live placement check for one layout of the capture plan (docs/capture_plan_v2.json), then the capture.
+"""Live placement check for one layout of the capture plans (docs/capture_plan_v2.json, docs/capture_plan_v3.json),
+then the capture.
 
 Reads the boxes and the robots from OptiTrack twice a second and prints, for every target of the layout,
 how far the nearest box (and, in the random family, the nearest robot) is and in which direction to move
@@ -130,16 +131,23 @@ def report(L, hub, tol):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--layout", required=True, help="layout id of the plan, e.g. R01")
-    ap.add_argument("--plan", default="docs/capture_plan_v2.json")
+    ap.add_argument("--plan", default=None,
+                    help="plan JSON (default: the first of docs/capture_plan_v2.json, docs/capture_plan_v3.json "
+                         "that has the layout)")
     ap.add_argument("--tolerance", type=float, default=0.05, help="m, boxes (robots: twice this)")
     ap.add_argument("--optitrack-server", default="127.0.0.1")
     ap.add_argument("--optitrack-local", default="127.0.0.1")
     ap.add_argument("--no-launch", action="store_true", help="only the check, never start the capture")
     a = ap.parse_args()
-    with open(a.plan, encoding="utf-8") as f:
-        plan = {L["id"]: L for L in json.load(f)}
+    plan = {}
+    for path in ([a.plan] if a.plan else ["docs/capture_plan_v2.json", "docs/capture_plan_v3.json"]):
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                plan = {L["id"]: L for L in json.load(f)}
+            if a.layout in plan:
+                break
     if a.layout not in plan:
-        raise SystemExit(f"{a.layout} is not in {a.plan}")
+        raise SystemExit(f"{a.layout} is not in {a.plan or 'docs/capture_plan_v2.json or docs/capture_plan_v3.json'}")
     L = plan[a.layout]
     from vf.localization.mocap_pose import MocapHub
     hub = MocapHub(sorted(set(ALL_BOX_IDS) | set(ROBOT_IDS.values())), a.optitrack_server, a.optitrack_local)

@@ -1,0 +1,103 @@
+CAPTURE COMMANDS - third block of real scenes (R81-R104)
+Run from the project folder on the lab PC, venv active. Capture in this order (medium first).
+Medium layouts: dense blocks whose boxes must NOT touch (centres 28-34 cm apart): place them
+within 3 cm (--tolerance 0.03). White objects of block D are not tracked: place them by eye
+from the guide. Block E: change the light before starting the layout and keep it for all 4 rounds.
+End of the day: git add data/survey_v2 config/ground_truth_positions.json, commit, push.
+
+R81  M medium  6 boxes, dense block, not touching, robots cerchio 1.0  [medium in 4/4 rounds (77% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R81 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R81 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R82  M medium  7 boxes, dense block, not touching, robots cerchio 1.0  [medium in 3/4 rounds (62% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R82 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R82 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R83  M medium  7 boxes, dense block, not touching, robots cerchio 1.0  [medium in 4/4 rounds (77% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R83 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R83 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R84  M medium  7 boxes, dense block, not touching, robots cerchio 1.3  [medium in 4/4 rounds (79% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R84 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R84 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
+R85  M medium  7 boxes, dense block, not touching, robots cerchio 1.0  [medium in 4/4 rounds (73% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R85 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R85 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R86  M medium  7 boxes, dense block, not touching, robots casuale  [medium in 3/4 rounds (71% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R86 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R86 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance)
+
+R87  M medium  6 boxes, dense block, not touching, robots cerchio 1.0  [medium in 3/4 rounds (71% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R87 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R87 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R88  M medium  7 boxes, dense block, not touching, robots cerchio 1.0  [medium in 3/4 rounds (86% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R88 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R88 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R89  M medium  7 boxes, dense block, not touching, robots casuale  [medium in 3/4 rounds (66% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R89 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R89 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance)
+
+R90  M medium  6 boxes, dense block, not touching, robots casuale  [medium in 3/4 rounds (79% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R90 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R90 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance)
+
+R91  M medium  6 boxes, dense block, not touching, robots cerchio 1.0  [medium in 3/4 rounds (62% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R91 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R91 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R92  M medium  7 boxes, dense block, not touching, robots cerchio 1.0  [medium in 3/4 rounds (66% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R92 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R92 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R93  M medium  7 boxes, dense block, not touching, robots cerchio 1.3  [medium in 3/4 rounds (62% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R93 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R93 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --box 17:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
+R94  M medium  6 boxes, dense block, not touching, robots cerchio 1.0  [medium in 3/4 rounds (66% of the draws)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R94 --tolerance 0.03
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R94 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --box 16:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1)
+
+R95  D white objects  3 boxes, sparse, robots cerchio 1.3  [1 white object(s) that are not boxes (paper bin, white bag, white cup...)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R95
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R95 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
+R96  D white objects  4 boxes, sparse, robots casuale  [2 white object(s) that are not boxes (paper bin, white bag, white cup...)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R96
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R96 --box 11:box --box 12:box --box 13:box --box 14:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance)
+
+R97  D white objects  5 boxes, sparse, robots cerchio 1.3  [1 white object(s) that are not boxes (paper bin, white bag, white cup...)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R97
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R97 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
+R98  D white objects  3 boxes, sparse, robots casuale  [2 white object(s) that are not boxes (paper bin, white bag, white cup...)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R98
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R98 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance)
+
+R99  D white objects  4 boxes, sparse, robots cerchio 1.3  [1 white object(s) that are not boxes (paper bin, white bag, white cup...)]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R99
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R99 --box 11:box --box 12:box --box 13:box --box 14:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
+R100  E light  3 boxes, sparse, robots cerchio 1.3  [curtains open]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R100
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R100 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
+R101  E light  4 boxes, sparse, robots casuale  [half of the lights off]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R101
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R101 --box 11:box --box 12:box --box 13:box --box 14:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance)
+
+R102  E light  5 boxes, sparse, robots cerchio 1.3  [curtains open]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R102
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R102 --box 11:box --box 12:box --box 13:box --box 14:box --box 15:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
+R103  E light  3 boxes, sparse, robots casuale  [half of the lights off]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R103
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R103 --box 11:box --box 12:box --box 13:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance)
+
+R104  E light  4 boxes, sparse, robots cerchio 1.3  [curtains open]
+    python -m tools.place_check --plan docs/capture_plan_v3.json --layout R104
+    (it runs: python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json --layout-id R104 --box 11:box --box 12:box --box 13:box --box 14:box --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_v2/ --aruco-marker-size 0.077 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2 --step-deg 22.5 --sweep-deg 67.5 --circle-center -0.28 -0.58 --no-robot-avoidance --radius 1.3)
+
