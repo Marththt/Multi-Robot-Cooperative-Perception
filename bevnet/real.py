@@ -26,7 +26,7 @@ that poses, pitch and lens put them on the boxes.
         --readings 0,1,2,3,4 --calibrate --masks          # second campaign: one run per layout (R01, R02, ...)
     python -m bevnet.real --runs "data/survey_v2_best/*" --out data/bev_real_v2_mko/ --readings 0,1,2,3,4 --calibrate \
         --calibrate-scope same-run --masks --marker-channel --oracle-markers --mask-cache data/bev_real_v2_masks/cache
-      (--oracle-markers: the marker channel drawn from the true boxes, every marker a perfect detector would find)
+      (--oracle-markers: the detected markers plus those of the visible boxes the detector missed)
     python -m bevnet.train --eval-only --out results/bev_obst/ --tests "data/bev_real/*" --results-name real
 """
 
@@ -142,8 +142,8 @@ def true_markers(boxes, pose, pitch, cam, size, mask):
     """The marker a perfect detector would find on each true box in one frame: the centre of the face that looks
     at the camera (the box centre moved by the apothem towards the camera, at the marker height), projected with
     the camera pose, pitch and lens. A marker is kept if it falls inside the image, on the segmentation mask
-    (the box is not hidden by a dark object) and is not behind another box. Returns full-size rectangles
-    (u0, v0, u1, v1), square, of the marker's apparent size."""
+    (the box is not hidden by a dark object) and is not behind another box. Returns (box index, full-size
+    rectangle (u0, v0, u1, v1)), square, of the marker's apparent size."""
     K, D = cam
     x, y = pose[0], pose[1]
     out = []
@@ -173,7 +173,7 @@ def true_markers(boxes, pose, pitch, cam, size, mask):
             if mask[min(int(vc * mh / size[1]), mh - 1), min(int(uc * mw / size[0]), mw - 1)] < 128:
                 continue
         half = 0.5 * K[0, 0] * MARKER_SIDE_M / max(d - APOTHEM_M, 0.1)
-        out.append((uc - half, vc - half, uc + half, vc + half))
+        out.append((k, (uc - half, vc - half, uc + half, vc + half)))
     return out
 
 
@@ -223,16 +223,20 @@ def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=N
                 ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
             elif marker_channel:                            # mask, markers, mask (B, G, R), as imgsim
                 mk = np.zeros_like(small)
-                if oracle_markers:                          # every visible marker, from the true boxes
-                    for u0, v0, u1, v1 in true_markers(boxes, world[n], math.radians(pitch_deg[n]), cams[q],
-                                                        (W, H), mask):
-                        cv2.rectangle(mk, (int(round(u0 * w / W)), int(round(v0 * h / H))),
-                                      (int(round(u1 * w / W)), int(round(v1 * h / H))), 255, -1)
-                else:
-                    for det in recs[q].get("detections", []):   # the ArUco markers detected in this frame
-                        bx, by, bw, bh = det["bbox"]
-                        cv2.rectangle(mk, (int(round(bx * w / W)), int(round(by * h / H))),
-                                      (int(round((bx + bw) * w / W)), int(round((by + bh) * h / H))), 255, -1)
+                dets = recs[q].get("detections", [])
+                for det in dets:                            # the ArUco markers detected in this frame
+                    bx, by, bw, bh = det["bbox"]
+                    cv2.rectangle(mk, (int(round(bx * w / W)), int(round(by * h / H))),
+                                  (int(round((bx + bw) * w / W)), int(round((by + bh) * h / H))), 255, -1)
+                if oracle_markers:                          # plus the visible boxes the detector missed
+                    found = {int(np.argmin(np.hypot(*(boxes - np.asarray(dt["position"], float)).T)))
+                             for dt in dets if "position" in dt
+                             and np.min(np.hypot(*(boxes - np.asarray(dt["position"], float)).T)) <= 0.3}
+                    for k, (u0, v0, u1, v1) in true_markers(boxes, world[n], math.radians(pitch_deg[n]), cams[q],
+                                                            (W, H), mask):
+                        if k not in found:
+                            cv2.rectangle(mk, (int(round(u0 * w / W)), int(round(v0 * h / H))),
+                                          (int(round(u1 * w / W)), int(round(v1 * h / H))), 255, -1)
                 ok, buf = cv2.imencode(".png", np.dstack([small, mk, small]))
             else:
                 ok, buf = cv2.imencode(".png", small)
@@ -303,8 +307,9 @@ def main():
                     help="with --masks: second image channel = the ArUco markers detected in the frame (filled "
                          "rectangles), as imgsim marker_channel")
     ap.add_argument("--oracle-markers", action="store_true",
-                    help="with --marker-channel: the markers a perfect detector would find (true_markers), "
-                         "instead of the detected ones: what the network does when it sees every visible marker")
+                    help="with --marker-channel: the detected markers plus, for every visible box the detector "
+                         "missed in that frame, the marker a perfect detector would find (true_markers): what the "
+                         "network does when no visible marker is missed")
     ap.add_argument("--cutout", action="store_true",
                     help="boxes only, as seen: the frame inside the segmentation mask, black elsewhere")
     ap.add_argument("--mask-cache", default=None,
@@ -365,7 +370,7 @@ def main():
         with open(os.path.join(out, "meta.json"), "w") as f:
             json.dump(dict(set=name, scenario="real", level=f"k{k}", scenes=len(scenes), camera="real", K=K0,
                            marker_channel=bool(a.marker_channel and a.masks),
-                           marker_source="truth" if a.oracle_markers else "detections",
+                           marker_source="detections + missed visible" if a.oracle_markers else "detections",
                            D=scenes[0]["D"][0], size=[int(round(1280 * a.scale)), int(round(720 * a.scale))],
                            scale=a.scale, pitch_deg=pitch, runs=[os.path.basename(r[0]) for r in runs],
                            calibration={f"{l}/{q}": v for (l, q), v in cal.items()} if cal else None), f, indent=2)
