@@ -1,0 +1,99 @@
+{
+  "robot_id": "P1",
+  "layout_id": "R88",
+  "written": "2026-11-12 12:03:01",
+  "camera_resolution": "720",
+  "camera_matrix": [
+    [
+      664.8202930314716,
+      0.0,
+      640.622841437227
+    ],
+    [
+      0.0,
+      665.183032816675,
+      364.3572210278712
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "dist_coeffs": [
+    [
+      -0.05100588988975071,
+      -0.0004892984709638901,
+      -0.0009122749425730488,
+      -0.0005144545585493005,
+      -0.01847347447187403
+    ]
+  ],
+  "camera_calib_file": "config\\checkerboard_calib_P1.json",
+  "aruco_marker_size_m": 0.077,
+  "aruco_dict": "4X4_50",
+  "aruco_classes_file": null,
+  "camera_offset_forward_m": 0.12,
+  "camera_offset_right_m": 0.0,
+  "frame_correction_file": null,
+  "yaw_offset_deg": 0.0,
+  "optitrack_rb_id": 7,
+  "n_readings": 5,
+  "instance_threshold_m": 0.2,
+  "settle_s": 1.0,
+  "jpeg_quality": 95,
+  "ground_truth_file": "data/survey_v2/R88_20261112-120254\\ground_truth.json",
+  "true_boxes": [
+    {
+      "class_name": "box",
+      "x": -0.3194,
+      "y": -0.0618,
+      "yaw": 2.9853,
+      "rb_id": 11
+    },
+    {
+      "class_name": "box",
+      "x": 0.105,
+      "y": -0.6713,
+      "yaw": 0.5788,
+      "rb_id": 12
+    },
+    {
+      "class_name": "box",
+      "x": -0.1458,
+      "y": -0.968,
+      "yaw": -0.0664,
+      "rb_id": 13
+    },
+    {
+      "class_name": "box",
+      "x": -0.5535,
+      "y": -0.3514,
+      "yaw": 1.8611,
+      "rb_id": 14
+    },
+    {
+      "class_name": "box",
+      "x": -0.2668,
+      "y": -0.6078,
+      "yaw": -1.329,
+      "rb_id": 15
+    },
+    {
+      "class_name": "box",
+      "x": 0.032,
+      "y": -0.2936,
+      "yaw": -1.8931,
+      "rb_id": 16
+    },
+    {
+      "class_name": "box",
+      "x": -0.532,
+      "y": -0.7509,
+      "yaw": 1.2656,
+      "rb_id": 17
+    }
+  ],
+  "pose_convention": "(x, y, yaw_rad) in the OptiTrack planar frame; camera_pose = body pose moved by the camera offsets",
+  "detection_convention": "distance = camera->marker [m]; bearing_rad positive to the right of the optical axis; viewing_angle_rad 0 = marker facing the camera"
+}
