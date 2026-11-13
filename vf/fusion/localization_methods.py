@@ -11,9 +11,9 @@ ONE static shot:
     poses     {robot_id: (x, y, yaw) of the camera, or None}
     sensor    SensorModel (sensor_model.py), the same for all
 
-The black box receives the robots' OBSERVATIONS (distance, bearing,
-class of every marker + the robot pose); the first step of every method,
-measurements_by_class() below, turns them into the measurements above.
+The callers (pipeline/analyze_rounds.fuse, pipeline/plan_mht) turn the
+robots' observations (distance, bearing, class of every marker + the
+camera pose) into these measurements with measurement_from_observation().
 
 Methods kept (the simplest and the most complex of the document's table):
     zone_class      1  zones + class: at most one object per zone (the
@@ -27,6 +27,8 @@ Methods kept (the simplest and the most complex of the document's table):
                        of every report, the inputs of the GNN
                        (sensor_aware_mht.py)
     phd, cphd       4  Random Finite Set filters (phd.py)
+    phd_avg, cphd_avg  the same filters with the intensity averaged over
+                       the orders of the robots (phd.py)
 
 Metric: OSPA (Schuhmacher, Vo, Vo 2008), the standard distance between
 two SETS of positions. It combines position error and count error: every
@@ -125,68 +127,8 @@ def measurement_from_observation(pose, distance, bearing):
     return np.asarray(global_position(pose, bearing, distance), float)
 
 
-def measurements_by_class(robots, require_pose=True):
-    """First step of every classical method: the observations of all the
-    robots -> the measurements Z, per class.
-
-    robots: {robot_id: dict(pose=(x, y, psi) or None,
-                            observations=[dict(class_name, distance, bearing,
-                                               pose=None, position=None), ...])}
-      distance [m] and bearing [rad] as measured by the robot; the
-      optional per-observation `pose` is the camera pose of the frame the
-      marker was seen in (default: the robot pose). `position` is only a
-      fallback for data without a bearing (trials recorded before the
-      bearing was saved).
-    Robots without a pose are left out (require_pose=True, live use):
-    their observations cannot be put in the world frame and their field of
-    view is unknown. With require_pose=False (old saved trials) they are
-    kept with pose None, using the stored positions.
-
-    Returns (used, poses, {class_name: {robot_id: [z, ...]}}, n_fallback)."""
-    used = sorted(rid for rid, r in robots.items()
-                  if r.get("pose") is not None or not require_pose)
-    poses = {rid: (tuple(robots[rid]["pose"]) if robots[rid].get("pose") is not None else None)
-             for rid in used}
-    per_class = {}
-    n_fallback = 0
-    for rid in used:
-        for ob in robots[rid].get("observations", []):
-            class_name = ob.get("class_name")
-            if class_name is None:
-                continue
-            frame_pose = ob.get("pose") or poses[rid]
-            if (frame_pose is not None and ob.get("distance") is not None
-                    and ob.get("bearing") is not None):
-                z = measurement_from_observation(frame_pose, ob["distance"], ob["bearing"])
-            elif ob.get("position") is not None:
-                z = np.asarray(ob["position"], float)
-                n_fallback += 1
-            else:
-                continue
-            per_class.setdefault(class_name, {}).setdefault(rid, []).append(z)
-    return used, poses, per_class, n_fallback
-
-
-def localize_live(robots, sensor, methods, zones=None):
-    """For the dashboard and the live map.
-
-    robots: the observations of every robot, format of
-    measurements_by_class (distance, bearing, class + robot pose).
-    Returns (used, {class_name: {method: dict(n, objects, extra)}})."""
-    used, poses, per_class, _ = measurements_by_class(robots)
-    results = {}
-    for class_name, reports in sorted(per_class.items()):
-        results[class_name] = {}
-        for m in methods:
-            if m == "zone_class" and not zones:
-                continue
-            out = run_method(m, used, reports, poses, sensor, zones=zones)
-            results[class_name][m] = dict(n=out["n"], objects=out["objects"],
-                                          extra=out.get("extra", {}))
-    return used, results
-
-
 def ospa(estimated, truth, c=0.5, p=1):
+    """OSPA distance between two sets of positions (cut-off c [m], order p)."""
     X = [np.asarray(x, float) for x in estimated]
     Y = [np.asarray(y, float) for y in truth]
     if not X and not Y:

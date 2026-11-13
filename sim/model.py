@@ -3,7 +3,7 @@ by sim/calibrate.py, which writes it as JSON (sensor_model.json).
 
 Positions are modelled in the CALIBRATED domain, i.e. after the range / bearing correction of pipeline/calibrate.py,
 which is what the fusion methods see. The writer converts them back to raw distance / bearing with the
-same correction, so pipeline/evaluate_runs.py --sensor-calib and gnn/train.py --sensor-calib read simulated runs
+same correction, so pipeline/evaluate_runs.py --sensor-calib and gnn/train_sim.py --sensor-calib read simulated runs
 exactly as real ones.
 """
 
@@ -14,6 +14,7 @@ from typing import List
 
 @dataclass
 class SensorModel:
+    """Parameters of the simulated sensor (see the module docstring); load() / save() read and write the JSON."""
     # --- setup (camera and survey settings)
     hfov_deg: float = 88.0                  # horizontal field of view
     r_min_m: float = 0.15                   # closer boxes are not detected

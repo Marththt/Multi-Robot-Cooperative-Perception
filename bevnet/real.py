@@ -9,7 +9,7 @@ scaled to the image size), the downward pitch measured on the real frames (--pit
 grid. One set per reading: data/bev_real/real_k<k>/ (shard_*.pkl, meta.json); run ids <layout>_r<round>.
 --calibrate fits, per robot, the camera pitch and a yaw offset from the ArUco detections stored with the
 frames (without --marker-channel the detections are used only for this calibration, never as network input), leave one layout
-out: the frames of a layout use the values fitted on the other layouts. A low camera (29 cm) makes the floor
+out: the frames of a layout use the values fitted on the other layouts. A low camera (25 cm) makes the floor
 geometry very sensitive to the pitch: at 1.5 m, 1 degree moves the middle of a box by about 60 cm along the ray.
 --check draws the true box centres and the grid's sampling points into a few frames (fig_REAL-0.png), to see
 that poses, pitch and lens put them on the boxes.
@@ -59,6 +59,9 @@ def camera_pose(rec):
 
 
 def load_run(run_dir):
+    """One run folder of launch_all.py: (layout id, true boxes (B, 2), frames, cameras), with
+    frames[(round, reading, yaw offset)][robot] = the raw record of that frame (pose, image path, detections)
+    and cameras[robot] = (camera matrix, distortion)."""
     with open(os.path.join(run_dir, "ground_truth.json")) as f:
         gt = json.load(f)
     frames = defaultdict(dict)                     # (round, reading, yaw offset) -> robot -> record
@@ -179,6 +182,10 @@ def true_markers(boxes, pose, pitch, cam, size, mask):
 
 def build_scene(run_dir, layout, boxes, recs, cams, scale, quality, pitch, cal=None, seg=None, cache=None,
                 overlays=None, cutout=False, instances=False, marker_channel=False, oracle_markers=False):
+    """One scene (the frames `recs` of the robots at one stop) in the format of bevnet/data.py: the images
+    (frames, masks, cut-outs or masks + marker channel), the camera poses relative to the centre of the robots,
+    the pitch (calibrated with `cal`), each camera's matrix and distortion, and the true boxes. With `seg`
+    the frames are segmented (masks read from / written to `cache`)."""
     robots = sorted(recs)
     poses = np.array([camera_pose(recs[q]) for q in robots], np.float64)
     pitch_deg = [pitch.get(q, 11.5) for q in robots]

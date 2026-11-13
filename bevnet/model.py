@@ -88,6 +88,11 @@ class FloorDecoder(nn.Module):
 
 
 class BevNet(nn.Module):
+    """The image network: the same encoder on every robot's image, the features lifted to the floor grid at
+    `heights` heights and turned into a message of `message` channels per cell, the messages of the robots of
+    a scene fused cell by cell (mean, maximum, number of robots that see the cell), and a decoder on the floor
+    that returns the map of box centres and the offsets inside the cells."""
+
     def __init__(self, channels=64, message=16, heights=3, encoder="small", pretrained=True):
         super().__init__()
         self.encoder = ResNetEncoder(channels, pretrained) if encoder == "resnet18" else ImageEncoder(channels)

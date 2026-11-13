@@ -313,6 +313,11 @@ class RobotGNN(nn.Module):
 
 
 class DetectionGNN(nn.Module):
+    """The adopted design: one node per detection. Every node starts from the features of its detection and of
+    its robot; in each hop it averages the messages of the detections that could be the same box (the pairs
+    inside the gate, see encode_scene) and updates its state; the read-out scores every pair (same box?) and
+    every detection (false?). skip: how the hops are chained (see SKIP_MODES)."""
+
     def __init__(self, hidden=64, hops=2, det_features=DET_FEATURES["full"], skip="residual"):
         super().__init__()
         h = hidden

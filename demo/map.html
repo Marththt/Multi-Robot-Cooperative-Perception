@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live comparison</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #14140f; --ink2: #55544e; --line: #dddcd6;
+    --good: #0f7b3f; --good-bg: #e3f3e8; --bad: #b3261e; --bad-bg: #fbe9e7; --warn: #8a5a00; --warn-bg: #fdf1d6;
+    --robot: #2a78d6; --muted-bg: #eeede8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { padding: 14px 22px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; border-bottom: 1px solid var(--line); background: var(--card); }
+  h1 { font-size: 22px; margin: 0; font-weight: 650; }
+  #status { margin-left: auto; color: var(--ink2); font-size: 15px; }
+  #status::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--robot); margin-right: 8px; animation: pulse 1.4s infinite; }
+  #status.off::before { background: var(--bad); animation: none; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { #status::before { animation: none; } }
+  main { padding: 14px 22px 26px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+  .chip { font-size: 14px; padding: 3px 10px; border-radius: 999px; background: var(--muted-bg); color: var(--ink2); font-variant-numeric: tabular-nums; }
+  .chip b { color: var(--ink); }
+  .chip.hard { background: var(--bad-bg); color: var(--bad); } .chip.medium { background: var(--warn-bg); color: var(--warn); } .chip.easy { background: var(--good-bg); color: var(--good); }
+  .chip.hard b, .chip.medium b, .chip.easy b { color: inherit; }
+  button { font: inherit; font-size: 14px; padding: 3px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--ink2); }
+  button:focus-visible { outline: 3px solid var(--robot); outline-offset: 2px; }
+  .drive { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 12px; padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+  .drive b { font-weight: 650; }
+  .drive button[aria-pressed="true"] { background: var(--robot); color: #fff; border-color: var(--robot); }
+  .drive .hint { color: var(--ink2); }
+  .drive .st-driving { color: var(--robot); } .drive .st-failed, .drive .st-blocked, .drive .st-refused { color: var(--bad); } .drive .st-reached { color: var(--good); }
+  button.stop { border-color: var(--bad); color: var(--bad); }
+  canvas.pick { cursor: crosshair; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 10px; display: flex; flex-direction: column; min-width: 0; }
+  .card h2 { font-size: 17px; margin: 0; font-weight: 650; min-height: 2.8em; display: flex; align-items: flex-end; }
+  .card .in { color: var(--ink2); font-size: 13.5px; margin: 1px 0 8px; }
+  .verdict { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-weight: 650; font-size: 16px; padding: 3px 11px; border-radius: 7px; background: var(--muted-bg); color: var(--ink2); }
+  .verdict.correct { background: var(--good-bg); color: var(--good); }
+  .verdict.few, .verdict.many { background: var(--bad-bg); color: var(--bad); }
+  .verdict.misplaced { background: var(--warn-bg); color: var(--warn); }
+  canvas { width: 100%; aspect-ratio: 1; margin-top: 8px; border-radius: 6px; background: #fbfbf9; border: 1px solid var(--line); }
+  .foot { color: var(--ink2); font-size: 14px; margin-top: 7px; display: flex; flex-direction: column; gap: 1px; font-variant-numeric: tabular-nums; min-height: 4.3em; }
+  .old { color: var(--bad); }
+  .score { margin-top: 6px; height: 7px; border-radius: 4px; background: var(--muted-bg); overflow: hidden; }
+  .score i { display: block; height: 100%; background: var(--good); transition: width .3s; }
+  h3 { font-size: 15px; font-weight: 650; color: var(--ink2); margin: 20px 0 8px; }
+  .frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  figure img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #222; }
+  figcaption { padding: 6px 10px; font-size: 14px; color: var(--ink2); }
+  figcaption b { color: var(--ink); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink2); font-size: 14px; margin-top: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend svg { flex: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cooperative box localisation: live comparison</h1>
+  <span id="status">connecting</span>
+</header>
+<main>
+  <div class="bar">
+    <span class="chip" id="scene"></span>
+    <span class="chip" id="level" hidden></span>
+    <span class="chip" id="robots"></span>
+    <span class="chip">bars: correct over the last <b>30 s</b></span>
+    <button id="reset" title="Start the count of the last 30 s again">Reset count</button>
+  </div>
+  <div class="drive" id="drive" hidden></div>
+  <div class="grid" id="grid"></div>
+  <div class="legend" aria-label="Legend">
+    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fff" stroke="#14140f" stroke-width="1.6"/></svg>true box (OptiTrack)</span>
+    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fbe9e7" stroke="#b3261e" stroke-width="1.6" stroke-dasharray="3 2"/></svg>true box not found</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#0f7b3f" stroke="#fff" stroke-width="2"/></svg>estimate on a box (within 15 cm)</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#fff" stroke="#b3261e" stroke-width="2.4"/><path d="M5.5 5.5l7 7M12.5 5.5l-7 7" stroke="#b3261e" stroke-width="2"/></svg>estimate with no box</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="2.6" fill="#9a9990"/></svg>single detection</span>
+    <span><svg width="26" height="18"><rect x="2" y="4" width="13" height="10" fill="#d6e4f7" stroke="#2a78d6" stroke-width="1.6"/><path d="M15 9h9" stroke="#2a78d6" stroke-width="1.8"/></svg>robot and camera direction</span>
+  </div>
+  <h3 id="framesTitle" hidden>What the robots see: box masks (green) and detected markers (red)</h3>
+  <div class="frames" id="frames"></div>
+</main>
+<script>
+"use strict";
+const BOX_R = 0.235 / Math.sqrt(3);          // centre to corner of a box [m]
+const ROBOT_L = 0.30, ROBOT_W = 0.25;        // robot footprint drawn to scale [m], camera on the front edge
+const CUTOFF = 0.15, WINDOW_S = 30, OLD_S = 3;
+const DETECTION_METHODS = new Set(["mht", "mht_sensor", "gnn"]);
+const POLL_MS = 80;                          // state asked about twelve times per second
+const DELAY_S = 0.15;                        // robots and boxes drawn where they were 0.15 s ago, interpolated
+let state = null, built = false, selected = null, lastB = null, driveKey = "";
+let dirty = true, clockOffset = null, drawnKey = "";
+const buf = {};                              // "robot:P0" / "box:11" -> timed poses [[t, x, y, yaw], ...]
+const drawn = { robots: {}, truth: [] };     // poses drawn in this frame
+const history = {};                          // method -> [[time of the input, correct], ...] of the last 30 s
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const setHTML = (el, html) => { if (el.innerHTML !== html && el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; } };
+const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+
+function absorb() {                         // a new state: server clock and timed poses
+  const off = state.now - performance.now() / 1000;
+  clockOffset = clockOffset === null || Math.abs(off - clockOffset) > 0.5 ? off : clockOffset + 0.1 * (off - clockOffset);
+  const tracks = state.tracks || {};
+  for (const [k, v] of Object.entries(tracks)) {
+    const b = buf[k] || (buf[k] = []);
+    for (const e of v) if (!b.length || e[0] > b[b.length - 1][0]) b.push(e);
+    while (b.length > 2 && b[0][0] < state.now - 2) b.shift();
+  }
+  for (const k in buf) if (!(k in tracks)) delete buf[k];
+}
+
+function at(key, T) {                        // pose at time T, interpolated between the two poses around it
+  const b = buf[key];
+  if (!b || !b.length) return null;
+  if (T <= b[0][0]) return b[0].slice(1);
+  const n = b.length - 1;
+  if (T >= b[n][0]) return b[n].slice(1);
+  let i = n;
+  while (b[i - 1][0] > T) i--;
+  const [t0, x0, y0, a0] = b[i - 1], [t1, x1, y1, a1] = b[i], f = (T - t0) / (t1 - t0);
+  return [x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, a0 + wrap(a1 - a0) * f];
+}
+
+function place() {                           // poses of this frame; true when they changed since the last one
+  const T = performance.now() / 1000 + clockOffset - DELAY_S;
+  drawn.robots = {};
+  for (const [q, r] of Object.entries(state.robots)) drawn.robots[q] = at("robot:" + q, T) || r.pose;
+  const ids = state.truth_ids || [];
+  drawn.truth = (state.truth || []).map((b, j) => {
+    const p = ids[j] != null && at("box:" + ids[j], T);
+    return p ? [p[0], p[1], p[2]] : b;
+  });
+  const key = JSON.stringify([drawn.robots, drawn.truth], (k, v) => typeof v === "number" ? Math.round(v * 1000) : v);
+  const changed = key !== drawnKey;
+  drawnKey = key;
+  return changed;
+}
+function verdictHtml(r) {
+  if (!r) return `<span class="verdict">waiting</span>`;
+  if (r.verdict === null) return `<span class="verdict">${r.n_est} found (no boxes from OptiTrack)</span>`;
+  const d = r.n_est - r.n_true;
+  if (r.verdict === "correct") return `<span class="verdict correct">&#10003; correct</span>`;
+  if (r.verdict === "too few") return `<span class="verdict few">&minus; ${-d} box${d === -1 ? "" : "es"} missing</span>`;
+  if (r.verdict === "too many") return `<span class="verdict many">+ ${d} box${d === 1 ? "" : "es"} too many</span>`;
+  return `<span class="verdict misplaced">&#9651; right count, one misplaced</span>`;
+}
+
+function match(est, truth) {                 // one to one, nearest pairs first, within the cut-off (as the server)
+  const pairs = [];
+  est.forEach((e, i) => truth.forEach((t, j) => pairs.push([Math.hypot(e[0] - t[0], e[1] - t[1]), i, j])));
+  pairs.sort((a, b) => a[0] - b[0]);
+  const eOk = est.map(() => false), tOk = truth.map(() => false);
+  for (const [d, i, j] of pairs) if (d <= CUTOFF && !eOk[i] && !tOk[j]) eOk[i] = tOk[j] = true;
+  return [eOk, tOk];
+}
+
+function bounds() {                          // the map is fixed: the whole arena
+  const a = state.arena;
+  if (!a) return { cx: 0, cy: 0, half: 2.6 };
+  return { cx: (a[0] + a[1]) / 2, cy: (a[2] + a[3]) / 2, half: Math.max(a[1] - a[0], a[3] - a[2]) / 2 + 0.15 };
+}
+
+function draw(canvas, key, B) {
+  const dpr = window.devicePixelRatio || 1, size = canvas.clientWidth;
+  if (!size) return;
+  if (canvas.width !== Math.round(size * dpr)) canvas.width = canvas.height = Math.round(size * dpr);
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, size, size);
+  const s = size / (2 * B.half);
+  const X = x => (x - B.cx + B.half) * s, Y = y => size - (y - B.cy + B.half) * s;       // Motive y upwards
+  g.lineWidth = 1; g.strokeStyle = "#ebeae4";                                             // 50 cm grid
+  for (let v = Math.ceil((B.cx - B.half) * 2) / 2; v < B.cx + B.half; v += 0.5) { g.beginPath(); g.moveTo(X(v), 0); g.lineTo(X(v), size); g.stroke(); }
+  for (let v = Math.ceil((B.cy - B.half) * 2) / 2; v < B.cy + B.half; v += 0.5) { g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(size, Y(v)); g.stroke(); }
+  g.fillStyle = "#55544e"; g.font = "11px system-ui, sans-serif";
+  g.fillRect(size / 2 - 0.25 * s, size - 9, 0.5 * s, 2); g.textAlign = "center"; g.fillText("50 cm", size / 2, size - 13); g.textAlign = "left";
+  for (const [name, r] of Object.entries(state.robots)) {                                 // goals of moving robots
+    const m = r.motion;
+    if (!m || m.state !== "driving" || !m.goal) continue;
+    g.strokeStyle = "#2a78d6"; g.lineWidth = 1.5; g.setLineDash([5, 4]);
+    const p = drawn.robots[name] || r.pose;
+    g.beginPath(); g.moveTo(X(p[0]), Y(p[1])); g.lineTo(X(m.goal[0]), Y(m.goal[1])); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.arc(X(m.goal[0]), Y(m.goal[1]), 6, 0, 2 * Math.PI); g.stroke();
+  }
+  for (const [name, r] of Object.entries(state.robots)) {                                 // robots
+    // a robot outside the map is moved along the line to the map centre until it is 16 px inside the border
+    const p = drawn.robots[name] || r.pose;
+    let dx = p[0] - B.cx, dy = p[1] - B.cy;
+    const lim = B.half - 16 / s, over = Math.max(Math.abs(dx), Math.abs(dy)) / lim;
+    if (over > 1) { dx /= over; dy /= over; }
+    const x = X(B.cx + dx), y = Y(B.cy + dy), a = -p[2];
+    // the robot (30 x 25 cm, to scale) behind the camera, which is on its front edge (pose = camera pose)
+    const sel = name === selected, L = Math.max(ROBOT_L * s, 8), Wd = Math.max(ROBOT_W * s, 7);
+    g.save(); g.translate(x, y); g.rotate(a);
+    g.fillStyle = sel ? "#2a78d6" : "#d6e4f7"; g.strokeStyle = "#2a78d6"; g.lineWidth = sel ? 3 : 1.6;
+    g.beginPath(); g.rect(-L, -Wd / 2, L, Wd); g.fill(); g.stroke();
+    g.lineWidth = 1.8; g.beginPath(); g.moveTo(0, 0); g.lineTo(18, 0); g.stroke();
+    g.fillStyle = "#2a78d6"; g.beginPath(); g.arc(0, 0, 2.5, 0, 2 * Math.PI); g.fill();
+    g.restore();
+    g.fillStyle = "#1d5fb0"; g.font = "600 11px system-ui, sans-serif"; g.textAlign = "center";
+    g.fillText(name, x - (L + 12) * Math.cos(a), y - (L + 12) * Math.sin(a) + 4); g.textAlign = "left";
+  }
+  const res = state.results[key], truth = state.truth || [];
+  const [eOk, tOk] = res ? match(res.boxes, truth) : [[], truth.map(() => true)];
+  truth.forEach((t, j) => {                                                               // true boxes
+    const found = !res || tOk[j], b = drawn.truth[j] || t;
+    g.beginPath();
+    for (let k = 0; k < 3; k++) {
+      const a = b[2] + k * 2 * Math.PI / 3, x = X(b[0] + BOX_R * Math.cos(a)), y = Y(b[1] + BOX_R * Math.sin(a));
+      k ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    g.fillStyle = found ? "#ffffff" : "#fbe9e7"; g.fill();
+    g.setLineDash(found ? [] : [5, 3]); g.strokeStyle = found ? "#14140f" : "#b3261e"; g.lineWidth = 1.7; g.stroke(); g.setLineDash([]);
+  });
+  if (DETECTION_METHODS.has(key)) {                                                       // what these methods read
+    g.fillStyle = "#9a9990";
+    for (const d of state.detections) { g.beginPath(); g.arc(X(d[0]), Y(d[1]), 2.6, 0, 2 * Math.PI); g.fill(); }
+  }
+  if (res) res.boxes.forEach((b, i) => {                                                  // estimates
+    const x = X(b[0]), y = Y(b[1]);
+    g.beginPath(); g.arc(x, y, 7.5, 0, 2 * Math.PI);
+    if (eOk[i]) { g.fillStyle = "#0f7b3f"; g.fill(); g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.stroke(); }
+    else {
+      g.fillStyle = "#ffffff"; g.fill(); g.strokeStyle = "#b3261e"; g.lineWidth = 2.4; g.stroke();
+      g.beginPath(); g.moveTo(x - 3.6, y - 3.6); g.lineTo(x + 3.6, y + 3.6); g.moveTo(x + 3.6, y - 3.6); g.lineTo(x - 3.6, y + 3.6); g.lineWidth = 2; g.stroke();
+    }
+  });
+}
+
+function build() {
+  $("grid").innerHTML = state.methods.map(m =>
+    `<section class="card" aria-label="${esc(m.label)}"><h2>${esc(m.label)}</h2><div class="in">input: ${esc(m.input)}</div>
+      <div id="v_${m.key}"></div>
+      <canvas data-key="${m.key}" role="img" aria-label="Top-down map of ${esc(m.label)}"></canvas>
+      <div class="foot" id="f_${m.key}"></div>
+      <div class="score" aria-hidden="true"><i id="s_${m.key}" style="width:0"></i></div></section>`).join("");
+  built = true;
+}
+
+function record(key, res) {                  // one entry per new result
+  const h = history[key] || (history[key] = []);
+  if (res && res.verdict !== null && (!h.length || h[h.length - 1][0] !== res.t)) h.push([res.t, res.verdict === "correct"]);
+  while (h.length && h[0][0] < state.now - WINDOW_S) h.shift();
+  return h;
+}
+
+function setFrame(q, src) {                  // the new frame replaces the old one only once it is loaded
+  let fig = document.querySelector(`figure[data-q="${q}"]`);
+  if (!fig) {
+    fig = document.createElement("figure"); fig.dataset.q = q;
+    fig.innerHTML = `<img alt="Frame of robot ${esc(q)} with box masks and detected markers"><figcaption></figcaption>`;
+    $("frames").appendChild(fig);
+  }
+  const img = fig.querySelector("img");
+  if (img.dataset.src !== src) {
+    const next = new Image();
+    next.onload = () => { img.src = next.src; };
+    next.src = "/frames/" + src;
+    img.dataset.src = src;
+  }
+  const c = state.camera[q];
+  setHTML(fig.querySelector("figcaption"), `<b>${esc(q)}</b>` + (c ? ` &middot; camera pitch ${c[0]}&deg;, yaw offset ${c[1]}&deg;` : ""));
+}
+
+function render() {
+  if (!state) return;
+  if (!built) build();
+  if ($("status").textContent !== state.status) $("status").textContent = state.status;
+  $("status").className = state.status.startsWith("live") ? "" : "off";
+  const truth = state.truth, nr = Object.keys(state.robots).length;
+  setHTML($("scene"), truth === null ? "no boxes from OptiTrack" : `<b>${truth.length}</b> box${truth.length === 1 ? "" : "es"} on the floor`);
+  setHTML($("robots"), `<b>${nr}</b> robot${nr === 1 ? "" : "s"}` + (nr ? ": " +
+    Object.entries(state.robots).map(([q, r]) => `${esc(q)} sees ${r.n}`).join(", ") : ""));
+  const lv = state.level;
+  $("level").hidden = !lv;
+  if (lv) {
+    $("level").className = "chip " + lv.level;
+    setHTML($("level"), `scene <b>${lv.level}</b>` + (lv.gap_cm ? ` &middot; closest boxes ${lv.gap_cm} cm` : "") +
+      ` &middot; least seen box: ${lv.min_clear_views} robot${lv.min_clear_views === 1 ? "" : "s"}`);
+  }
+  renderDrive();
+  absorb();
+  const B = bounds(); lastB = B;
+  for (const m of state.methods) {
+    const res = state.results[m.key], err = state.unavailable[m.key];
+    setHTML($("v_" + m.key), err ? `<span class="verdict" title="${esc(err)}">not available</span>` : verdictHtml(res));
+    const h = record(m.key, res), ok = h.filter(e => e[1]).length;
+    let foot = "";
+    if (res) {
+      const age = Math.max(0, state.now - res.t);
+      if (res.verdict !== null) foot += `<span>found ${res.n_matched} of ${res.n_true}${res.rmse_cm === null ? "" : ` &middot; error ${res.rmse_cm} cm`}</span>`;
+      foot += `<span class="${age > OLD_S ? "old" : ""}">input ${age.toFixed(1)} s old &middot; computed in ${res.seconds} s</span>`;
+    }
+    if (h.length) foot += `<span>correct in ${ok} of ${h.length} updates (${Math.round(100 * ok / h.length)}%)</span>`;
+    setHTML($("f_" + m.key), foot);
+    $("s_" + m.key).style.width = (h.length ? 100 * ok / h.length : 0) + "%";
+  }
+  dirty = true;                              // the maps are drawn by the animation loop (frame)
+  const frames = Object.entries(state.frames);
+  $("framesTitle").hidden = !frames.length;
+  for (const [q, f] of frames) setFrame(q, f);
+  document.querySelectorAll("figure[data-q]").forEach(f => { if (!(f.dataset.q in state.frames)) f.remove(); });
+}
+
+const WORDS = { driving: "driving", reached: "arrived", failed: "stopped on the way", blocked: "no free path",
+                refused: "refused", stopped: "stopped", idle: "waiting for a command" };
+
+function renderDrive() {                     // move the robots from the page (acquisition/live_drive.py)
+  const names = Object.keys(state.robots).sort();
+  const bar = $("drive");
+  bar.hidden = !names.length;
+  if (selected && !names.includes(selected)) selected = null;
+  const m = selected && state.robots[selected].motion;
+  const st = m ? `<span class="st-${m.state}">${esc(WORDS[m.state] || m.state)}${m.note ? ": " + esc(m.note) : ""}</span>` : "";
+  const key = names.join() + "|" + selected + "|" + st;
+  if (key === driveKey) return;              // rebuilt only when something changed, so clicks are not lost
+  driveKey = key;
+  bar.innerHTML = `<b>Move</b>` + names.map(q => `<button data-robot="${esc(q)}" aria-pressed="${q === selected}">${esc(q)}</button>`).join("") +
+    (selected ? ` <span class="hint">click a point of any map to send ${esc(selected)} there (it arrives facing the boxes)</span>
+      <button data-cmd="turn" data-deg="22.5">turn left</button><button data-cmd="turn" data-deg="-22.5">turn right</button>
+      <button data-cmd="face">face the boxes</button><button data-cmd="stop" class="stop">stop</button> ${st}`
+      : ` <span class="hint">pick a robot, or click it on a map</span>`) +
+    ` <button data-cmd="stopall" class="stop" style="margin-left:auto">stop all robots</button>`;
+  document.querySelectorAll("canvas[data-key]").forEach(c => c.classList.toggle("pick", !!selected));
+}
+
+async function command(body) {
+  try {
+    await fetch("/command", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  } catch (e) { $("status").textContent = "command not sent: server not reachable"; }
+}
+
+$("drive").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.robot) { selected = b.dataset.robot === selected ? null : b.dataset.robot; driveKey = ""; render(); return; }
+  const c = b.dataset.cmd;
+  if (c === "stopall") command({ robot: "*", kind: "stop" });
+  else if (selected && c === "turn") command({ robot: selected, kind: "turn", deg: Number(b.dataset.deg) });
+  else if (selected && c) command({ robot: selected, kind: c });
+});
+
+$("grid").addEventListener("click", e => {          // a click on a map: pick a robot, or send the selected one
+  const c = e.target.closest("canvas[data-key]");
+  if (!c || !state || !lastB) return;
+  const r = c.getBoundingClientRect(), size = c.clientWidth, s = size / (2 * lastB.half);
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  const x = px / s + lastB.cx - lastB.half, y = (size - py) / s + lastB.cy - lastB.half;
+  for (const [q, rb] of Object.entries(state.robots)) {
+    const cx = rb.pose[0] - 0.15 * Math.cos(rb.pose[2]), cy = rb.pose[1] - 0.15 * Math.sin(rb.pose[2]);
+    if (Math.hypot(cx - x, cy - y) * s < Math.max(18, 0.2 * s)) { selected = q === selected ? null : q; driveKey = ""; render(); return; }
+  }
+  if (selected) command({ robot: selected, kind: "goto", x: Number(x.toFixed(3)), y: Number(y.toFixed(3)), yaw_deg: null });
+});
+
+async function poll() {                     // the next request leaves when the previous one is back
+  const t0 = performance.now();
+  try {
+    state = await (await fetch("/state", { cache: "no-store" })).json();
+    render();
+  } catch (e) { $("status").textContent = "server not reachable"; $("status").className = "off"; }
+  setTimeout(poll, Math.max(0, POLL_MS - (performance.now() - t0)));
+}
+
+function frame() {                           // maps redrawn at the refresh rate of the screen, only when needed
+  if (state && built && lastB && clockOffset !== null) {
+    const moving = place();
+    if (moving || dirty) {
+      document.querySelectorAll("canvas[data-key]").forEach(c => draw(c, c.dataset.key, lastB));
+      dirty = false;
+    }
+  }
+  requestAnimationFrame(frame);
+}
+$("reset").addEventListener("click", () => { for (const k in history) delete history[k]; render(); });
+window.addEventListener("resize", () => { dirty = true; });
+poll(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

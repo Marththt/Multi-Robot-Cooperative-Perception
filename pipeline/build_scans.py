@@ -16,7 +16,7 @@ different times by different robots can be put together.
 Step 1 - single measurements (does the data make sense?)
 ---------------------------------------------------------
 Every observation is turned into its measurement z (the same first step
-of every method, measurements_by_class) and compared with the nearest
+of every method, measurement_from_observation) and compared with the nearest
 true box of the same class:
   - position error of z: bias (mean error x, y) and RMS, also per
     distance band;

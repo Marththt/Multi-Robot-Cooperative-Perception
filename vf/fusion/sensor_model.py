@@ -1,6 +1,6 @@
 """Sensor model (camera + ArUco of ONE robot) shared by all the
 multi-object localization methods: MHT, PHD, CPHD
-(data_association.py, phd.py) and by the comparison in localize_trials.py.
+(data_association.py, phd.py).
 
 Same assumptions for every method, so the comparison measures the method
 and not different parameters. The assumptions are those of Section 3.5 of
@@ -218,8 +218,8 @@ def arena_from_data(points, margin=1.0):
 
 
 # ====================================================================
-# Shared command-line arguments (localize_trials.py, dashboard.py,
-# map_server.py): same names, same defaults
+# Shared command-line arguments (launch_all.py, pipeline/*.py):
+# same names, same defaults
 # ====================================================================
 
 def add_sensor_arguments(parser):
