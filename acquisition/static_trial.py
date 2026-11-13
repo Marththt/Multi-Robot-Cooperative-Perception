@@ -788,10 +788,8 @@ def main():
                 if args.commands and pose_provider is not None and args.state_out:
                     # the controller of the captures steers the rigid body, not the camera ahead of it
                     from acquisition.live_drive import LiveDriver
-                    from vf.fusion.sensor_model import arena_from_regions
                     driver = LiveDriver(robot.chassis, pose_provider.pose, args.commands,
-                                        os.path.dirname(args.state_out) or ".", args.robot_id,
-                                        arena_from_regions(args.regions))
+                                        os.path.dirname(args.state_out) or ".", args.robot_id)
                     driver.start()
                     print(f"driving on the commands in {args.commands}", flush=True)
                 live_preview(camera, raw_detector, args.robot_id,

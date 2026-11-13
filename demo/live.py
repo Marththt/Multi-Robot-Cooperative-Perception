@@ -19,11 +19,13 @@ verdict of the thesis (correct, too few, too many, misplaced), how old its input
 in the last 30 seconds; above the panels, the difficulty level of the scene as it is now. A robot whose state
 stops arriving (its process stopped, or OptiTrack lost it) is left out.
 
-Speed. The robots and the true boxes on the maps are updated ten times per second by a thread of their own,
-whatever the methods are doing; the page asks for the state ten times per second and moves the robots smoothly
-between two states. The image loop runs in a process of its own (its pre- and post-processing would otherwise
-hold up the other loops), segments the frames of all the robots in one batch and, on CUDA, in half precision
-(--no-half: full precision; --image-thread: in a thread of this process, as before).
+Speed. The robots and the true boxes on the maps follow OptiTrack (30 poses per second, written by
+demo/live_robots.py in boxes.json), read by a thread of their own whatever the methods are doing; the page gets
+the timed poses of the last moments and draws robots and boxes where they were a fraction of a second ago,
+interpolated, at the refresh rate of the screen. The map is fixed on the arena (--regions). The image loop runs
+in a process of its own (its pre- and post-processing would otherwise hold up the other loops), segments the
+frames of all the robots in one batch and, on CUDA, in half precision (--no-half: full precision;
+--image-thread: in a thread of this process).
 
 The camera pitch and yaw offset needed by the image networks are fitted continuously on the markers the robots
 see (as bevnet/real.py does on a run); --camera-calib loads fixed values, --write-camera-calib saves the fitted
@@ -36,6 +38,7 @@ seconds), writing the files demo/live_robots.py writes:
 """
 
 import argparse
+import collections
 import glob
 import json
 import multiprocessing
@@ -54,6 +57,7 @@ LABELS = {"mht": "MHT", "mht_sensor": "MHT with sensor model", "gnn": "Graph net
 INPUT = {"mht": "detections", "mht_sensor": "detections", "gnn": "detections", "image": "camera frames",
          "image_mk": "camera frames + markers"}
 PAGE = os.path.join(os.path.dirname(__file__), "map.html")
+TRACK_S = 0.6                                            # timed poses sent to the page
 
 
 class Live:
@@ -66,6 +70,13 @@ class Live:
                           camera={}, loops={})
         os.makedirs(a.work, exist_ok=True)
         self.classical = self.gnn = self.images = None
+        self.tracks = {}                                     # "robot:P0" / "box:11" -> timed poses
+        try:
+            from vf.fusion.sensor_model import arena_from_regions
+            self.state["arena"] = [round(v, 3) for v in arena_from_regions(a.regions)]
+        except Exception as e:
+            print(f"no arena from {a.regions}: {e}", flush=True)
+            self.state["arena"] = None
 
     def set(self, **kw):
         with self.lock:
@@ -91,7 +102,7 @@ class Live:
 
     # ---- loops --------------------------------------------------------------------------------------------
 
-    def scene_info(self, robots, truth, with_level=True):
+    def scene_info(self, robots, truth, truth_ids, with_level=True):
         """Robots (last state of each) and true boxes as the maps draw them; the level of the scene too."""
         level = self.state.get("level")
         if with_level:
@@ -100,16 +111,27 @@ class Live:
             if robots and truth and len(truth) > 0:
                 lv, gap, views = scene_level([b[:2] for b in truth], [tuple(s["pose"]) for s in robots.values()])
                 level = dict(level=lv, gap_cm=round(100 * gap) if gap < 9 else None, min_clear_views=views)
+        now = time.time()
         with self.lock:
             self.state["robots"] = {q: dict(pose=[round(v, 3) for v in s["pose"]], n=len(s.get("detections", [])),
-                                            age=round(time.time() - s["t"], 2), motion=s.get("motion"))
+                                            age=round(now - s["t"], 2), motion=s.get("motion"))
                                     for q, s in robots.items()}
             self.state["truth"] = [[round(v, 3) for v in b] for b in truth] if truth is not None else None
+            self.state["truth_ids"] = truth_ids
             self.state["level"] = level
+            self.state["tracks"] = {k: [list(e) for e in v if now - e[0] <= TRACK_S] for k, v in self.tracks.items()
+                                    if v and now - v[-1][0] <= TRACK_S}
+
+    def track(self, key, t, x, y, yaw):
+        tr = self.tracks.setdefault(key, collections.deque(maxlen=60))
+        if not tr or t > tr[-1][0]:
+            tr.append((round(t, 3), round(x, 4), round(y, 4), round(yaw, 4)))
 
     def sample(self, recent):
-        """Ten times per second: the last state of every robot and the true boxes for the maps (the level of
-        the scene twice per second), and the states kept for the pooling of the detection loop."""
+        """Every state_every_s: the last state of every robot and the true boxes for the maps (the level of the
+        scene twice per second), the states kept for the pooling of the detection loop and, for the page to
+        move robots and boxes smoothly, their timed poses of the last moments: from OptiTrack directly
+        (boxes.json, 30 per second, demo/live_robots.py), otherwise from the robot states."""
         last_level = 0.0
         while True:
             t0 = time.time()
@@ -117,8 +139,25 @@ class Live:
                 robots, truth, _t = methods.snapshot(self.a.live_dir, self.a.stale_s)
                 with self.recent_lock:
                     recent.add(robots)
+                mocap = methods.read_json(os.path.join(self.a.live_dir, "boxes.json")) or {}
+                fresh = t0 - float(mocap.get("t", 0)) <= self.a.stale_s
+                truth_ids = None
+                if fresh and truth is not None:
+                    truth_ids = [b.get("rb_id") for b in mocap.get("boxes", [])]
+                    if len(truth_ids) != len(truth):
+                        truth_ids = None
+                    for b in mocap.get("boxes", []):
+                        if b.get("rb_id") is not None:
+                            self.track(f"box:{b['rb_id']}", mocap["t"], b["x"], b["y"], b.get("yaw") or 0.0)
+                for q, s in robots.items():
+                    p = (mocap.get("robots") or {}).get(q) if fresh else None
+                    if p is not None:
+                        s = robots[q] = dict(s, pose=p)          # the pose of OptiTrack: newer than the state
+                        self.track(f"robot:{q}", mocap["t"], *p[:3])
+                    else:
+                        self.track(f"robot:{q}", s["t"], *s["pose"][:3])
                 level_now = t0 - last_level >= 0.5
-                self.scene_info(robots, truth, with_level=level_now)
+                self.scene_info(robots, truth, truth_ids, with_level=level_now)
                 if level_now:
                     last_level = t0
             except Exception:
@@ -356,7 +395,7 @@ def main():
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--work", default="data/demo_work/", help="working files of the page")
     ap.add_argument("--every-s", type=float, default=0.15, help="period of the detection loop")
-    ap.add_argument("--state-every-s", type=float, default=0.05, help="period of the robots and boxes on the maps")
+    ap.add_argument("--state-every-s", type=float, default=0.03, help="period of the robots and boxes on the maps")
     ap.add_argument("--window-s", type=float, default=0.6,
                     help="detections of the last seconds pooled per object (a capture pools the 5 frames of a stop)")
     ap.add_argument("--stale-s", type=float, default=2.0, help="a robot silent for longer is left out")

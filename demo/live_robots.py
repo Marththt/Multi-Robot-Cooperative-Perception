@@ -4,9 +4,10 @@ Place the robots by hand, or send them from the page (below), and move the boxes
 acquisition/static_trial.py --live, which shows its camera with the detected markers and writes, a few times per
 second, its live state (camera pose from OptiTrack, detections) and its last frame in --out. This script
 starts one such process per robot, one after the other (the robot SDK finds a robot through a port that only one
-process at a time can use), and meanwhile writes the positions of the boxes that OptiTrack sees inside the arena
-in <out>/boxes.json, the ground truth of the page. demo/live.py reads these files and runs the methods on them
-continuously.
+process at a time can use), and meanwhile writes, 30 times per second, the positions of the boxes that OptiTrack
+sees inside the arena and the camera poses of the robots in <out>/boxes.json: the ground truth of the page and
+the poses with which the page moves the robots smoothly. demo/live.py reads these files and runs the methods on
+them continuously.
 
 Run it in the usual environment of the captures (robot SDK, natnet):
 
@@ -23,6 +24,7 @@ every robot process.
 
 import argparse
 import json
+import math
 import os
 import signal
 import subprocess
@@ -34,6 +36,7 @@ from acquisition.launch_all import parse_robot
 
 CONNECTED_MSG = "Waiting for the first frame"        # printed by static_trial.py --live once the robot is connected
 CONNECT_TIMEOUT_S = 60.0
+MOCAP_HZ = 30.0                                       # boxes and robot poses written to boxes.json
 
 
 def pump(proc, tag, connected):
@@ -64,23 +67,33 @@ def write_json(path, data):
             time.sleep(0.02 * (attempt + 1))
 
 
-def truth_loop(a, stop):
-    """Writes <out>/boxes.json five times per second: the boxes OptiTrack tracks inside the arena."""
+def truth_loop(a, robots, stop):
+    """Writes <out>/boxes.json MOCAP_HZ times per second: the boxes OptiTrack tracks inside the arena and the
+    camera pose of every robot (rigid body + the camera offset, as static_trial.py computes it)."""
     from vf.fusion.sensor_model import arena_from_regions
     from vf.localization.mocap_pose import MocapHub
     x0, x1, y0, y1 = arena_from_regions(a.regions)
-    hub = MocapHub(a.box, a.optitrack_server, a.optitrack_local)
+    hub = MocapHub(list(a.box) + [r["rb"] for r in robots], a.optitrack_server, a.optitrack_local)
     path = os.path.join(a.out, "boxes.json")
+    off = a.camera_offset_forward_m
     try:
         while not stop.is_set():
+            t0 = time.time()
             boxes = []
             for rb in a.box:
                 q = hub.get_pose(rb)
                 if q is not None and x0 <= q[0] <= x1 and y0 <= q[1] <= y1:
                     boxes.append(dict(class_name="box", rb_id=rb, x=round(float(q[0]), 4), y=round(float(q[1]), 4),
                                       yaw=round(float(q[2]), 4)))
-            write_json(path, dict(t=time.time(), boxes=boxes))
-            stop.wait(0.2)
+            poses = {}
+            for r in robots:
+                q = hub.get_pose(r["rb"])
+                if q is not None:
+                    x, y, yaw = (float(v) for v in q[:3])
+                    poses[r["robot_id"]] = [round(x + off * math.cos(yaw), 4), round(y + off * math.sin(yaw), 4),
+                                            round(yaw, 4)]
+            write_json(path, dict(t=time.time(), boxes=boxes, robots=poses))
+            stop.wait(max(0.0, 1.0 / MOCAP_HZ - (time.time() - t0)))
     finally:
         hub.close()
 
@@ -106,7 +119,7 @@ def main():
     robots = [parse_robot(s) for s in a.robot]
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    truth = threading.Thread(target=truth_loop, args=(a, stop), daemon=True)
+    truth = threading.Thread(target=truth_loop, args=(a, robots, stop), daemon=True)
     truth.start()
     procs = []
     for r in robots:

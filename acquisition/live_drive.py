@@ -3,8 +3,8 @@
 acquisition/static_trial.py --live --commands <file> starts a LiveDriver next to the camera loop. The page of
 the demo (demo/live.py) writes the latest command for this robot into <file>; the driver picks it up within a
 fraction of a second and drives with the controller of the captures (vf/control/goto.py), on a path that keeps
-clear of the boxes and of the other robots (acquisition/survey.route), inside the arena. A new command replaces
-the one in progress; "stop" halts the robot at once.
+clear of the boxes and of the other robots (acquisition/survey.route). There is no arena border: the robot goes
+wherever it is sent. A new command replaces the one in progress; "stop" halts the robot at once.
 
 Commands (JSON, written atomically; seq grows with every command):
     {"seq": 7, "kind": "goto", "x": 0.4, "y": -1.2, "yaw_deg": null}   drive there; yaw_deg null = arrive
@@ -30,11 +30,11 @@ import os
 import threading
 import time
 
-from acquisition.survey import border_distance, inside, route
+from acquisition.survey import route
 from vf.control.goto import go_to, stop, wrap_pi
 
 KEEP_OUT_M = 0.45            # no leg closer than this to a box centre (as the captures, survey --keep-out-m)
-MARGIN_M = 0.35              # goals at least this far inside the arena border
+NO_BORDER = (-1e3, 1e3, -1e3, 1e3)   # survey.route keeps paths inside an arena: here, anywhere
 STOP_DISTANCE_M = 0.6        # wait while another robot is this close and in the way (survey --stop-distance)
 ROBOT_CLEARANCE_M = 0.6      # no leg closer than this to a standing robot
 STALE_S = 2.0
@@ -55,10 +55,10 @@ def read_json(path):
 
 
 class LiveDriver(threading.Thread):
-    def __init__(self, chassis, pose_fn, command_path, live_dir, robot_id, arena, log=print):
+    def __init__(self, chassis, pose_fn, command_path, live_dir, robot_id, log=print):
         super().__init__(daemon=True)
         self.chassis, self.pose_fn, self.path = chassis, pose_fn, command_path
-        self.live_dir, self.robot_id, self.arena, self.log = live_dir, robot_id, arena, log
+        self.live_dir, self.robot_id, self.log = live_dir, robot_id, log
         self.quit = threading.Event()
         old = read_json(command_path)                       # a command left from an earlier session is not run
         self.seq = old.get("seq") if old else None
@@ -164,10 +164,6 @@ class LiveDriver(threading.Thread):
             return
         boxes = self.boxes()
         centre = self.centre(boxes)
-        limit = min(MARGIN_M / 2, border_distance(here, self.arena) - 0.03)
-
-        def fence(q):
-            return border_distance(q, self.arena) >= limit
 
         def facing(xy):
             return None if centre is None else math.atan2(centre[1] - xy[1], centre[0] - xy[0])
@@ -178,7 +174,7 @@ class LiveDriver(threading.Thread):
                 self.report("refused", "no boxes to face")
                 return
             self.report("driving", goal=[here[0], here[1], math.degrees(yaw)])
-            ok = go_to(self.pose_fn, self.chassis, here[:2], yaw, fence=fence, pos_tol=0.15,
+            ok = go_to(self.pose_fn, self.chassis, here[:2], yaw, pos_tol=0.15,
                        cancel=self.newer, log=self.log)
             self.report("reached" if ok else ("stopped" if self.newer() else "failed"))
             return
@@ -188,15 +184,12 @@ class LiveDriver(threading.Thread):
         goal = (float(c["x"]), float(c["y"]))
         yaw = math.radians(c["yaw_deg"]) if c.get("yaw_deg") is not None else facing(goal)
         goal_pose = [goal[0], goal[1], None if yaw is None else math.degrees(yaw)]
-        if not inside(goal, self.arena, MARGIN_M):
-            self.report("refused", "goal too close to the arena border", goal_pose)
-            return
         if boxes and min(math.hypot(b["x"] - goal[0], b["y"] - goal[1]) for b in boxes) < KEEP_OUT_M:
             self.report("refused", "goal too close to a box", goal_pose)
             return
         robots = self.others()
         if boxes:
-            path = route(here[:2], goal, centre, boxes, KEEP_OUT_M, self.arena, MARGIN_M,
+            path = route(here[:2], goal, centre, boxes, KEEP_OUT_M, NO_BORDER, 0.0,
                          robots=robots, robot_clearance_m=ROBOT_CLEARANCE_M)
         else:
             path = [goal]
@@ -207,10 +200,10 @@ class LiveDriver(threading.Thread):
         for k, wp in enumerate(path):
             last = k == len(path) - 1
             ok = go_to(self.pose_fn, self.chassis, wp, yaw if last else None, others=self.others,
-                       stop_distance_m=STOP_DISTANCE_M, fence=fence, cancel=self.newer, log=self.log)
+                       stop_distance_m=STOP_DISTANCE_M, cancel=self.newer, log=self.log)
             if not ok:
                 self.report("stopped" if self.newer() else "failed",
-                         "" if self.newer() else "stopped on the way (timeout, tracking or fence)")
+                         "" if self.newer() else "stopped on the way (timeout or tracking lost)")
                 return
         self.report("reached")
 
