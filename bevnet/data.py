@@ -246,6 +246,7 @@ class BevDataset:
         self.height_noise_m = 0.0         # same for the camera height (a wrong height scales all floor distances)
         self.mask_noise = 0.0             # training on masks: imperfect segmentation (see noisy_mask)
         self.marker_dropout = 0.0         # masks with a marker channel: missed and false detections (noisy_markers)
+        self.marker_rates = False         # with marker_dropout: markers missed by distance as in the real frames
         self.drop_markers = False         # test without markers: the marker channel emptied
         self.min_visible_px = self.MIN_VISIBLE_PX
 
@@ -278,17 +279,17 @@ class BevDataset:
                                           or self.mask_noise or self.marker_dropout) else None
         markers = marker_channel(meta)
         for k, jpg in enumerate(s["jpgs"]):
+            Kk = np.array(s["K"][k]) if "K" in s else K              # real frames: each robot its own camera
+            Dk = np.array(s["D"][k]) if "D" in s else D
             img = cv2.imdecode(np.frombuffer(jpg, np.uint8), cv2.IMREAD_COLOR)
             mk = img[..., 1].copy() if markers else None
             if self.mask_noise and rng is not None:
                 img = noisy_mask(img, rng, self.mask_noise)
             if markers:
                 if self.marker_dropout and rng is not None:
-                    mk = noisy_markers(mk, rng, self.marker_dropout)
+                    mk = noisy_markers(mk, rng, self.marker_dropout, float(Kk[0, 0]) if self.marker_rates else None)
                 img[..., 1] = 0 if self.drop_markers else mk
             imgs.append(cv2.cvtColor(img, cv2.COLOR_BGR2RGB).transpose(2, 0, 1).astype(np.float32) / 255.0)
-            Kk = np.array(s["K"][k]) if "K" in s else K              # real frames: each robot its own camera
-            Dk = np.array(s["D"][k]) if "D" in s else D
             pose, pitch, height = np.asarray(s["poses"][k], float), float(s["pitch"][k]), float(s["height"])
             if rng is not None:
                 pitch += math.radians(rng.normal(0, self.pitch_noise_deg))
@@ -319,16 +320,37 @@ def marker_channel(meta):
     return bool(meta.get("marker_channel", (meta.get("appearance") or {}).get("marker_channel", False)))
 
 
-def noisy_markers(mk, rng, level):
+# Share of the boxes within 30 deg of the optical axis whose marker the ArUco detector finds in the real frames,
+# by distance (bin centres [m], rate): measured on the real frames (Chapter on the image network).
+REAL_MARKER_RATE = ((0.75, 0.90), (1.25, 0.74), (1.75, 0.63), (2.25, 0.15), (2.75, 0.0))
+MARKER_SIDE_M = 0.077
+
+
+def marker_keep(depth_m):
+    """Probability of keeping a marker drawn by the simulator at this distance so that, together with the
+    detection probability of the simulator (imgsim/render.py marker_map: 0.93, falling to 0 between 1.8 and
+    2.6 m), markers are found as often as in the real frames."""
+    real = float(np.interp(depth_m, [d for d, _ in REAL_MARKER_RATE], [r for _, r in REAL_MARKER_RATE]))
+    sim = 0.93 * min(max((2.6 - depth_m) / 0.8, 0.0), 1.0)
+    return 0.0 if sim <= 0 else min(real / sim, 1.0)
+
+
+def noisy_markers(mk, rng, level, fx=None):
     """The marker channel made imperfect, so that the network does not rely on it: now and then all the
     markers of the image gone (a robot whose marker detection fails), each marker missed with some
-    probability, and a few false detections (small squares). level 1 = the default amounts."""
+    probability, and a few false detections (small squares). level 1 = the default amounts. With fx (the
+    focal length of the image [px]) a marker is missed as often as in the real frames at its distance
+    (marker_keep; distance from the height of the drawn marker), instead of with a fixed probability."""
     if rng.random() < 0.25 * level:
         return np.zeros_like(mk)
     m = (mk > 127).astype(np.uint8)
     n, lab, stats, _ = cv2.connectedComponentsWithStats(m)
     for c in range(1, n):
-        if rng.random() < 0.15 * level:
+        if fx is not None:
+            depth = fx * MARKER_SIDE_M / max(stats[c, cv2.CC_STAT_HEIGHT], 1)
+            if rng.random() >= marker_keep(depth):
+                m[lab == c] = 0
+        elif rng.random() < 0.15 * level:
             m[lab == c] = 0
     H, W = m.shape
     for _ in range(rng.poisson(0.1 * level)):

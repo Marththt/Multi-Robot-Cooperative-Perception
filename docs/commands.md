@@ -353,6 +353,27 @@ the run itself because the cameras moved between layouts), then the tests:
     python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --val data/bev_mask_mk/val --tests "data/bev_real_v3_mk5/real_k*" --results-name real_v3
     python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --val data/bev_mask_mk/val --tests "data/bev_real_v3_mk5/real_k*" --results-name real_v3_nomk --drop-markers
 
+All the real scenes as one data set (the 56 scenes of data/survey_rounds and the 388 of data/survey_v2_best, every
+camera calibrated on its own run), the masks of both caches reused; then three training seeds per network and
+the tests, each also with the five frames of every stop fused (`--fuse-frames`: the box-centre maps of the
+frames averaged before decoding, set `fused`). `--marker-rates` makes the markers of the training images go
+missing as often as in the real frames at the same distance (bevnet/data.marker_keep):
+
+    xcopy /E /I /Y /Q data\bev_real_masks\cache data\bev_real_all\cache
+    xcopy /E /I /Y /Q data\bev_real_v2_masks\cache data\bev_real_all\cache
+    python -m bevnet.real --runs "data/survey_rounds/*" "data/survey_v2_best/*" --masks --calibrate --calibrate-scope same-run --mask-cache data/bev_real_all/cache --readings 0,1,2,3,4 --out data/bev_real_all_masks/
+    python -m bevnet.real --runs "data/survey_rounds/*" "data/survey_v2_best/*" --masks --calibrate --calibrate-scope same-run --mask-cache data/bev_real_all/cache --marker-channel --readings 0,1,2,3,4 --out data/bev_real_all_mk5/
+    python -m bevnet.train --train data/bev_mask_wp/train --val data/bev_mask_wp/val --tests "data/bev_mask_wp/G0_*" "data/bev_mask_wp/E3_*" "data/bev_mask_wp/S1_*" --out results/bev_mask_wp/ --name masks_wp_s1 --seed 1 --workers 8 --pitch-noise 1.5 --yaw-noise 1.0 --height-noise 0.025 --mask-noise 1.0
+    python -m bevnet.train --train data/bev_mask_mk/train --val data/bev_mask_mk/val --tests "data/bev_mask_mk/G0_*" "data/bev_mask_mk/E3_*" "data/bev_mask_mk/S1_*" --out results/bev_mask_mk/ --name masks_mkr_s0 --seed 0 --workers 8 --pitch-noise 1.5 --yaw-noise 1.0 --height-noise 0.025 --mask-noise 1.0 --marker-dropout 1.0 --marker-rates
+    python -m bevnet.train --eval-only --out results/bev_mask_wp/ --name masks_wp_s1 --val data/bev_mask_wp/val --workers 8 --tests "data/bev_real_all_masks/real_k*" --fuse-frames --results-name real_all
+    python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mkr_s0 --val data/bev_mask_mk/val --workers 8 --tests "data/bev_real_all_mk5/real_k*" --fuse-frames --results-name real_all
+
+Text prompt of the segmentation: tools/prompt_check.py runs several prompts on a few real frames of every block
+and counts the boxes found, missed and the false ones; a chosen prompt gets its own mask cache:
+
+    python -m tools.prompt_check --out results/figures/prompt_check.png
+    python -m bevnet.real --runs "data/survey_rounds/*" "data/survey_v2_best/*" --masks --calibrate --calibrate-scope same-run --prompt "a white box with blue stripes." --mask-cache data/bev_real_all_p2/cache --readings 0,1,2,3,4 --out data/bev_real_all_p2_masks/
+
 `--oracle-markers` (bevnet.real) adds the marker of every visible box the detector missed: what the network does
 when no visible marker is lost. Variants that did not help on the real scenes, kept for the record: `--cutout`
 (the frame inside the mask) and `--instances` / `config/appearance_*borders.json` (a line between touching boxes).

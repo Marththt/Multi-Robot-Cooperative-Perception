@@ -121,6 +121,12 @@ def main():
     ap.add_argument("--marker-dropout", type=float, default=0.0,
                     help="sets with a marker channel: missed, dropped and false marker detections in training "
                          "(1 = default amounts, see bevnet/data.noisy_markers)")
+    ap.add_argument("--marker-rates", action="store_true",
+                    help="with --marker-dropout: each marker missed as often as in the real frames at its distance "
+                         "(bevnet/data.marker_keep) instead of with a fixed probability")
+    ap.add_argument("--fuse-frames", action="store_true",
+                    help="tests: also fuse the sets that are frames of the same stops (real_k0 ... real_k4): the "
+                         "box-centre maps of the frames averaged before decoding, one more set 'fused'")
     ap.add_argument("--drop-markers", action="store_true",
                     help="test with the marker channel emptied (what if the marker detection fails)")
     ap.add_argument("--min-visible-px", type=int, default=12,
@@ -181,6 +187,7 @@ def main():
         train.mask_noise = a.mask_noise
         train.min_visible_px = a.min_visible_px
         train.marker_dropout = a.marker_dropout
+        train.marker_rates = a.marker_rates
         print(f"{len(train)} training scenes, {len(val)} validation scenes", flush=True)
         train_dl = loader(train, a.batch, True, a.workers, a.seed)
         pre = [p for n, p in model.named_parameters() if n.startswith("encoder.") and a.encoder == "resnet18"
@@ -249,14 +256,19 @@ def main():
         ds = BevDataset(dirs)
         ds.min_visible_px = a.min_visible_px
         ds.drop_markers = a.drop_markers
-        by_set, maps, kept = {}, {}, {}
+        by_set, maps, kept, frames = {}, {}, {}, {}
         for heat, off, boxes, run, set_name, seen in predict_iter(model, loader(ds, a.batch, False, a.workers), device):
             by_set.setdefault(set_name, []).append(score_one(heat, off, boxes, run, set_name, threshold, seen=seen))
+            if a.fuse_frames:                                 # the frames of one stop: same run id in every set
+                frames.setdefault(run, []).append((heat, off, boxes, seen))
             if a.save_maps and len(maps.setdefault(set_name, [])) < a.save_maps:
                 maps[set_name].append((heat.astype(np.float16), off.astype(np.float16), np.asarray(boxes), run,
                                        geo.decode(heat, off, threshold)))
             if a.diagnose:
                 kept.setdefault(set_name, []).append((heat, off, boxes))
+        if frames:                                            # the maps of the frames of each stop averaged
+            by_set["fused"] = [score_one(np.mean([f[0] for f in fs], 0), np.mean([f[1] for f in fs], 0), fs[0][2],
+                                         run, "fused", threshold, seen=fs[0][3]) for run, fs in sorted(frames.items())]
         sfx = f"_{a.results_name}" if a.results_name else ""
         for set_name in sorted(by_set):
             r = by_set[set_name]

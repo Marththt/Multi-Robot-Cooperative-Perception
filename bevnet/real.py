@@ -323,6 +323,9 @@ def main():
                     help="folder of the segmentation masks (default <out>/cache; reuse the one of a --masks run)")
     ap.add_argument("--seg-device", default="auto", help="auto | mps | cuda | cpu")
     ap.add_argument("--seg-threshold", type=float, default=0.30, help="detector box threshold")
+    ap.add_argument("--prompt", default="a white box.",
+                    help="text prompt of the open-vocabulary detector (bevnet/segment.py); a new prompt needs its "
+                         "own --mask-cache")
     ap.add_argument("--seg-max-area", type=float, default=0.70,
                     help="largest detector rectangle kept, as a share of the frame (near boxes fill much of it)")
     ap.add_argument("--calibrate", action="store_true",
@@ -345,7 +348,8 @@ def main():
     seg, overlays, cache = None, [], a.mask_cache or os.path.join(a.out, "cache")
     if a.masks or a.cutout:
         from bevnet.segment import BoxSegmenter
-        seg = BoxSegmenter(device=a.seg_device, box_threshold=a.seg_threshold, max_area=a.seg_max_area)
+        seg = BoxSegmenter(device=a.seg_device, text=a.prompt, box_threshold=a.seg_threshold,
+                           max_area=a.seg_max_area, half=False)
     if cal:
         for q in sorted({q for _, q in cal}):
             v = np.array([cal[k] for k in cal if k[1] == q])
@@ -378,6 +382,8 @@ def main():
             json.dump(dict(set=name, scenario="real", level=f"k{k}", scenes=len(scenes), camera="real", K=K0,
                            marker_channel=bool(a.marker_channel and a.masks),
                            marker_source="detections + missed visible" if a.oracle_markers else "detections",
+                           prompt=a.prompt if (a.masks or a.cutout) else None,
+                           calibrate_scope=a.calibrate_scope if a.calibrate else None,
                            D=scenes[0]["D"][0], size=[int(round(1280 * a.scale)), int(round(720 * a.scale))],
                            scale=a.scale, pitch_deg=pitch, runs=[os.path.basename(r[0]) for r in runs],
                            calibration={f"{l}/{q}": v for (l, q), v in cal.items()} if cal else None), f, indent=2)
