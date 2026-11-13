@@ -91,6 +91,26 @@ second,R09,0,A base,5,0.208,1,hard
 second,R09,1,A base,5,0.208,1,hard
 second,R09,2,A base,5,0.208,1,hard
 second,R09,3,A base,5,0.208,1,hard
+second,R100,0,E light,3,0.622,3,easy
+second,R100,1,E light,3,0.622,3,easy
+second,R100,2,E light,3,0.622,3,easy
+second,R100,3,E light,3,0.622,3,easy
+second,R101,0,E light,4,0.338,3,easy
+second,R101,1,E light,4,0.338,2,easy
+second,R101,2,E light,4,0.338,2,easy
+second,R101,3,E light,4,0.338,2,easy
+second,R102,0,E light,5,0.325,2,easy
+second,R102,1,E light,5,0.325,1,medium
+second,R102,2,E light,5,0.325,2,easy
+second,R102,3,E light,5,0.325,1,medium
+second,R103,0,E light,3,0.353,3,easy
+second,R103,1,E light,3,0.353,3,easy
+second,R103,2,E light,3,0.353,3,easy
+second,R103,3,E light,3,0.353,2,easy
+second,R104,0,E light,4,0.364,2,easy
+second,R104,1,E light,4,0.364,2,easy
+second,R104,2,E light,4,0.364,2,easy
+second,R104,3,E light,4,0.364,2,easy
 second,R10,0,A base,5,0.185,1,hard
 second,R10,1,A base,5,0.185,1,hard
 second,R10,2,A base,5,0.185,2,hard
@@ -347,3 +367,79 @@ second,R75,0,E luce,7,0.234,1,hard
 second,R75,1,E luce,7,0.234,1,hard
 second,R75,2,E luce,7,0.234,0,hard
 second,R75,3,E luce,7,0.234,1,hard
+second,R81,0,M medium,6,0.277,1,medium
+second,R81,1,M medium,6,0.277,0,hard
+second,R81,2,M medium,6,0.277,0,hard
+second,R81,3,M medium,6,0.277,1,medium
+second,R82,0,M medium,7,0.268,1,medium
+second,R82,1,M medium,7,0.268,0,hard
+second,R82,2,M medium,7,0.268,1,medium
+second,R82,3,M medium,7,0.268,1,medium
+second,R83,0,M medium,7,0.223,1,hard
+second,R83,1,M medium,7,0.223,1,hard
+second,R83,2,M medium,7,0.223,1,hard
+second,R83,3,M medium,7,0.223,1,hard
+second,R84,0,M medium,7,0.288,2,easy
+second,R84,1,M medium,7,0.288,1,medium
+second,R84,2,M medium,7,0.288,1,medium
+second,R84,3,M medium,7,0.288,1,medium
+second,R85,0,M medium,7,0.272,1,medium
+second,R85,1,M medium,7,0.272,1,medium
+second,R85,2,M medium,7,0.272,0,hard
+second,R85,3,M medium,7,0.272,1,medium
+second,R86,0,M medium,7,0.272,2,easy
+second,R86,1,M medium,7,0.272,1,medium
+second,R86,2,M medium,7,0.272,1,medium
+second,R86,3,M medium,7,0.272,1,medium
+second,R87,0,M medium,6,0.271,1,medium
+second,R87,1,M medium,6,0.271,2,easy
+second,R87,2,M medium,6,0.271,1,medium
+second,R87,3,M medium,6,0.271,1,medium
+second,R88,0,M medium,7,0.301,1,medium
+second,R88,1,M medium,7,0.301,2,easy
+second,R88,2,M medium,7,0.301,1,medium
+second,R88,3,M medium,7,0.301,1,medium
+second,R89,0,M medium,7,0.292,1,medium
+second,R89,1,M medium,7,0.292,1,medium
+second,R89,2,M medium,7,0.292,1,medium
+second,R89,3,M medium,7,0.292,0,hard
+second,R90,0,M medium,6,0.258,2,easy
+second,R90,1,M medium,6,0.258,1,medium
+second,R90,2,M medium,6,0.258,1,medium
+second,R90,3,M medium,6,0.258,2,easy
+second,R91,0,M medium,6,0.31,0,hard
+second,R91,1,M medium,6,0.31,0,hard
+second,R91,2,M medium,6,0.31,0,hard
+second,R91,3,M medium,6,0.31,0,hard
+second,R92,0,M medium,7,0.323,1,medium
+second,R92,1,M medium,7,0.323,1,medium
+second,R92,2,M medium,7,0.323,1,medium
+second,R92,3,M medium,7,0.323,0,hard
+second,R93,0,M medium,7,0.281,1,medium
+second,R93,1,M medium,7,0.281,1,medium
+second,R93,2,M medium,7,0.281,1,medium
+second,R93,3,M medium,7,0.281,1,medium
+second,R94,0,M medium,6,0.314,2,easy
+second,R94,1,M medium,6,0.314,2,easy
+second,R94,2,M medium,6,0.314,2,easy
+second,R94,3,M medium,6,0.314,1,medium
+second,R95,0,D white objects,3,0.423,3,hard
+second,R95,1,D white objects,3,0.423,2,hard
+second,R95,2,D white objects,3,0.423,3,hard
+second,R95,3,D white objects,3,0.423,3,hard
+second,R96,0,D white objects,4,0.419,3,hard
+second,R96,1,D white objects,4,0.419,3,hard
+second,R96,2,D white objects,4,0.419,2,hard
+second,R96,3,D white objects,4,0.419,3,hard
+second,R97,0,D white objects,5,0.271,2,hard
+second,R97,1,D white objects,5,0.271,1,hard
+second,R97,2,D white objects,5,0.271,2,hard
+second,R97,3,D white objects,5,0.271,2,hard
+second,R98,0,D white objects,3,0.31,2,hard
+second,R98,1,D white objects,3,0.31,2,hard
+second,R98,2,D white objects,3,0.31,2,hard
+second,R98,3,D white objects,3,0.31,2,hard
+second,R99,0,D white objects,4,0.428,3,hard
+second,R99,1,D white objects,4,0.428,2,hard
+second,R99,2,D white objects,4,0.428,3,hard
+second,R99,3,D white objects,4,0.428,3,hard

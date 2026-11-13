@@ -1,91 +1,0 @@
-73 layouts from 136 runs -> data/survey_v2_best/
-R01_20261109-153345F R02_20261109-153742F R03_20261109-153939F R04_20261109-154129F R05_20261109-154707F R06_20261109-160318F R07_20261109-160526F R08_20261109-160800F R09_20261109-161005F R10_20261109-161243F R11_20261109-161412F R12_20261109-161546F R13_20261109-161909F R14_20261109-162124F R15_20261110-112359F R16_20261110-132215F R17_20261110-134442F R18_20261110-134855F R19_20261110-135058F R20_20261110-135343F R21_20261110-135829F R22_20261110-140038F R23_20261110-152210F R24_20261110-15243F R25_20261110-153201F R26_20261110-154216F R27_20261110-154525F R28_20261110-164739F R29_20261110-173313 R30_20261110-173504 R31_20261110-173631 R32_20261110-173827 R33_20261110-174612 R34_20261110-174842 R35_20261110-175019 R36_20261110-175233 R38_20261111-125428 R39_20261111-125938 R40_20261111-130148 R41_20261111-130745 R42_20261111-130934 R43_20261111-131157 R44_20261111-131507 R45_20261111-131938 R46_20261111-132159 R47_20261111-132600 R48_20261111-133529 R49_20261111-133755 R50_20261111-133953 R51_20261111-134213 R52_20261111-134347 R53_20261111-145656 R54_20261111-150037 R55_20261111-150236 R56_20261111-150419 R57_20261111-150637 R58_20261111-150805 R59_20261111-151042 R60_20261111-151308 R61_20261111-152222 R62_20261111-152859 R63_20261111-153533 R64_20261111-153807 R65_20261111-154055 R66_20261111-154401 R67_20261111-155540 R68_20261111-160436 R69_20261111-160948 R70_20261111-161229 R71_20261111-161813 R73_20261111-162159 R74_20261111-162332 R75_20261111-162716
-sensor settings: range fit [1.1019, -0.1242], bearing fit [1.0157, 0.00182], sigma_pos 0.045 m, p_d 0.78, union threshold 0.134 m, camera offset 0.000 m
-
-=== all robots fused, per method (all scenes) ===
-  method                 scenes     P_D   RMSE*   false   exact   OSPA
-  zone + class              292   66.5%  10.4cm    0.83     24%  0.102
-  union                     292   96.8%   5.5cm    1.26     28%  0.076
-  MHT                       292   95.1%   5.6cm    0.20     66%  0.056
-  PHD                       292   55.9%  10.5cm    0.11     13%  0.098
-  CPHD                      292   68.6%   9.3cm    0.30     22%  0.087
-  MHT with sensor model     292   96.2%   5.2cm    0.15     73%  0.050
-  PHD (order average)       292   75.0%   8.4cm    0.13     32%  0.075
-  CPHD (order average)      292   69.5%   9.1cm    0.25     23%  0.085
-  P_D = true boxes found; RMSE* = over all true boxes, a missed box = 0.15 m; false = estimates with no true box, per scene
-
-written in results/evaluation_v3/: scenes.csv, summary.csv and the figures
-variant detection_full_ring_h3 -> results/gnn_mixed_large/detection_full_ring_h3
-  REAL3  ( 3.9 viewpoints) GNN P_D  95.4±0.3%, RMSE*  5.5±0.1 cm, false 0.11 | MHT P_D  95.1%, RMSE*  5.6 cm, false 0.20
-
-written in results/gnn_mixed_large/detection_full_ring_h3: summary_real_v3.csv, mcnemar_real_v3.csv, test_scenes_real_v3.csv
-W1112 11:40:06.226000 9480 .venv\Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
-Loading weights:   0%|          | 0/978 [00:00<?, ?it/s]Loading weights:  13%|#3        | 129/978 [00:00<00:00, 1170.60it/s]Loading weights:  32%|###2      | 316/978 [00:00<00:00, 1560.46it/s]Loading weights:  48%|####8     | 474/978 [00:00<00:00, 568.43it/s] Loading weights: 100%|##########| 978/978 [00:00<00:00, 1339.27it/s]
-Loading weights:   0%|          | 0/314 [00:00<?, ?it/s]Loading weights:  31%|###       | 97/314 [00:00<00:00, 908.89it/s]Loading weights:  60%|#####9    | 188/314 [00:00<00:00, 477.57it/s]Loading weights: 100%|##########| 314/314 [00:00<00:00, 849.26it/s]
-  P0: pitch 13.17 deg (assumed 11.5), yaw offset -0.21 deg, over the 73 leave-one-out fits
-  P1: pitch 21.86 deg (assumed 11.5), yaw offset +0.07 deg, over the 73 leave-one-out fits
-  P3: pitch 25.78 deg (assumed 11.5), yaw offset -1.21 deg, over the 71 leave-one-out fits
-  P5: pitch 20.87 deg (assumed 22.0), yaw offset -0.48 deg, over the 73 leave-one-out fits
-  real_k0: 292 scenes, 1163 images -> data/bev_real_v3_masks/real_k0
-  real_k1: 292 scenes, 1163 images -> data/bev_real_v3_masks/real_k1
-  real_k2: 292 scenes, 1163 images -> data/bev_real_v3_masks/real_k2
-  real_k3: 292 scenes, 1163 images -> data/bev_real_v3_masks/real_k3
-  real_k4: 292 scenes, 1163 images -> data/bev_real_v3_masks/real_k4
-W1112 11:41:30.709000 9860 .venv\Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
-Loading weights:   0%|          | 0/978 [00:00<?, ?it/s]Loading weights:  12%|#2        | 122/978 [00:00<00:00, 1056.20it/s]Loading weights:  31%|###1      | 305/978 [00:00<00:00, 1473.35it/s]Loading weights:  47%|####6     | 455/978 [00:00<00:00, 583.43it/s] Loading weights: 100%|##########| 978/978 [00:00<00:00, 1419.30it/s]
-Loading weights:   0%|          | 0/314 [00:00<?, ?it/s]Loading weights:  19%|#9        | 60/314 [00:00<00:00, 569.02it/s]Loading weights:  37%|###7      | 117/314 [00:00<00:00, 427.42it/s]Loading weights: 100%|##########| 314/314 [00:00<00:00, 887.33it/s]
-  P0: pitch 13.17 deg (assumed 11.5), yaw offset -0.21 deg, over the 73 leave-one-out fits
-  P1: pitch 21.86 deg (assumed 11.5), yaw offset +0.07 deg, over the 73 leave-one-out fits
-  P3: pitch 25.78 deg (assumed 11.5), yaw offset -1.21 deg, over the 71 leave-one-out fits
-  P5: pitch 20.87 deg (assumed 22.0), yaw offset -0.48 deg, over the 73 leave-one-out fits
-  real_k0: 292 scenes, 1163 images -> data/bev_real_v3_mk5/real_k0
-  real_k1: 292 scenes, 1163 images -> data/bev_real_v3_mk5/real_k1
-  real_k2: 292 scenes, 1163 images -> data/bev_real_v3_mk5/real_k2
-  real_k3: 292 scenes, 1163 images -> data/bev_real_v3_mk5/real_k3
-  real_k4: 292 scenes, 1163 images -> data/bev_real_v3_mk5/real_k4
-W1112 11:42:56.651000 17524 .venv\Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
-Loading weights:   0%|          | 0/978 [00:00<?, ?it/s]Loading weights:  14%|#4        | 138/978 [00:00<00:00, 1328.22it/s]Loading weights:  28%|##7       | 271/978 [00:00<00:00, 1282.23it/s]Loading weights:  41%|####      | 400/978 [00:00<00:01, 480.80it/s] Loading weights: 100%|##########| 978/978 [00:00<00:00, 1377.26it/s]
-Loading weights:   0%|          | 0/314 [00:00<?, ?it/s]Loading weights:  22%|##1       | 69/314 [00:00<00:00, 643.83it/s]Loading weights:  43%|####2     | 134/314 [00:00<00:00, 361.47it/s]Loading weights: 100%|##########| 314/314 [00:00<00:00, 893.11it/s]
-  P0: pitch 13.17 deg (assumed 11.5), yaw offset -0.21 deg, over the 73 leave-one-out fits
-  P1: pitch 21.86 deg (assumed 11.5), yaw offset +0.07 deg, over the 73 leave-one-out fits
-  P3: pitch 25.78 deg (assumed 11.5), yaw offset -1.21 deg, over the 71 leave-one-out fits
-  P5: pitch 20.87 deg (assumed 22.0), yaw offset -0.48 deg, over the 73 leave-one-out fits
-  real_k0: 292 scenes, 1163 images -> data/bev_real_v3_mko/real_k0
-  real_k1: 292 scenes, 1163 images -> data/bev_real_v3_mko/real_k1
-  real_k2: 292 scenes, 1163 images -> data/bev_real_v3_mko/real_k2
-  real_k3: 292 scenes, 1163 images -> data/bev_real_v3_mko/real_k3
-  real_k4: 292 scenes, 1163 images -> data/bev_real_v3_mko/real_k4
-device cuda, variant results/bev_mask_wp/masks_wp
-588,019 parameters
-  real_k0              correct  62.0%  too few  11.6%  too many  23.3%  RMSE 3.7 cm  solvable 100.0%  correct on solvable  62.0%
-  real_k1              correct  61.0%  too few  14.0%  too many  22.3%  RMSE 3.6 cm  solvable 100.0%  correct on solvable  61.0%
-  real_k2              correct  61.3%  too few  13.7%  too many  21.6%  RMSE 3.6 cm  solvable 100.0%  correct on solvable  61.3%
-  real_k3              correct  63.0%  too few  12.3%  too many  21.6%  RMSE 3.7 cm  solvable 100.0%  correct on solvable  63.0%
-  real_k4              correct  62.7%  too few  12.0%  too many  20.9%  RMSE 3.7 cm  solvable 100.0%  correct on solvable  62.7%
-written in results/bev_mask_wp/masks_wp
-device cuda, variant results/bev_mask_mk/masks_mk
-588,019 parameters
-  real_k0              correct  70.5%  too few  20.9%  too many   5.5%  RMSE 3.1 cm  solvable 100.0%  correct on solvable  70.5%
-  real_k1              correct  69.5%  too few  21.6%  too many   6.2%  RMSE 3.1 cm  solvable 100.0%  correct on solvable  69.5%
-  real_k2              correct  73.3%  too few  19.9%  too many   5.1%  RMSE 3.1 cm  solvable 100.0%  correct on solvable  73.3%
-  real_k3              correct  70.2%  too few  20.2%  too many   7.9%  RMSE 3.2 cm  solvable 100.0%  correct on solvable  70.2%
-  real_k4              correct  70.5%  too few  20.9%  too many   7.2%  RMSE 3.2 cm  solvable 100.0%  correct on solvable  70.5%
-written in results/bev_mask_mk/masks_mk
-device cuda, variant results/bev_mask_mk/masks_mk
-588,019 parameters
-  real_k0              correct  73.6%  too few  16.8%  too many   7.9%  RMSE 3.0 cm  solvable 100.0%  correct on solvable  73.6%
-  real_k1              correct  73.6%  too few  16.4%  too many   7.5%  RMSE 3.1 cm  solvable 100.0%  correct on solvable  73.6%
-  real_k2              correct  75.7%  too few  15.8%  too many   7.2%  RMSE 3.0 cm  solvable 100.0%  correct on solvable  75.7%
-  real_k3              correct  74.0%  too few  15.8%  too many   9.6%  RMSE 3.1 cm  solvable 100.0%  correct on solvable  74.0%
-  real_k4              correct  74.3%  too few  15.8%  too many   8.6%  RMSE 3.1 cm  solvable 100.0%  correct on solvable  74.3%
-written in results/bev_mask_mk/masks_mk
-348 scenes -> results/scene_levels.csv
-  first   easy    34
-  first   hard    21
-  first   medium  1
-  second  easy    90
-  second  hard    161
-  second  medium  41
-        1개 파일이 복사되었습니다.
-지정된 파일을 찾을 수 없습니다.
-fatal: pathspec 'run_day6.log' did not match any files
