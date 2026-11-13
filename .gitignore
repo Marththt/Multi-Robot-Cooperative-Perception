@@ -29,3 +29,7 @@ _to_delete/
 
 # One run per layout of a campaign (python -m tools.select_runs)
 data/survey_v2_best/
+
+# Live demo: states streamed by the robots and working files of the page
+data/live/
+data/demo_work/

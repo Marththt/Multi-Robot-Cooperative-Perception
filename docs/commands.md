@@ -2,14 +2,52 @@
 
 Run every command from the repository root. Scripts are run as modules (`python -m <package>.<script>`).
 
-## Live trial (one terminal per robot) and live map
+## Live demo: every method continuously, in the browser
 
-    python -m acquisition.static_trial --robot-id P0 --live --state-out data/live/P0.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 8 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P0.json
-    python -m acquisition.static_trial --robot-id P1 --live --state-out data/live/P1.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 7 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
-    python -m acquisition.static_trial --robot-id P2 --live --state-out data/live/P2.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 9 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
-    python -m acquisition.static_trial --robot-id P3 --live --state-out data/live/P3.json --regions config/optitrack_regions.json --localization optitrack --optitrack-rb-id 10 --detector aruco --aruco-marker-size 0.08 --camera-calib config/checkerboard_calib_P1.json
+The robots stand still and stream what they see. Place them, move them by hand, move, add or take away boxes, put
+other objects in the way, at any time: the page follows within a second for MHT, MHT with sensor model and the
+graph network, within a few seconds for the two image networks.
 
-    python -m acquisition.map_server --state-dir data/live/ --regions config/optitrack_regions.json --localize
+`demo/live.py` only reads the files the robots write, so it runs in its own terminal and its own Python environment
+(the robot SDK needs an old Python; the networks need a recent one with `torch`). One-time setup on the capture PC,
+from the repository root:
+
+    py -3.11 -m venv .venv_demo
+    .venv_demo\Scripts\activate.bat
+    pip install torch --index-url https://download.pytorch.org/whl/cu128
+    pip install transformers pillow opencv-python numpy scipy matplotlib
+
+Terminal 1 (the usual capture environment): the robots and OptiTrack. It starts one camera process per robot, one
+after the other, and writes the boxes OptiTrack tracks inside the arena (every box must be a rigid body in Motive,
+11-17). Ctrl+C here stops every robot; `--windows` also shows the camera window of each robot.
+
+    python -m demo.live_robots --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json
+
+Terminal 2 (demo environment): the methods and the page, http://localhost:8000. The first start downloads the
+segmentation models (Grounding DINO, SAM) once.
+
+    .venv_demo\Scripts\activate.bat
+    python -m demo.live
+
+Each panel shows the boxes its method finds now against the true boxes, the verdict (correct, too few, too many,
+misplaced), how old its input is and how often it was correct in the last 30 seconds; above the panels, the
+difficulty level of the scene as it is now; below, the frames of the robots with the box masks and the markers.
+
+Camera angles for the image networks: by default the pitch and yaw offset of each camera are fitted continuously on
+the markers the robots see. To fix them before the demo, leave the robots looking at some boxes for a minute while
+saving them, then start the demo with the file:
+
+    python -m demo.live --write-camera-calib config/demo_cameras.json
+    python -m demo.live --camera-calib config/demo_cameras.json
+
+Rehearsal without robots: a recorded run played as if it were live, one round every 4 seconds:
+
+    python -m demo.live --replay data/survey_v2/R01_20261109-153345F --replay-every 4
+
+Other options: `--window-s` (seconds of detections pooled per object, default 1), `--no-images` (only the methods
+on the detections, for a PC without GPU), `--gnn`, `--image`, `--image-markers` (variant folders in `results/`),
+`--port`. A method whose packages or model files are missing is shown as "not available" and the others keep
+working.
 
 ## Record the box positions (OptiTrack)
 
@@ -18,6 +56,18 @@ Run every command from the repository root. Scripts are run as modules (`python 
 ## Move and capture (all robots, round mode)
 
     python -m acquisition.launch_all --robot P0:8 --robot P1:7 --robot P4:6:config/checkerboard_calib_P1.json --robot P3:10:config/checkerboard_calib_P1.json --layout-id L4 --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out data/survey_rounds/ --aruco-marker-size 0.077 --radius 1.3 --step-deg 15 --sweep-deg 90 --range-fit 1.064 -0.080 --camera-offset-forward-m 0.12 --instance-threshold-m 0.2
+
+Second campaign (R01-R104): the layouts are planned first (`docs/capture_plan_v2.csv/.json`,
+`docs/capture_plan_v3.json`, one page per layout in `docs/capture_guide_v*.pdf`), then every layout is placed with
+the live OptiTrack check, which starts `launch_all` when the boxes are in place:
+
+    python -m tools.capture_plan                 # plan v2 (R01-R80) from docs/capture_plan_v2.csv
+    python -m tools.capture_plan_v3              # plan v3 (R81-R104: medium scenes, white objects, light)
+    python -m tools.place_check --layout R81 --tolerance 0.03
+
+One run per layout (the one with the most frames), for every evaluation of the second campaign:
+
+    python -m tools.select_runs --src data/survey_v2/ --dst data/survey_v2_best/
 
 ## Sensor calibration and evaluation of the classical methods
 
@@ -32,13 +82,13 @@ Scans and per-round analysis:
 
     python -m pipeline.build_scans --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --out results/analysis/ --plots results/analysis/
 
-## GNN
+Second campaign (same calibration and sensor model as the first; `--full-only`: all the robots of each scene):
 
-    python -m gnn.train --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json --sensor-calib config/sensor_calib.json --baseline results/evaluation_calib/scenes.csv --out results/evaluation_gnn/
+    python -m pipeline.evaluate_runs --survey-dir data/survey_v2_best/ --ground-truth config/ground_truth_positions.json --regions config/optitrack_regions.json --sensor-calib config/sensor_calib.json --sensor-model config/sensor_model.json --full-only --quiet --out results/evaluation_v3/
 
-Whole arrangement types left out of training:
+Difficulty level of every real scene, from its geometry only (results/scene_levels.csv):
 
-    python -m gnn.train ... --folds "L4,L5,L6;L7,L8;L9,L10,L11" --out results/evaluation_gnn_groups/
+    python -m tools.scene_levels
 
 ## Simulator
 
@@ -52,12 +102,6 @@ Fidelity check: sensor model fitted on L5, L7, L10 only (rare events from all la
 Sensor model for everything else (failure map, training, test conditions), fitted on all layouts:
 
     python -m sim.calibrate --survey-dir data/survey_rounds/ --ground-truth config/ground_truth_positions.json --sensor-calib config/sensor_calib.json --layouts L4,L5,L6,L7,L8,L9,L10,L11 --rare-events all --out config/sensor_model.json
-
-Failure map of the classical methods (one factor changed at a time around the real setup; 500 scenes per value):
-
-    python -m sim.sweep --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --runs 500 --seed 1 --out results/failure_map/
-
-Only some factors: `--factors spacing,occlusion` (spacing, boxes, robots, distance, occlusion, false_rate, two_face).
 
 New scenes from a scenario (training set, or a test condition T0-T7 in `sim/specs/`):
 
@@ -93,10 +137,6 @@ Real scenes with more viewpoints: the rounds of each real run are combined (4, 8
 
 (same `--eval-only` command with the flags of every other variant)
 
-All the variants in one table and one figure per metric (detection probability, RMSE over all true boxes with a missed box = 0.15 m, false estimates per scene): `results/gnn_sim/comparison_<metric>.csv/.png`, and `viewpoints_<metric>.png` for the combined real scenes:
-
-    python -m gnn.collect --results-dir results/gnn_sim/
-
 ## Two-circle scenario (targets in an inner circle, robots on an outer circle, communication range)
 
 Sets: training (3-10 robots), validation, the nominal test C0 (6 robots at 1.5 m, inner circle 0.7 m) and its variants with 3-16 robots (Cn*), with the classical methods:
@@ -127,8 +167,6 @@ A box is found only by an estimate within `MATCH_CUTOFF_M` (pipeline/evaluate_ru
     python -m pipeline.combine_rounds --regions config/optitrack_regions.json
     python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --standard-tests --eval-only --out results/gnn_sim/
     python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --combined-tests --eval-only --out results/gnn_sim/
-    python -m sim.sweep --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --runs 500 --seed 1 --out results/failure_map/
-    python -m gnn.collect --results-dir results/gnn_sim/
 
 Two-circle sets: the same with `--sets circle --baselines-only`, then `--eval-only` for each trained variant (same flags as its training).
 
@@ -151,18 +189,15 @@ The nominal sensor of T0, but 3-8 boxes and 4-8 robots anywhere in a 3 m x 3 m a
 
     python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets R0 --methods mht_sensor
     python -m gnn.train_sim --train-dir data/sim_train/ --val-dir data/sim_val/ --sensor-calib config/sensor_calib.json --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 5 --eval-only --results-name random --out results/gnn_sim/
-    python pipeline/scene_oracle.py results results/gnn_sim/detection_full_ring_h2/test_scenes_random.csv R0
 
-GNN trained on random layouts (sim/specs/R_train.json: the R0 placement with the randomised sensor of the general training set), tested on T0-T7, the real scenes and R0; then the scene-level oracle against the MHT with sensor model:
+GNN trained on random layouts (sim/specs/R_train.json: the R0 placement with the randomised sensor of the general training set), tested on T0-T7, the real scenes and R0:
 
     python -m sim.make_sets --model config/sensor_model.json --sensor-calib config/sensor_calib.json --regions config/optitrack_regions.json --sets Rtrain,Rval --no-baselines
     python -m gnn.train_sim --train-dir data/sim_Rtrain/ --val-dir data/sim_Rval/ --sensor-calib config/sensor_calib.json --standard-tests --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 3 --out results/gnn_random/
-    python pipeline/scene_oracle.py results results/gnn_random/detection_full_ring_h2/test_scenes.csv T0,T1,T2,T3,T4,T5,T6,T7,REAL,R0
 
 GNN trained on both placements (ring layouts of the general training set and random layouts, 50,000 scenes each, pooled; validation on both), tested on the same sets:
 
     python -m gnn.train_sim --train-dir data/sim_train/ data/sim_Rtrain/ --val-dir data/sim_val/ data/sim_Rval/ --sensor-calib config/sensor_calib.json --standard-tests --test R0 data/sim_R0/ data/sim_R0/ground_truth.json results/baselines_sim/R0/scenes.csv --graph detection --features full --edges ring --hops 2 --seeds 3 --out results/gnn_mixed/
-    python pipeline/scene_oracle.py results results/gnn_mixed/detection_full_ring_h2/test_scenes.csv T0,T1,T2,T3,T4,T5,T6,T7,REAL,R0
 
 
 ## Research plan: MHT with a learned normality gate (modules M0-M1)
@@ -284,3 +319,34 @@ Boxes only. --masks renders only the box silhouettes (white on black; obstacles 
     python -m bevnet.data --sets G0,E3,S1 --masks --out data/bev_mask/
     python -m bevnet.train --pitch-noise 1.5 --yaw-noise 1.0 --height-noise 0.025 --mask-noise 1.0 --name masks --train data/bev_mask/train --val data/bev_mask/val --tests "data/bev_mask/G0_*" "data/bev_mask/E3_*" "data/bev_mask/S1_*" --out results/bev_mask/
     python -m bevnet.train --eval-only --name masks --out results/bev_mask/ --tests "data/bev_real_masks/*" --results-name real
+
+Final image networks of the thesis (measured geometry, wide camera pitch, imperfect masks). Masks only (`masks_wp`):
+
+    python -m bevnet.data --sets train --runs 20000 --obstacles 2 --masks --appearance config/appearance_wide_pitch.json --out data/bev_mask_wp/
+    python -m bevnet.data --sets val --obstacles 2 --masks --appearance config/appearance_wide_pitch.json --out data/bev_mask_wp/
+    python -m bevnet.data --sets G0,E3,S1 --masks --out data/bev_mask_wp/
+    python -m bevnet.train --train data/bev_mask_wp/train --val data/bev_mask_wp/val --tests "data/bev_mask_wp/G0_*" "data/bev_mask_wp/E3_*" "data/bev_mask_wp/S1_*" --out results/bev_mask_wp/ --name masks_wp --pitch-noise 1.5 --yaw-noise 1.0 --height-noise 0.025 --mask-noise 1.0
+
+Masks + detected markers (`masks_mk`): second image channel with the marker detections, white objects without
+markers among the obstacles, markers dropped in training:
+
+    python -m bevnet.data --sets train --runs 20000 --obstacles 2 --distractors 3 --obstacle-style random --masks --appearance config/appearance_markers.json --out data/bev_mask_mk/
+    python -m bevnet.data --sets val --runs 2000 --obstacles 2 --distractors 3 --obstacle-style random --masks --appearance config/appearance_markers.json --out data/bev_mask_mk/
+    python -m bevnet.data --sets G0,E3,S1 --masks --appearance config/appearance_markers_test.json --out data/bev_mask_mk/
+    python -m bevnet.train --train data/bev_mask_mk/train --val data/bev_mask_mk/val --tests "data/bev_mask_mk/G0_*" "data/bev_mask_mk/E3_*" "data/bev_mask_mk/S1_*" --out results/bev_mask_mk/ --name masks_mk --pitch-noise 1.5 --yaw-noise 1.0 --height-noise 0.025 --mask-noise 1.0 --marker-dropout 1.0
+
+Real campaigns in the network's format (masks cached; first campaign calibrated on the other layouts, second on
+the run itself because the cameras moved between layouts), then the tests:
+
+    python -m bevnet.real --runs "data/survey_rounds/*" --masks --calibrate --readings 0,1,2,3,4 --out data/bev_real_masks/
+    python -m bevnet.real --runs "data/survey_rounds/*" --masks --calibrate --mask-cache data/bev_real_masks/cache --marker-channel --readings 0,1,2,3,4 --out data/bev_real_mk5/
+    python -m bevnet.real --runs "data/survey_v2_best/*" --masks --calibrate --calibrate-scope same-run --mask-cache data/bev_real_v2_masks/cache --readings 0,1,2,3,4 --out data/bev_real_v3_masks/
+    python -m bevnet.real --runs "data/survey_v2_best/*" --masks --calibrate --calibrate-scope same-run --mask-cache data/bev_real_v2_masks/cache --marker-channel --readings 0,1,2,3,4 --out data/bev_real_v3_mk5/
+    python -m bevnet.train --eval-only --out results/bev_mask_wp/ --name masks_wp --val data/bev_mask_wp/val --tests "data/bev_real_v3_masks/real_k*" --results-name real_v3
+    python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --val data/bev_mask_mk/val --tests "data/bev_real_v3_mk5/real_k*" --results-name real_v3
+    python -m bevnet.train --eval-only --out results/bev_mask_mk/ --name masks_mk --val data/bev_mask_mk/val --tests "data/bev_real_v3_mk5/real_k*" --results-name real_v3_nomk --drop-markers
+
+`--oracle-markers` (bevnet.real) adds the marker of every visible box the detector missed: what the network does
+when no visible marker is lost. Variants that did not help on the real scenes, kept for the record: `--cutout`
+(the frame inside the mask) and `--instances` / `config/appearance_*borders.json` (a line between touching boxes).
+

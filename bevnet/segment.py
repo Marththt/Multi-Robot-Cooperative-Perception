@@ -23,6 +23,10 @@ GRIPPER = os.path.join(os.path.dirname(__file__), "..", "imgsim", "assets", "gri
 
 
 class BoxSegmenter:
+    """Mask of the boxes in a real frame: Grounding DINO finds the rectangles that match `text`, SAM draws the
+    mask of the object in each of them, and the gripper at the bottom of the frame is blanked. Calling it
+    returns (mask, rectangles, labels): labels gives every box its own index, for the instance borders."""
+
     def __init__(self, device="auto", text="a white box.", box_threshold=0.30, text_threshold=0.25,
                  max_area=0.70, max_aspect=2.5):
         import torch

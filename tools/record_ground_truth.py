@@ -1,6 +1,6 @@
 """Records the TRUE positions of the boxes of one layout from OptiTrack and
-writes them into the ground truth file read by survey.py, build_scans.py
-and localize_trials.py (--ground-truth).
+writes them into the ground truth file read by survey.py and build_scans.py
+(--ground-truth).
 
 Every box needs its own OptiTrack rigid body (a few reflective markers on
 the box, defined as a rigid body in Motive; note its Streaming ID). Its

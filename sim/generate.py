@@ -1,5 +1,5 @@
 """Generates simulated runs in the format of the real runs (one folder per run, P<k>.jsonl + ground_truth.json,
-plus a combined ground_truth.json in --out for pipeline/evaluate_runs.py / gnn/train.py).
+plus a combined ground_truth.json in --out for pipeline/evaluate_runs.py / gnn/train_sim.py).
 
 Two modes:
 

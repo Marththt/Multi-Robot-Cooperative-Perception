@@ -128,6 +128,9 @@ def evaluate_scenes(model, scenes, encoded, a, estimates=None):
 
 
 def train_one(train_enc, val_scenes, val_enc, a, seed, log):
+    """One model for one seed: Adam on the training scenes, the correct-scene rate on the validation scenes
+    after every epoch, the best epoch kept, early stop after --patience epochs without improvement. Appends
+    one row per epoch to log."""
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     model = build_model(a.graph, a.hidden, a.hops, a.features, a.skip)

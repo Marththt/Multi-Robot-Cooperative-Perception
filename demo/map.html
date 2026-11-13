@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live comparison</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #14140f; --ink2: #55544e; --line: #dddcd6;
+    --good: #0f7b3f; --good-bg: #e3f3e8; --bad: #b3261e; --bad-bg: #fbe9e7; --warn: #8a5a00; --warn-bg: #fdf1d6;
+    --robot: #2a78d6; --muted-bg: #eeede8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { padding: 14px 22px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; border-bottom: 1px solid var(--line); background: var(--card); }
+  h1 { font-size: 22px; margin: 0; font-weight: 650; }
+  #status { margin-left: auto; color: var(--ink2); font-size: 15px; }
+  #status::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--robot); margin-right: 8px; animation: pulse 1.4s infinite; }
+  #status.off::before { background: var(--bad); animation: none; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { #status::before { animation: none; } }
+  main { padding: 14px 22px 26px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+  .chip { font-size: 14px; padding: 3px 10px; border-radius: 999px; background: var(--muted-bg); color: var(--ink2); font-variant-numeric: tabular-nums; }
+  .chip b { color: var(--ink); }
+  .chip.hard { background: var(--bad-bg); color: var(--bad); } .chip.medium { background: var(--warn-bg); color: var(--warn); } .chip.easy { background: var(--good-bg); color: var(--good); }
+  .chip.hard b, .chip.medium b, .chip.easy b { color: inherit; }
+  button { font: inherit; font-size: 14px; padding: 3px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--ink2); }
+  button:focus-visible { outline: 3px solid var(--robot); outline-offset: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 10px; display: flex; flex-direction: column; min-width: 0; }
+  .card h2 { font-size: 17px; margin: 0; font-weight: 650; min-height: 2.8em; display: flex; align-items: flex-end; }
+  .card .in { color: var(--ink2); font-size: 13.5px; margin: 1px 0 8px; }
+  .verdict { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-weight: 650; font-size: 16px; padding: 3px 11px; border-radius: 7px; background: var(--muted-bg); color: var(--ink2); }
+  .verdict.correct { background: var(--good-bg); color: var(--good); }
+  .verdict.few, .verdict.many { background: var(--bad-bg); color: var(--bad); }
+  .verdict.misplaced { background: var(--warn-bg); color: var(--warn); }
+  canvas { width: 100%; aspect-ratio: 1; margin-top: 8px; border-radius: 6px; background: #fbfbf9; border: 1px solid var(--line); }
+  .foot { color: var(--ink2); font-size: 14px; margin-top: 7px; display: flex; flex-direction: column; gap: 1px; font-variant-numeric: tabular-nums; min-height: 4.3em; }
+  .old { color: var(--bad); }
+  .score { margin-top: 6px; height: 7px; border-radius: 4px; background: var(--muted-bg); overflow: hidden; }
+  .score i { display: block; height: 100%; background: var(--good); transition: width .3s; }
+  h3 { font-size: 15px; font-weight: 650; color: var(--ink2); margin: 20px 0 8px; }
+  .frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  figure img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #222; }
+  figcaption { padding: 6px 10px; font-size: 14px; color: var(--ink2); }
+  figcaption b { color: var(--ink); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink2); font-size: 14px; margin-top: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend svg { flex: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cooperative box localisation: live comparison</h1>
+  <span id="status">connecting</span>
+</header>
+<main>
+  <div class="bar">
+    <span class="chip" id="scene"></span>
+    <span class="chip" id="level" hidden></span>
+    <span class="chip" id="robots"></span>
+    <span class="chip">bars: correct over the last <b>30 s</b></span>
+    <button id="reset" title="Start the count of the last 30 s again">Reset count</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="legend" aria-label="Legend">
+    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fff" stroke="#14140f" stroke-width="1.6"/></svg>true box (OptiTrack)</span>
+    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fbe9e7" stroke="#b3261e" stroke-width="1.6" stroke-dasharray="3 2"/></svg>true box not found</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#0f7b3f" stroke="#fff" stroke-width="2"/></svg>estimate on a box (within 15 cm)</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#fff" stroke="#b3261e" stroke-width="2.4"/><path d="M5.5 5.5l7 7M12.5 5.5l-7 7" stroke="#b3261e" stroke-width="2"/></svg>estimate with no box</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="2.6" fill="#9a9990"/></svg>single detection</span>
+    <span><svg width="22" height="18"><circle cx="8" cy="9" r="6" fill="#d6e4f7" stroke="#2a78d6" stroke-width="1.6"/><path d="M8 9h11" stroke="#2a78d6" stroke-width="1.8"/></svg>robot and heading (on the border when farther away)</span>
+  </div>
+  <h3 id="framesTitle" hidden>What the robots see: box masks (green) and detected markers (red)</h3>
+  <div class="frames" id="frames"></div>
+</main>
+<script>
+"use strict";
+const BOX_R = 0.235 / Math.sqrt(3);          // centre to corner of a box [m]
+const CUTOFF = 0.15, WINDOW_S = 30, OLD_S = 3;
+const DETECTION_METHODS = new Set(["mht", "mht_sensor", "gnn"]);
+let state = null, built = false, view = null;
+const history = {};                          // method -> [[time of the input, correct], ...] of the last 30 s
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function verdictHtml(r) {
+  if (!r) return `<span class="verdict">waiting</span>`;
+  if (r.verdict === null) return `<span class="verdict">${r.n_est} found (no boxes from OptiTrack)</span>`;
+  const d = r.n_est - r.n_true;
+  if (r.verdict === "correct") return `<span class="verdict correct">&#10003; correct</span>`;
+  if (r.verdict === "too few") return `<span class="verdict few">&minus; ${-d} box${d === -1 ? "" : "es"} missing</span>`;
+  if (r.verdict === "too many") return `<span class="verdict many">+ ${d} box${d === 1 ? "" : "es"} too many</span>`;
+  return `<span class="verdict misplaced">&#9651; right count, one misplaced</span>`;
+}
+
+function match(est, truth) {                 // one to one, nearest pairs first, within the cut-off (as the server)
+  const pairs = [];
+  est.forEach((e, i) => truth.forEach((t, j) => pairs.push([Math.hypot(e[0] - t[0], e[1] - t[1]), i, j])));
+  pairs.sort((a, b) => a[0] - b[0]);
+  const eOk = est.map(() => false), tOk = truth.map(() => false);
+  for (const [d, i, j] of pairs) if (d <= CUTOFF && !eOk[i] && !tOk[j]) eOk[i] = tOk[j] = true;
+  return [eOk, tOk];
+}
+
+function bounds() {
+  // the boxes and every estimate fill the map; it moves only when something leaves it or it is far too large,
+  // so that it does not jump at every update
+  let pts = (state.truth || []).map(b => [b[0], b[1]]);
+  for (const r of Object.values(state.results)) for (const b of r.boxes) pts.push(b);
+  if (!pts.length) pts = Object.values(state.robots).map(r => [r.pose[0], r.pose[1]]);
+  if (!pts.length) return view || { cx: 0, cy: 0, half: 1.5 };
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const need = Math.max(Math.max(x1 - x0, y1 - y0) / 2 + 0.6, 0.9);
+  const fits = view && x0 > view.cx - view.half + 0.25 && x1 < view.cx + view.half - 0.25 &&
+               y0 > view.cy - view.half + 0.25 && y1 < view.cy + view.half - 0.25 && view.half < need + 0.8;
+  if (!fits) view = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, half: need };
+  return view;
+}
+
+function draw(canvas, key, B) {
+  const dpr = window.devicePixelRatio || 1, size = canvas.clientWidth;
+  if (!size) return;
+  if (canvas.width !== Math.round(size * dpr)) canvas.width = canvas.height = Math.round(size * dpr);
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, size, size);
+  const s = size / (2 * B.half);
+  const X = x => (x - B.cx + B.half) * s, Y = y => size - (y - B.cy + B.half) * s;       // Motive y upwards
+  g.lineWidth = 1; g.strokeStyle = "#ebeae4";                                             // 50 cm grid
+  for (let v = Math.ceil((B.cx - B.half) * 2) / 2; v < B.cx + B.half; v += 0.5) { g.beginPath(); g.moveTo(X(v), 0); g.lineTo(X(v), size); g.stroke(); }
+  for (let v = Math.ceil((B.cy - B.half) * 2) / 2; v < B.cy + B.half; v += 0.5) { g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(size, Y(v)); g.stroke(); }
+  g.fillStyle = "#55544e"; g.font = "11px system-ui, sans-serif";
+  g.fillRect(size / 2 - 0.25 * s, size - 9, 0.5 * s, 2); g.textAlign = "center"; g.fillText("50 cm", size / 2, size - 13); g.textAlign = "left";
+  for (const [name, r] of Object.entries(state.robots)) {                                 // robots
+    // a robot outside the map is moved along the line to the map centre until it is 16 px inside the border
+    const p = r.pose;
+    let dx = p[0] - B.cx, dy = p[1] - B.cy;
+    const lim = B.half - 16 / s, over = Math.max(Math.abs(dx), Math.abs(dy)) / lim;
+    if (over > 1) { dx /= over; dy /= over; }
+    const x = X(B.cx + dx), y = Y(B.cy + dy), a = -p[2];
+    g.fillStyle = "#d6e4f7"; g.strokeStyle = "#2a78d6"; g.lineWidth = 1.6;
+    g.beginPath(); g.arc(x, y, 9, 0, 2 * Math.PI); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + 22 * Math.cos(a), y + 22 * Math.sin(a)); g.stroke();
+    g.fillStyle = "#1d5fb0"; g.font = "600 11px system-ui, sans-serif"; g.textAlign = "center";
+    g.fillText(name, x + 36 * Math.cos(a), y + 36 * Math.sin(a) + 4); g.textAlign = "left";
+  }
+  const res = state.results[key], truth = state.truth || [];
+  const [eOk, tOk] = res ? match(res.boxes, truth) : [[], truth.map(() => true)];
+  truth.forEach((b, j) => {                                                               // true boxes
+    const found = !res || tOk[j];
+    g.beginPath();
+    for (let k = 0; k < 3; k++) {
+      const a = b[2] + k * 2 * Math.PI / 3, x = X(b[0] + BOX_R * Math.cos(a)), y = Y(b[1] + BOX_R * Math.sin(a));
+      k ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    g.fillStyle = found ? "#ffffff" : "#fbe9e7"; g.fill();
+    g.setLineDash(found ? [] : [5, 3]); g.strokeStyle = found ? "#14140f" : "#b3261e"; g.lineWidth = 1.7; g.stroke(); g.setLineDash([]);
+  });
+  if (DETECTION_METHODS.has(key)) {                                                       // what these methods read
+    g.fillStyle = "#9a9990";
+    for (const d of state.detections) { g.beginPath(); g.arc(X(d[0]), Y(d[1]), 2.6, 0, 2 * Math.PI); g.fill(); }
+  }
+  if (res) res.boxes.forEach((b, i) => {                                                  // estimates
+    const x = X(b[0]), y = Y(b[1]);
+    g.beginPath(); g.arc(x, y, 7.5, 0, 2 * Math.PI);
+    if (eOk[i]) { g.fillStyle = "#0f7b3f"; g.fill(); g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.stroke(); }
+    else {
+      g.fillStyle = "#ffffff"; g.fill(); g.strokeStyle = "#b3261e"; g.lineWidth = 2.4; g.stroke();
+      g.beginPath(); g.moveTo(x - 3.6, y - 3.6); g.lineTo(x + 3.6, y + 3.6); g.moveTo(x + 3.6, y - 3.6); g.lineTo(x - 3.6, y + 3.6); g.lineWidth = 2; g.stroke();
+    }
+  });
+}
+
+function build() {
+  $("grid").innerHTML = state.methods.map(m =>
+    `<section class="card" aria-label="${esc(m.label)}"><h2>${esc(m.label)}</h2><div class="in">input: ${esc(m.input)}</div>
+      <div id="v_${m.key}"></div>
+      <canvas data-key="${m.key}" role="img" aria-label="Top-down map of ${esc(m.label)}"></canvas>
+      <div class="foot" id="f_${m.key}"></div>
+      <div class="score" aria-hidden="true"><i id="s_${m.key}" style="width:0"></i></div></section>`).join("");
+  built = true;
+}
+
+function record(key, res) {                  // one entry per new result
+  const h = history[key] || (history[key] = []);
+  if (res && res.verdict !== null && (!h.length || h[h.length - 1][0] !== res.t)) h.push([res.t, res.verdict === "correct"]);
+  while (h.length && h[0][0] < state.now - WINDOW_S) h.shift();
+  return h;
+}
+
+function setFrame(q, src) {                  // the new frame replaces the old one only once it is loaded
+  let fig = document.querySelector(`figure[data-q="${q}"]`);
+  if (!fig) {
+    fig = document.createElement("figure"); fig.dataset.q = q;
+    fig.innerHTML = `<img alt="Frame of robot ${esc(q)} with box masks and detected markers"><figcaption></figcaption>`;
+    $("frames").appendChild(fig);
+  }
+  const img = fig.querySelector("img");
+  if (img.dataset.src !== src) {
+    const next = new Image();
+    next.onload = () => { img.src = next.src; };
+    next.src = "/frames/" + src;
+    img.dataset.src = src;
+  }
+  const c = state.camera[q];
+  fig.querySelector("figcaption").innerHTML = `<b>${esc(q)}</b>` + (c ? ` &middot; camera pitch ${c[0]}&deg;, yaw offset ${c[1]}&deg;` : "");
+}
+
+function render() {
+  if (!state) return;
+  if (!built) build();
+  $("status").textContent = state.status;
+  $("status").className = state.status.startsWith("live") ? "" : "off";
+  const truth = state.truth, nr = Object.keys(state.robots).length;
+  $("scene").innerHTML = truth === null ? "no boxes from OptiTrack" : `<b>${truth.length}</b> box${truth.length === 1 ? "" : "es"} on the floor`;
+  $("robots").innerHTML = `<b>${nr}</b> robot${nr === 1 ? "" : "s"}` + (nr ? ": " +
+    Object.entries(state.robots).map(([q, r]) => `${esc(q)} sees ${r.n}`).join(", ") : "");
+  const lv = state.level;
+  $("level").hidden = !lv;
+  if (lv) {
+    $("level").className = "chip " + lv.level;
+    $("level").innerHTML = `scene <b>${lv.level}</b>` + (lv.gap_cm ? ` &middot; closest boxes ${lv.gap_cm} cm` : "") +
+      ` &middot; least seen box: ${lv.min_clear_views} robot${lv.min_clear_views === 1 ? "" : "s"}`;
+  }
+  const B = bounds();
+  for (const m of state.methods) {
+    const res = state.results[m.key], err = state.unavailable[m.key];
+    $("v_" + m.key).innerHTML = err ? `<span class="verdict" title="${esc(err)}">not available</span>` : verdictHtml(res);
+    const h = record(m.key, res), ok = h.filter(e => e[1]).length;
+    let foot = "";
+    if (res) {
+      const age = Math.max(0, state.now - res.t);
+      if (res.verdict !== null) foot += `<span>found ${res.n_matched} of ${res.n_true}${res.rmse_cm === null ? "" : ` &middot; error ${res.rmse_cm} cm`}</span>`;
+      foot += `<span class="${age > OLD_S ? "old" : ""}">input ${age.toFixed(1)} s old &middot; computed in ${res.seconds} s</span>`;
+    }
+    if (h.length) foot += `<span>correct in ${ok} of ${h.length} updates (${Math.round(100 * ok / h.length)}%)</span>`;
+    $("f_" + m.key).innerHTML = foot;
+    $("s_" + m.key).style.width = (h.length ? 100 * ok / h.length : 0) + "%";
+  }
+  document.querySelectorAll("canvas[data-key]").forEach(c => draw(c, c.dataset.key, B));
+  const frames = Object.entries(state.frames);
+  $("framesTitle").hidden = !frames.length;
+  for (const [q, f] of frames) setFrame(q, f);
+  document.querySelectorAll("figure[data-q]").forEach(f => { if (!(f.dataset.q in state.frames)) f.remove(); });
+}
+
+async function poll() {
+  try {
+    state = await (await fetch("/state", { cache: "no-store" })).json();
+    render();
+  } catch (e) { $("status").textContent = "server not reachable"; $("status").className = "off"; }
+}
+$("reset").addEventListener("click", () => { for (const k in history) delete history[k]; render(); });
+window.addEventListener("resize", render);
+setInterval(poll, 300); poll();
+</script>
+</body>
+</html>

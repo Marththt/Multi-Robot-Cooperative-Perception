@@ -47,6 +47,8 @@ CALIB = dict(P0="config/checkerboard_calib_P0.json", P1="config/checkerboard_cal
 
 
 def render_shard(task):
+    """Renders the scenes of one shard (one worker process): every scene of sim.plan with its seed, one image
+    per robot, encoded and stored with the camera poses, the pitch and the true boxes."""
     (name, spec_dict, runs, start, seed, out_path, model_path, calib, scale, app_path, quality, no_markers, obstacles,
      obstacle_style, obstacle_shapes, distractors, visual, masks, cutout) = task
     from imgsim.render import Appearance, Renderer

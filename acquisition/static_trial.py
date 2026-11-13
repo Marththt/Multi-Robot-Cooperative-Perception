@@ -1,11 +1,10 @@
-"""Capture of ONE static trial for one robot, or live preview / live state for the dashboards.
+"""Capture of ONE static trial for one robot, or live preview / live state for the live demo.
 
 A static trial is one stationary arrangement of objects: the robot does not move and takes one
 snapshot. It writes one observation per distinct physical object in view (class, confidence,
 distance, bearing, position): --n-readings closely spaced readings (default 5) are grouped by
 estimated position (capture_trial()), and for each object the reading whose distance is closest to
-the group median is kept (_pick_representative()). merge_static_trials.py then pairs the objects
-across robots, again by position, and runs the fusion.
+the group median is kept (_pick_representative()).
 
 Trial (one process per robot, the same --trial-id for all robots):
 
@@ -21,13 +20,15 @@ Live preview (camera video with the detected markers drawn on top; 'q' in the wi
     python -m acquisition.static_trial --robot-id P0 --detector aruco --aruco-marker-size 0.08 --live
 
 With --state-out (plus --regions and the localization options) it also writes the live state of the
-robot for dashboard.py and map_server.py:
+robot (camera pose from OptiTrack, every detected marker with distance, bearing, viewing angle and rectangle)
+on every frame, and with --frame-out the latest camera frame a few times per second: the input of the live
+demo (demo/live.py), one process per robot:
 
     python -m acquisition.static_trial --robot-id P0 --live --state-out data/live/P0.json \
-        --regions config/optitrack_regions.json \
-        --localization optitrack --optitrack-rb-id 8 \
-        --detector aruco --aruco-marker-size 0.08 \
-        --camera-calib config/checkerboard_calib_P0.json
+        --frame-out data/live/P0.jpg --regions config/optitrack_regions.json \
+        --localization optitrack --optitrack-rb-id 8 --camera-offset-forward-m 0.12 \
+        --detector aruco --aruco-marker-size 0.077 --camera-resolution 720 \
+        --camera-calib config/checkerboard_calib_P0.json --no-window
 """
 
 import argparse
@@ -55,12 +56,12 @@ from vf.perception.yolo_client import RemoteYoloDetector         # in main
 log = logging.getLogger(__name__)
 
 
-def write_live_state(path, robot_id, pose, detections_state, p_d=1.0):
+def write_live_state(path, robot_id, pose, detections_state, p_d=1.0, extra=None):
     """ATOMIC write (temporary file + rename) of THIS robot's live state,
-    for dashboard.py. Overwritten on every frame -- this is not a growing
+    for the live demo (demo/live.py). Overwritten on every frame -- this is not a growing
     log (like the static trials), just "the last thing this robot saw",
     read continuously by another process. The atomic rename prevents
-    dashboard.py from reading a half-written file (rare but possible with
+    the demo from reading a half-written file (rare but possible with
     a file rewritten several times per second by one process while
     another reads it)."""
     data = dict(
@@ -68,8 +69,8 @@ def write_live_state(path, robot_id, pose, detections_state, p_d=1.0):
         pose=list(pose) if pose is not None else None,
         detections=detections_state,
         # p_D with which THIS robot is dropping detections (--p-d), shown
-        # by the dashboards next to the robot (1.0 = no interference).
-        p_d=p_d)
+        # next to the robot (1.0 = no interference).
+        p_d=p_d, **(extra or {}))
     folder = os.path.dirname(path)
     if folder:
         # unlike the non-live path (main() already calls os.makedirs on
@@ -90,7 +91,7 @@ def write_live_state(path, robot_id, pose, detections_state, p_d=1.0):
             # similar often scan newly created/modified files in real
             # time) can hold the file for a fraction of a second exactly
             # when this rename arrives -- transient, and not caused by
-            # dashboard.py (which reads read-only; on Windows Python
+            # the reader (which reads read-only; on Windows Python
             # already opens files with read/write/delete sharing, so it
             # should never block a rename by itself). Retry a few times
             # with a short pause instead of bringing down the whole
@@ -98,7 +99,7 @@ def write_live_state(path, robot_id, pose, detections_state, p_d=1.0):
             time.sleep(0.02 * (attempt + 1))
     # still failing after the retries: do NOT raise -- a missed state
     # update must not interrupt the capture/video preview, which remains
-    # this process's primary information (dashboard.py will simply mark
+    # this process's primary information (the reader will simply mark
     # this robot as "old"/STALE if it keeps happening long enough).
     # Warning printed sparingly (not on every frame) so as not to flood
     # the terminal.
@@ -112,6 +113,28 @@ def write_live_state(path, robot_id, pose, detections_state, p_d=1.0):
               f"excluding the folder from the antivirus.")
 
 
+def write_live_frame(path, img, quality=85):
+    """ATOMIC write of the latest camera frame (JPEG, full resolution) for the live demo: temporary file +
+    rename, as write_live_state, so the reader never sees a half-written image. Returns the write time, or
+    None if the file was busy (the next frame will try again)."""
+    folder = os.path.dirname(path)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, quality])
+    if not ok:
+        return None
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as f:
+        f.write(buf.tobytes())
+    for attempt in range(5):
+        try:
+            os.replace(tmp, path)
+            return time.time()
+        except PermissionError:
+            time.sleep(0.02 * (attempt + 1))
+    return None
+
+
 def draw_triangle(img, x, y, w, h, colour):
     """Outline of a box in the preview: a triangle in the detection rectangle (apex at the top centre)."""
     pts = [(int(x + w / 2), y), (x, y + h), (x + w, y + h)]
@@ -120,7 +143,8 @@ def draw_triangle(img, x, y, w, h, colour):
 
 
 def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
-                 debug=False, p_d=1.0, seed=0):
+                 debug=False, p_d=1.0, seed=0, frame_out=None, frame_every_s=0.25,
+                 show_window=True):
     """Video window with the detected markers drawn on top, in real time
     -- see the module docstring (--live). 'q' to quit.
 
@@ -128,7 +152,7 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
     OptiTrack, --optitrack-rb-id -- see main()), besides showing the video
     it continuously writes THIS robot's state (pose + detections with
     global position, not just bbox) to state_out: this is what
-    dashboard.py reads for the live merge across robots. Without
+    the live demo reads for the fusion across robots. Without
     pose_fn/state_out it behaves exactly as before (video preview only,
     no file written, no OptiTrack dependency) -- fully compatible with
     earlier callers.
@@ -144,7 +168,7 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
     an independent Bernoulli trial, kept with probability p_d and dropped
     with probability 1-p_d. A dropped marker is a "not seen" (missed
     detection) for this robot: it does not end up in state_out, so the
-    dashboard treats it as 0 observations for that class. In the video
+    demo treats it as 0 observations for that class. In the video
     window it stays drawn in GREY with "DROPPED", so you can see what the
     interference removed. Draws are reproducible with the same seed
     (random.Random seeded with a string, stable across runs -- same
@@ -153,7 +177,14 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
     debug=True prints to the TERMINAL (no longer overlaid on the image)
     the pixel offset and the bearing-from-pixel for each marker -- the
     pixel->bearing self-consistency check commented below, previously
-    drawn on the frame."""
+    drawn on the frame.
+
+    frame_out: path of the latest camera frame (JPEG), rewritten every
+    frame_every_s seconds; the state written right after it carries its
+    time (frame_t), the pose of that frame (frame_pose), the detections of
+    that frame and the camera matrix, so a reader gets a frame and the
+    data that belong to it. show_window=False runs without the video
+    window (several robots on one PC: the page of the demo shows them)."""
     import random
     from vf.perception.object_position import global_position
 
@@ -167,8 +198,17 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
 
     n_frames = 0
     n_no_frame = 0
-    print("Waiting for the first frame... video window coming, "
-          "'q' in the window to quit.")
+    last_frame_t = 0.0
+    frame_info = {}
+    camera_info = {}
+    camera_matrix = getattr(detector, "camera_matrix", None)
+    dist_coeffs = getattr(detector, "dist_coeffs", None)
+    if camera_matrix is not None:
+        camera_info["camera_matrix"] = [[float(v) for v in row] for row in camera_matrix]
+    if dist_coeffs is not None:
+        camera_info["dist_coeffs"] = [float(v) for v in list(dist_coeffs.ravel())]
+    print("Waiting for the first frame... " + ("video window coming, 'q' in the window to quit."
+                                               if show_window else "no window: Ctrl+C to quit."))
     while True:
         img, age = camera.read()
         if img is None:
@@ -290,7 +330,8 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
                 detections_state.append(dict(
                     class_name=class_name, confidence=conf, distance=dist,
                     bearing_rad=bearing, viewing_angle_rad=viewing_angle,
-                    position=list(position) if position is not None else None))
+                    position=list(position) if position is not None else None,
+                    bbox=[int(v) for v in bbox]))
 
         if legend_rows:
             # Semi-transparent panel at the bottom, one row per marker,
@@ -320,14 +361,24 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
             status_text += f"  p_D={p_d:.2f}"
         cv2.putText(display, status_text,
                     (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 255), 2)
+        if frame_out is not None and time.time() - last_frame_t >= frame_every_s:
+            t_written = write_live_frame(frame_out, img)
+            if t_written is not None:
+                last_frame_t = t_written
+                frame_info = dict(frame=os.path.basename(frame_out), frame_t=t_written,
+                                  frame_pose=list(pose) if pose is not None else None,
+                                  frame_detections=detections_state,
+                                  image_size=[int(img.shape[1]), int(img.shape[0])])
         if state_out is not None:
             write_live_state(state_out, robot_id, pose, detections_state,
-                             p_d=p_d)
-        cv2.imshow(f"debug ArUco - {robot_id} (q to quit)", display)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+                             p_d=p_d, extra=dict(camera_info, **frame_info))
+        if show_window:
+            cv2.imshow(f"debug ArUco - {robot_id} (q to quit)", display)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
 
-    cv2.destroyAllWindows()
+    if show_window:
+        cv2.destroyAllWindows()
     print(f"\nframes received: {n_frames}, attempts without "
           f"a frame: {n_no_frame}")
     if p_d < 1.0 and n_detected_total:
@@ -481,19 +532,26 @@ def main():
                         "see the module docstring. With --live, "
                         "--trial-id/--out/--regions/--localization are "
                         "not needed, UNLESS --state-out is also used")
+    p.add_argument("--frame-out", default=None,
+                   help="ONLY with --live --state-out: also writes the latest camera frame "
+                        "(JPEG) to this path, for the image network of the live demo")
+    p.add_argument("--frame-every-s", type=float, default=0.25,
+                   help="with --frame-out: seconds between two frames written")
+    p.add_argument("--no-window", action="store_true",
+                   help="with --live: no video window")
     p.add_argument("--state-out", default=None,
                    help="ONLY with --live: continuously writes this "
                         "robot's state (pose + detections with global "
                         "position) to this JSON file, overwritten on "
-                        "every frame -- read by dashboard.py for the "
-                        "live merge across robots. Requires --regions "
+                        "every frame -- read by demo/live.py for the "
+                        "live fusion across robots. Requires --regions "
                         "and (with OptiTrack) --optitrack-rb-id, because "
                         "the global position needs the robot pose")
     p.add_argument("--trial-id", default=None,
                    help="identifies THIS trial (same label for all "
                         "participating robots) -- ties the rows of the "
                         "different robots together in "
-                        "merge_static_trials.py -- required unless "
+                        "the analysis -- required unless "
                         "--live is used")
     p.add_argument("--out", default=None,
                    help="folder shared by the robot processes: one row "
@@ -569,8 +627,7 @@ def main():
     p.add_argument("--instance-threshold-m", type=float, default=0.5,
                    help="within how many metres two readings of THIS robot "
                         "are considered the same physical object instead "
-                        "of two distinct instances (same default as "
-                        "merge_static_trials.py)")
+                        "of two distinct instances")
     p.add_argument("--debug", action="store_true",
                    help="print every raw reading during capture (how "
                         "many markers in the frame, whether each has an "
@@ -721,7 +778,9 @@ def main():
                 live_preview(camera, raw_detector, args.robot_id,
                              pose_fn=pose_fn, state_out=args.state_out,
                              debug=args.debug, p_d=args.p_d,
-                             seed=args.seed)
+                             seed=args.seed, frame_out=args.frame_out,
+                             frame_every_s=args.frame_every_s,
+                             show_window=not args.no_window)
             finally:
                 camera.stop()
                 if localizer is not None:
@@ -748,7 +807,7 @@ def main():
                                      instance_threshold_m=args.instance_threshold_m,
                                      debug=args.debug)
             # Camera pose at capture time, stored in every row as
-            # "robot_pose": localize_trials.py uses it to know each
+            # "robot_pose": the analysis uses it to know each
             # robot's field of view.
             trial_pose = localizer.pose()
         finally:
@@ -786,7 +845,7 @@ def main():
     # wrong) REPLACES that trial's previous rows in this file instead of
     # piling up under the old ones. Previously it was pure append:
     # running the same trial_id twice left both the old AND the new rows
-    # in the same file, and merge_static_trials.py merged them as if they
+    # in the same file, and the analysis merged them as if they
     # were different readings of the same trial, giving results that
     # looked like a bug (extra instances or inconsistent positions) but
     # were just stale data never cleaned up. Other trial_ids in the same
