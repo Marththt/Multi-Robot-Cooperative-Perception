@@ -24,6 +24,7 @@ import os
 import threading
 import time
 
+from acquisition.survey import border_distance, inside, route
 from vf.control.goto import go_to, stop, wrap_pi
 
 KEEP_OUT_M = 0.45            # no leg closer than this to a box centre (as the captures, survey --keep-out-m)
@@ -106,7 +107,6 @@ class LiveDriver(threading.Thread):
         stop(self.chassis)
 
     def execute(self, c):
-        from acquisition.survey import border_distance, inside, route
         kind = c.get("kind")
         if kind == "stop":
             stop(self.chassis)

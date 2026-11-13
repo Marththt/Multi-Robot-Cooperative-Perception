@@ -235,7 +235,9 @@ def _ctrl_break(signum, frame):
     raise KeyboardInterrupt
 
 
-if hasattr(signal, "SIGBREAK"):          # Windows: Ctrl+Break from the launcher -> same cleanup as Ctrl+C
+if hasattr(signal, "SIGBREAK") and threading.current_thread() is threading.main_thread():
+    # Windows: Ctrl+Break from the launcher -> same cleanup as Ctrl+C (a handler can be set only from the main
+    # thread: when this module is imported elsewhere, e.g. by acquisition/live_drive.py, it is skipped there)
     signal.signal(signal.SIGBREAK, _ctrl_break)
 
 

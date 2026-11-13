@@ -7,7 +7,8 @@ For every --scene LAYOUT:ROUND (the run kept for that layout in --runs, first re
                                        (yellow); bottom: the 256 x 144 input of each robot (mask white, markers red)
   <out>/<layout>_r<round>_maps.png     the floor map of box-centre probability of the network on masks alone and
                                        of the network on masks + markers, with the true boxes (OptiTrack), the
-                                       boxes found and the four cameras
+                                       boxes found and the four robots (their maps, boxes and robots are kept in
+                                       <layout>_r<round>_maps.npz)
 Runs in the environment of the demo (torch, transformers, a GPU helps):
 
     python -m tools.fig_image_report --scene R81:0 --scene R96:0 --out results/figures/image_report/
@@ -32,6 +33,7 @@ from matplotlib.patches import Polygon
 from bevnet import geometry as geo
 from bevnet import real
 from pipeline.build_scans import best_runs
+from tools.draw_robot import draw_robot
 
 SCALE = 0.2
 
@@ -124,8 +126,7 @@ def draw_map(ax, heat, est, boxes, yaws, cams, title, half):
         else:
             ax.plot(x, y, "X", ms=11, mfc="#c0392b", mec="white", mew=1.2)
     for x, y, yaw in cams:
-        ax.plot(x, y, "o", ms=10, mfc="#d6e4f7", mec="#2a78d6", mew=1.6)
-        ax.plot([x, x + 0.25 * math.cos(yaw)], [y, y + 0.25 * math.sin(yaw)], color="#2a78d6", lw=2)
+        draw_robot(ax, x, y, yaw)
     ax.set_xlim(-half, half)
     ax.set_ylim(-half, half)
     ax.set_aspect("equal")
@@ -212,6 +213,10 @@ def main():
         bx = np.asarray(boxes, float) - centre
         cams_rel = [(p[0], p[1], p[2]) for p in np.asarray(scene["poses"], float)]
         half = max(1.2, float(np.max(np.abs(np.vstack([bx, np.asarray(cams_rel)[:, :2]])))) + 0.25)
+        np.savez_compressed(os.path.join(a.out, f"{name}_maps.npz"), boxes=bx, yaws=np.asarray(yaws),
+                            cams=np.asarray(cams_rel), half=half,
+                            **{f"{k}_{f}": v for k in results for f, v in (("heat", results[k][0]),
+                                                                            ("est", np.asarray(results[k][1])))})
         fig, axes = plt.subplots(1, 2, figsize=(11, 5.6))
         for ax, key, label in ((axes[0], "masks", "masks only"), (axes[1], "markers", "masks + markers")):
             heat, est, _s = results[key]
