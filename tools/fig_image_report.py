@@ -212,7 +212,7 @@ def main():
         centre = np.array(scene["centre"])
         bx = np.asarray(boxes, float) - centre
         cams_rel = [(p[0], p[1], p[2]) for p in np.asarray(scene["poses"], float)]
-        half = max(1.2, float(np.max(np.abs(np.vstack([bx, np.asarray(cams_rel)[:, :2]])))) + 0.25)
+        half = max(1.2, float(np.max(np.abs(np.vstack([bx, np.asarray(cams_rel)[:, :2]])))) + 0.55)
         np.savez_compressed(os.path.join(a.out, f"{name}_maps.npz"), boxes=bx, yaws=np.asarray(yaws),
                             cams=np.asarray(cams_rel), half=half,
                             **{f"{k}_{f}": v for k in results for f, v in (("heat", results[k][0]),

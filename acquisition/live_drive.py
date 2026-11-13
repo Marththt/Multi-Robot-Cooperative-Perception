@@ -15,6 +15,12 @@ Commands (JSON, written atomically; seq grows with every command):
 
 The state of the last command (seq, state: driving / reached / failed / blocked / refused / stopped, goal,
 note) is written with the live state of the robot, so the page shows it.
+
+Holding still. A robot left standing creeps: small movements that add up to a turn of many degrees in a minute.
+Between commands the driver therefore keeps the robot where it last stood: when it has crept more than HOLD_POS_M
+or HOLD_YAW_DEG from that pose, slowly, it is driven back. A robot moved by hand moves fast (faster than
+HAND_SPEED_M_S or HAND_TURN_DEG_S): then nothing is corrected, and once it has stood still for HAND_SETTLE_S
+where it was put, that becomes the pose to keep.
 """
 
 import glob
@@ -32,6 +38,11 @@ MARGIN_M = 0.35              # goals at least this far inside the arena border
 STOP_DISTANCE_M = 0.6        # wait while another robot is this close and in the way (survey --stop-distance)
 ROBOT_CLEARANCE_M = 0.6      # no leg closer than this to a standing robot
 STALE_S = 2.0
+HOLD_POS_M = 0.05            # creeping farther than this from the kept pose -> driven back (> the 2 cm of go_to)
+HOLD_YAW_DEG = 7.0           # turning more than this -> turned back (> the 5 deg tolerance of go_to)
+HAND_SPEED_M_S = 0.12        # faster than this, the robot is being moved by hand (creeping is far slower)
+HAND_TURN_DEG_S = 20.0
+HAND_SETTLE_S = 1.5          # still for this long after a move by hand -> the new pose is kept
 
 
 def read_json(path):
@@ -52,6 +63,9 @@ class LiveDriver(threading.Thread):
         old = read_json(command_path)                       # a command left from an earlier session is not run
         self.seq = old.get("seq") if old else None
         self.status = dict(seq=self.seq, state="idle", goal=None, note="")
+        self.hold = None                                    # pose to keep between commands
+        self.last = None                                    # (time, pose) of the previous check
+        self.hand_until = 0.0                               # moved by hand: no correction before this time
 
     # ---- what the robot knows of the scene --------------------------------------------------------------
 
@@ -103,8 +117,40 @@ class LiveDriver(threading.Thread):
                 except Exception as e:                       # never leave the robot moving
                     stop(self.chassis)
                     self.report("failed", f"{type(e).__name__}: {e}")
+                self.hold, self.last = self.pose_fn(), None  # keep where the command left it
+            else:
+                try:
+                    self.keep_still()
+                except Exception as e:
+                    stop(self.chassis)
+                    self.log(f"[drive] holding still failed: {type(e).__name__}: {e}")
             time.sleep(0.15)
         stop(self.chassis)
+
+    def keep_still(self):
+        """Between commands: drives back to the kept pose a robot that has crept away from it (see above)."""
+        pose, now = self.pose_fn(), time.time()
+        if pose is None:
+            return
+        if self.hold is None:
+            self.hold = pose
+        if self.last is not None:
+            dt = max(now - self.last[0], 1e-3)
+            speed = math.hypot(pose[0] - self.last[1][0], pose[1] - self.last[1][1]) / dt
+            turn = abs(math.degrees(wrap_pi(pose[2] - self.last[1][2]))) / dt
+            if speed > HAND_SPEED_M_S or turn > HAND_TURN_DEG_S:
+                self.hand_until = now + HAND_SETTLE_S
+        self.last = (now, pose)
+        if now < self.hand_until:                             # being moved by hand: the new pose will be kept
+            self.hold = pose
+            return
+        off = math.hypot(pose[0] - self.hold[0], pose[1] - self.hold[1])
+        off_yaw = abs(math.degrees(wrap_pi(pose[2] - self.hold[2])))
+        if off <= HOLD_POS_M and off_yaw <= HOLD_YAW_DEG:
+            return
+        go_to(self.pose_fn, self.chassis, self.hold[:2], self.hold[2], pos_tol=0.02, max_runtime_s=6.0,
+              cancel=self.newer, log=lambda m: None)
+        self.last = (time.time(), self.pose_fn() or pose)
 
     def execute(self, c):
         kind = c.get("kind")

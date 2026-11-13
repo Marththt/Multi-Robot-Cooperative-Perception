@@ -88,14 +88,32 @@
 <script>
 "use strict";
 const BOX_R = 0.235 / Math.sqrt(3);          // centre to corner of a box [m]
-const ROBOT_L = 0.32, ROBOT_W = 0.24;        // RoboMaster EP chassis [m]
+const ROBOT_L = 0.30, ROBOT_W = 0.25;        // robot footprint drawn to scale [m], camera on the front edge
 const CUTOFF = 0.15, WINDOW_S = 30, OLD_S = 3;
 const DETECTION_METHODS = new Set(["mht", "mht_sensor", "gnn"]);
+const POLL_MS = 100, SMOOTH_MS = 90;          // state asked ten times per second; robots glide to the new pose
 let state = null, built = false, view = null, selected = null, lastB = null, driveKey = "";
+let dirty = true, lastFrame = 0;
+const shown = {};                            // robot -> pose drawn now, moving towards its last pose
 const history = {};                          // method -> [[time of the input, correct], ...] of the last 30 s
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const setHTML = (el, html) => { if (el.innerHTML !== html && el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; } };
+const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+
+function glide(dt) {                         // moves the drawn poses towards the last ones; true while moving
+  let moving = false;
+  const k = 1 - Math.exp(-dt / SMOOTH_MS);
+  for (const [q, r] of Object.entries(state.robots)) {
+    const p = r.pose, sp = shown[q];
+    if (!sp || Math.hypot(p[0] - sp[0], p[1] - sp[1]) > 1.0) { shown[q] = p.slice(); continue; }   // first or jump
+    sp[0] += (p[0] - sp[0]) * k; sp[1] += (p[1] - sp[1]) * k; sp[2] += wrap(p[2] - sp[2]) * k;
+    if (Math.hypot(p[0] - sp[0], p[1] - sp[1]) > 0.002 || Math.abs(wrap(p[2] - sp[2])) > 0.003) moving = true;
+  }
+  for (const q in shown) if (!(q in state.robots)) delete shown[q];
+  return moving;
+}
 
 function verdictHtml(r) {
   if (!r) return `<span class="verdict">waiting</span>`;
@@ -153,18 +171,19 @@ function draw(canvas, key, B) {
     const m = r.motion;
     if (!m || m.state !== "driving" || !m.goal) continue;
     g.strokeStyle = "#2a78d6"; g.lineWidth = 1.5; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(X(r.pose[0]), Y(r.pose[1])); g.lineTo(X(m.goal[0]), Y(m.goal[1])); g.stroke(); g.setLineDash([]);
+    const p = shown[name] || r.pose;
+    g.beginPath(); g.moveTo(X(p[0]), Y(p[1])); g.lineTo(X(m.goal[0]), Y(m.goal[1])); g.stroke(); g.setLineDash([]);
     g.beginPath(); g.arc(X(m.goal[0]), Y(m.goal[1]), 6, 0, 2 * Math.PI); g.stroke();
   }
   for (const [name, r] of Object.entries(state.robots)) {                                 // robots
     // a robot outside the map is moved along the line to the map centre until it is 16 px inside the border
-    const p = r.pose;
+    const p = shown[name] || r.pose;
     let dx = p[0] - B.cx, dy = p[1] - B.cy;
     const lim = B.half - 16 / s, over = Math.max(Math.abs(dx), Math.abs(dy)) / lim;
     if (over > 1) { dx /= over; dy /= over; }
     const x = X(B.cx + dx), y = Y(B.cy + dy), a = -p[2];
-    // the chassis (32 x 24 cm) behind the camera, which is on its front edge (pose = camera pose)
-    const sel = name === selected, L = Math.max(ROBOT_L * s, 16), Wd = Math.max(ROBOT_W * s, 12);
+    // the robot (30 x 25 cm, to scale) behind the camera, which is on its front edge (pose = camera pose)
+    const sel = name === selected, L = Math.max(ROBOT_L * s, 8), Wd = Math.max(ROBOT_W * s, 7);
     g.save(); g.translate(x, y); g.rotate(a);
     g.fillStyle = sel ? "#2a78d6" : "#d6e4f7"; g.strokeStyle = "#2a78d6"; g.lineWidth = sel ? 3 : 1.6;
     g.beginPath(); g.rect(-L, -Wd / 2, L, Wd); g.fill(); g.stroke();
@@ -234,30 +253,30 @@ function setFrame(q, src) {                  // the new frame replaces the old o
     img.dataset.src = src;
   }
   const c = state.camera[q];
-  fig.querySelector("figcaption").innerHTML = `<b>${esc(q)}</b>` + (c ? ` &middot; camera pitch ${c[0]}&deg;, yaw offset ${c[1]}&deg;` : "");
+  setHTML(fig.querySelector("figcaption"), `<b>${esc(q)}</b>` + (c ? ` &middot; camera pitch ${c[0]}&deg;, yaw offset ${c[1]}&deg;` : ""));
 }
 
 function render() {
   if (!state) return;
   if (!built) build();
-  $("status").textContent = state.status;
+  if ($("status").textContent !== state.status) $("status").textContent = state.status;
   $("status").className = state.status.startsWith("live") ? "" : "off";
   const truth = state.truth, nr = Object.keys(state.robots).length;
-  $("scene").innerHTML = truth === null ? "no boxes from OptiTrack" : `<b>${truth.length}</b> box${truth.length === 1 ? "" : "es"} on the floor`;
-  $("robots").innerHTML = `<b>${nr}</b> robot${nr === 1 ? "" : "s"}` + (nr ? ": " +
-    Object.entries(state.robots).map(([q, r]) => `${esc(q)} sees ${r.n}`).join(", ") : "");
+  setHTML($("scene"), truth === null ? "no boxes from OptiTrack" : `<b>${truth.length}</b> box${truth.length === 1 ? "" : "es"} on the floor`);
+  setHTML($("robots"), `<b>${nr}</b> robot${nr === 1 ? "" : "s"}` + (nr ? ": " +
+    Object.entries(state.robots).map(([q, r]) => `${esc(q)} sees ${r.n}`).join(", ") : ""));
   const lv = state.level;
   $("level").hidden = !lv;
   if (lv) {
     $("level").className = "chip " + lv.level;
-    $("level").innerHTML = `scene <b>${lv.level}</b>` + (lv.gap_cm ? ` &middot; closest boxes ${lv.gap_cm} cm` : "") +
-      ` &middot; least seen box: ${lv.min_clear_views} robot${lv.min_clear_views === 1 ? "" : "s"}`;
+    setHTML($("level"), `scene <b>${lv.level}</b>` + (lv.gap_cm ? ` &middot; closest boxes ${lv.gap_cm} cm` : "") +
+      ` &middot; least seen box: ${lv.min_clear_views} robot${lv.min_clear_views === 1 ? "" : "s"}`);
   }
   renderDrive();
   const B = bounds(); lastB = B;
   for (const m of state.methods) {
     const res = state.results[m.key], err = state.unavailable[m.key];
-    $("v_" + m.key).innerHTML = err ? `<span class="verdict" title="${esc(err)}">not available</span>` : verdictHtml(res);
+    setHTML($("v_" + m.key), err ? `<span class="verdict" title="${esc(err)}">not available</span>` : verdictHtml(res));
     const h = record(m.key, res), ok = h.filter(e => e[1]).length;
     let foot = "";
     if (res) {
@@ -266,10 +285,10 @@ function render() {
       foot += `<span class="${age > OLD_S ? "old" : ""}">input ${age.toFixed(1)} s old &middot; computed in ${res.seconds} s</span>`;
     }
     if (h.length) foot += `<span>correct in ${ok} of ${h.length} updates (${Math.round(100 * ok / h.length)}%)</span>`;
-    $("f_" + m.key).innerHTML = foot;
+    setHTML($("f_" + m.key), foot);
     $("s_" + m.key).style.width = (h.length ? 100 * ok / h.length : 0) + "%";
   }
-  document.querySelectorAll("canvas[data-key]").forEach(c => draw(c, c.dataset.key, B));
+  dirty = true;                              // the maps are drawn by the animation loop (frame)
   const frames = Object.entries(state.frames);
   $("framesTitle").hidden = !frames.length;
   for (const [q, f] of frames) setFrame(q, f);
@@ -327,15 +346,30 @@ $("grid").addEventListener("click", e => {          // a click on a map: pick a 
   if (selected) command({ robot: selected, kind: "goto", x: Number(x.toFixed(3)), y: Number(y.toFixed(3)), yaw_deg: null });
 });
 
-async function poll() {
+async function poll() {                     // the next request leaves when the previous one is back
+  const t0 = performance.now();
   try {
     state = await (await fetch("/state", { cache: "no-store" })).json();
     render();
   } catch (e) { $("status").textContent = "server not reachable"; $("status").className = "off"; }
+  setTimeout(poll, Math.max(0, POLL_MS - (performance.now() - t0)));
+}
+
+function frame(now) {                        // maps redrawn at the refresh rate of the screen, only when needed
+  const dt = lastFrame ? Math.min(now - lastFrame, 100) : 16;
+  lastFrame = now;
+  if (state && built && lastB) {
+    const moving = glide(dt);
+    if (moving || dirty) {
+      document.querySelectorAll("canvas[data-key]").forEach(c => draw(c, c.dataset.key, lastB));
+      dirty = false;
+    }
+  }
+  requestAnimationFrame(frame);
 }
 $("reset").addEventListener("click", () => { for (const k in history) delete history[k]; render(); });
-window.addEventListener("resize", render);
-setInterval(poll, 300); poll();
+window.addEventListener("resize", () => { dirty = true; });
+poll(); requestAnimationFrame(frame);
 </script>
 </body>
 </html>

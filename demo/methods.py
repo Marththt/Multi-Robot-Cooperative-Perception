@@ -105,14 +105,14 @@ class Recent:
         self.states = collections.defaultdict(lambda: collections.deque(maxlen=keep))
 
     def update(self):
-        for name in os.listdir(self.dir) if os.path.isdir(self.dir) else []:
-            if not name.endswith(".json") or name == "boxes.json" or name.endswith(".cmd.json"):
-                continue
-            s = read_json(os.path.join(self.dir, name))
-            if s and s.get("pose") is not None:
-                q = self.states[s.get("robot_id", name[:-5])]
-                if not q or q[-1]["t"] != s["t"]:
-                    q.append(s)
+        self.add(snapshot(self.dir, float("inf"))[0])
+
+    def add(self, robots):
+        """Keeps the states of a snapshot ({robot: state}) that are new."""
+        for name, s in robots.items():
+            q = self.states[name]
+            if not q or q[-1]["t"] != s["t"]:
+                q.append(s)
 
     def pooled(self, window_s, stale_s):
         """{robot: its last state, with the detections of the last window_s seconds grouped by position and,
@@ -304,13 +304,13 @@ class ImageNets:
 
     SCALE = 0.2                                          # network images: 256 x 144
 
-    def __init__(self, models, work_dir, device="auto"):
+    def __init__(self, models, work_dir, device="auto", half=True):
         import torch
         from bevnet import geometry as geo
         from bevnet.model import BevNet
         from bevnet.segment import BoxSegmenter
         self.device = torch.device(("cuda" if torch.cuda.is_available() else "cpu") if device == "auto" else device)
-        self.seg = BoxSegmenter(device=device)
+        self.seg = BoxSegmenter(device=device, half=half)     # half precision on CUDA only
         self.work = work_dir
         self.models = {}
         for key, folder in models.items():
@@ -356,11 +356,11 @@ class ImageNets:
             self.calibration.add(q, frames[q][1], truth)
         poses, pitch, Ks, Ds, small, mk = [], [], [], [], {}, {}
         overlays = {}
-        for q in names:
+        segmented = self.seg.many([frames[q][0] for q in names])     # all the frames in one batch
+        for q, (mask, _rects, _labels) in zip(names, segmented):
             img, s = frames[q]
             H, W = img.shape[:2]
             w, h = int(round(1280 * self.SCALE)), int(round(720 * self.SCALE))
-            mask, _rects, _labels = self.seg(img)
             small[q] = (cv2.resize(mask, (w, h), interpolation=cv2.INTER_AREA) > 127).astype(np.uint8) * 255
             mk[q] = np.zeros_like(small[q])
             for det in s.get("frame_detections", []):
