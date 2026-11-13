@@ -273,7 +273,7 @@ def main():
     ap.add_argument("--sensor-calib", default="config/sensor_calib.json")
     ap.add_argument("--sensor-model", default="config/sensor_model.json")
     ap.add_argument("--regions", default="config/optitrack_regions.json")
-    ap.add_argument("--gnn", default="results/gnn_mixed_large/detection_full_ring_h3",
+    ap.add_argument("--gnn", default="results/plan/M4/gnn/detection_full_full_h2",
                     help="variant folder of gnn/train_sim.py (variant.json, model_seed0.pt)")
     ap.add_argument("--image", default="results/bev_mask_wp/masks_wp",
                     help="image network on masks: variant folder of bevnet/train.py (variant.json, model.pt)")
