@@ -1,0 +1,47 @@
+{
+  "train": [
+    "data/bev_mask_mk/train"
+  ],
+  "val": [
+    "data/bev_mask_mk/val"
+  ],
+  "tests": [
+    "data/bev_mask_mk/G0_*",
+    "data/bev_mask_mk/E3_*",
+    "data/bev_mask_mk/S1_*"
+  ],
+  "out": "results/bev_mask_mk/",
+  "channels": 64,
+  "encoder": "small",
+  "encoder_lr": 0.2,
+  "jitter": 0.0,
+  "pitch_noise": 1.5,
+  "yaw_noise": 1.0,
+  "height_noise": 0.025,
+  "mask_noise": 1.0,
+  "marker_dropout": 1.0,
+  "marker_rates": true,
+  "fuse_frames": false,
+  "drop_markers": false,
+  "min_visible_px": 12,
+  "name": "masks_mkr_s2",
+  "message": 16,
+  "epochs": 15,
+  "patience": 4,
+  "batch": 8,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "offset_weight": 1.0,
+  "max_train": null,
+  "max_val": 2000,
+  "workers": 8,
+  "device": "auto",
+  "seed": 2,
+  "eval_only": false,
+  "save_maps": 0,
+  "diagnose": false,
+  "results_name": "",
+  "threshold": 0.35,
+  "best_val_correct_pct": 76.75,
+  "best_epoch": 14
+}
