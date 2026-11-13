@@ -28,6 +28,13 @@
   button { font: inherit; font-size: 14px; padding: 3px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--ink); cursor: pointer; }
   button:hover { border-color: var(--ink2); }
   button:focus-visible { outline: 3px solid var(--robot); outline-offset: 2px; }
+  .drive { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 12px; padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+  .drive b { font-weight: 650; }
+  .drive button[aria-pressed="true"] { background: var(--robot); color: #fff; border-color: var(--robot); }
+  .drive .hint { color: var(--ink2); }
+  .drive .st-driving { color: var(--robot); } .drive .st-failed, .drive .st-blocked, .drive .st-refused { color: var(--bad); } .drive .st-reached { color: var(--good); }
+  button.stop { border-color: var(--bad); color: var(--bad); }
+  canvas.pick { cursor: crosshair; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 10px; display: flex; flex-direction: column; min-width: 0; }
   .card h2 { font-size: 17px; margin: 0; font-weight: 650; min-height: 2.8em; display: flex; align-items: flex-end; }
@@ -65,6 +72,7 @@
     <span class="chip">bars: correct over the last <b>30 s</b></span>
     <button id="reset" title="Start the count of the last 30 s again">Reset count</button>
   </div>
+  <div class="drive" id="drive" hidden></div>
   <div class="grid" id="grid"></div>
   <div class="legend" aria-label="Legend">
     <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fff" stroke="#14140f" stroke-width="1.6"/></svg>true box (OptiTrack)</span>
@@ -82,7 +90,7 @@
 const BOX_R = 0.235 / Math.sqrt(3);          // centre to corner of a box [m]
 const CUTOFF = 0.15, WINDOW_S = 30, OLD_S = 3;
 const DETECTION_METHODS = new Set(["mht", "mht_sensor", "gnn"]);
-let state = null, built = false, view = null;
+let state = null, built = false, view = null, selected = null, lastB = null, driveKey = "";
 const history = {};                          // method -> [[time of the input, correct], ...] of the last 30 s
 
 const $ = id => document.getElementById(id);
@@ -112,11 +120,14 @@ function bounds() {
   // so that it does not jump at every update
   let pts = (state.truth || []).map(b => [b[0], b[1]]);
   for (const r of Object.values(state.results)) for (const b of r.boxes) pts.push(b);
-  if (!pts.length) pts = Object.values(state.robots).map(r => [r.pose[0], r.pose[1]]);
+  for (const r of Object.values(state.robots)) {                 // the robots too: they can be sent anywhere
+    pts.push([r.pose[0], r.pose[1]]);
+    if (r.motion && r.motion.state === "driving" && r.motion.goal) pts.push(r.motion.goal.slice(0, 2));
+  }
   if (!pts.length) return view || { cx: 0, cy: 0, half: 1.5 };
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const need = Math.max(Math.max(x1 - x0, y1 - y0) / 2 + 0.6, 0.9);
+  const need = Math.max(Math.max(x1 - x0, y1 - y0) / 2 + 0.35, 0.9);
   const fits = view && x0 > view.cx - view.half + 0.25 && x1 < view.cx + view.half - 0.25 &&
                y0 > view.cy - view.half + 0.25 && y1 < view.cy + view.half - 0.25 && view.half < need + 0.8;
   if (!fits) view = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, half: need };
@@ -137,6 +148,13 @@ function draw(canvas, key, B) {
   for (let v = Math.ceil((B.cy - B.half) * 2) / 2; v < B.cy + B.half; v += 0.5) { g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(size, Y(v)); g.stroke(); }
   g.fillStyle = "#55544e"; g.font = "11px system-ui, sans-serif";
   g.fillRect(size / 2 - 0.25 * s, size - 9, 0.5 * s, 2); g.textAlign = "center"; g.fillText("50 cm", size / 2, size - 13); g.textAlign = "left";
+  for (const [name, r] of Object.entries(state.robots)) {                                 // goals of moving robots
+    const m = r.motion;
+    if (!m || m.state !== "driving" || !m.goal) continue;
+    g.strokeStyle = "#2a78d6"; g.lineWidth = 1.5; g.setLineDash([5, 4]);
+    g.beginPath(); g.moveTo(X(r.pose[0]), Y(r.pose[1])); g.lineTo(X(m.goal[0]), Y(m.goal[1])); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.arc(X(m.goal[0]), Y(m.goal[1]), 6, 0, 2 * Math.PI); g.stroke();
+  }
   for (const [name, r] of Object.entries(state.robots)) {                                 // robots
     // a robot outside the map is moved along the line to the map centre until it is 16 px inside the border
     const p = r.pose;
@@ -144,8 +162,9 @@ function draw(canvas, key, B) {
     const lim = B.half - 16 / s, over = Math.max(Math.abs(dx), Math.abs(dy)) / lim;
     if (over > 1) { dx /= over; dy /= over; }
     const x = X(B.cx + dx), y = Y(B.cy + dy), a = -p[2];
-    g.fillStyle = "#d6e4f7"; g.strokeStyle = "#2a78d6"; g.lineWidth = 1.6;
-    g.beginPath(); g.arc(x, y, 9, 0, 2 * Math.PI); g.fill(); g.stroke();
+    const sel = name === selected;
+    g.fillStyle = sel ? "#2a78d6" : "#d6e4f7"; g.strokeStyle = "#2a78d6"; g.lineWidth = sel ? 3 : 1.6;
+    g.beginPath(); g.arc(x, y, sel ? 11 : 9, 0, 2 * Math.PI); g.fill(); g.stroke(); g.lineWidth = 1.6;
     g.beginPath(); g.moveTo(x, y); g.lineTo(x + 22 * Math.cos(a), y + 22 * Math.sin(a)); g.stroke();
     g.fillStyle = "#1d5fb0"; g.font = "600 11px system-ui, sans-serif"; g.textAlign = "center";
     g.fillText(name, x + 36 * Math.cos(a), y + 36 * Math.sin(a) + 4); g.textAlign = "left";
@@ -229,7 +248,8 @@ function render() {
     $("level").innerHTML = `scene <b>${lv.level}</b>` + (lv.gap_cm ? ` &middot; closest boxes ${lv.gap_cm} cm` : "") +
       ` &middot; least seen box: ${lv.min_clear_views} robot${lv.min_clear_views === 1 ? "" : "s"}`;
   }
-  const B = bounds();
+  renderDrive();
+  const B = bounds(); lastB = B;
   for (const m of state.methods) {
     const res = state.results[m.key], err = state.unavailable[m.key];
     $("v_" + m.key).innerHTML = err ? `<span class="verdict" title="${esc(err)}">not available</span>` : verdictHtml(res);
@@ -250,6 +270,56 @@ function render() {
   for (const [q, f] of frames) setFrame(q, f);
   document.querySelectorAll("figure[data-q]").forEach(f => { if (!(f.dataset.q in state.frames)) f.remove(); });
 }
+
+const WORDS = { driving: "driving", reached: "arrived", failed: "stopped on the way", blocked: "no free path",
+                refused: "refused", stopped: "stopped", idle: "waiting for a command" };
+
+function renderDrive() {                     // move the robots from the page (acquisition/live_drive.py)
+  const names = Object.keys(state.robots).sort();
+  const bar = $("drive");
+  bar.hidden = !names.length;
+  if (selected && !names.includes(selected)) selected = null;
+  const m = selected && state.robots[selected].motion;
+  const st = m ? `<span class="st-${m.state}">${esc(WORDS[m.state] || m.state)}${m.note ? ": " + esc(m.note) : ""}</span>` : "";
+  const key = names.join() + "|" + selected + "|" + st;
+  if (key === driveKey) return;              // rebuilt only when something changed, so clicks are not lost
+  driveKey = key;
+  bar.innerHTML = `<b>Move</b>` + names.map(q => `<button data-robot="${esc(q)}" aria-pressed="${q === selected}">${esc(q)}</button>`).join("") +
+    (selected ? ` <span class="hint">click a point of any map to send ${esc(selected)} there (it arrives facing the boxes)</span>
+      <button data-cmd="turn" data-deg="22.5">turn left</button><button data-cmd="turn" data-deg="-22.5">turn right</button>
+      <button data-cmd="face">face the boxes</button><button data-cmd="stop" class="stop">stop</button> ${st}`
+      : ` <span class="hint">pick a robot, or click it on a map</span>`) +
+    ` <button data-cmd="stopall" class="stop" style="margin-left:auto">stop all robots</button>`;
+  document.querySelectorAll("canvas[data-key]").forEach(c => c.classList.toggle("pick", !!selected));
+}
+
+async function command(body) {
+  try {
+    await fetch("/command", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  } catch (e) { $("status").textContent = "command not sent: server not reachable"; }
+}
+
+$("drive").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.robot) { selected = b.dataset.robot === selected ? null : b.dataset.robot; driveKey = ""; render(); return; }
+  const c = b.dataset.cmd;
+  if (c === "stopall") command({ robot: "*", kind: "stop" });
+  else if (selected && c === "turn") command({ robot: selected, kind: "turn", deg: Number(b.dataset.deg) });
+  else if (selected && c) command({ robot: selected, kind: c });
+});
+
+$("grid").addEventListener("click", e => {          // a click on a map: pick a robot, or send the selected one
+  const c = e.target.closest("canvas[data-key]");
+  if (!c || !state || !lastB) return;
+  const r = c.getBoundingClientRect(), size = c.clientWidth, s = size / (2 * lastB.half);
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  const x = px / s + lastB.cx - lastB.half, y = (size - py) / s + lastB.cy - lastB.half;
+  for (const [q, rb] of Object.entries(state.robots)) {
+    if (Math.hypot(rb.pose[0] - x, rb.pose[1] - y) * s < 16) { selected = q === selected ? null : q; driveKey = ""; render(); return; }
+  }
+  if (selected) command({ robot: selected, kind: "goto", x: Number(x.toFixed(3)), y: Number(y.toFixed(3)), yaw_deg: null });
+});
 
 async function poll() {
   try {

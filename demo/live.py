@@ -30,6 +30,7 @@ seconds), writing the files demo/live_robots.py writes:
 """
 
 import argparse
+import glob
 import json
 import os
 import shutil
@@ -90,7 +91,8 @@ class Live:
             level = dict(level=lv, gap_cm=round(100 * gap) if gap < 9 else None, min_clear_views=views)
         with self.lock:
             self.state["robots"] = {q: dict(pose=[round(v, 3) for v in s["pose"]], n=len(s.get("detections", [])),
-                                            age=round(time.time() - s["t"], 2)) for q, s in robots.items()}
+                                            age=round(time.time() - s["t"], 2), motion=s.get("motion"))
+                                    for q, s in robots.items()}
             self.state["truth"] = [[round(v, 3) for v in b] for b in truth] if truth is not None else None
             self.state["level"] = level
 
@@ -260,6 +262,37 @@ def handler(live):
                     self.send_error(404)
             else:
                 self.send_error(404)
+
+        def do_POST(self):
+            """A move command for one robot ("*" = stop every robot): the robot process drives it
+            (acquisition/live_drive.py)."""
+            if self.path.split("?")[0] != "/command":
+                self.send_error(404)
+                return
+            try:
+                c = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            except ValueError:
+                self.send_error(400)
+                return
+            robot, kind = str(c.get("robot", "")), c.get("kind")
+            if kind not in ("goto", "turn", "face", "stop") or not (robot == "*" or robot.isalnum()):
+                self.send_error(400)
+                return
+            if robot == "*":
+                names = [os.path.basename(p)[:-5] for p in glob.glob(os.path.join(live.a.live_dir, "*.json"))
+                         if os.path.basename(p) != "boxes.json" and not p.endswith(".cmd.json")]
+            else:
+                names = [robot]
+            seq = int(time.time() * 1000)
+            for q in names:
+                cmd = dict(seq=seq, kind=kind if robot != "*" else "stop")
+                if kind == "goto":
+                    cmd.update(x=float(c["x"]), y=float(c["y"]),
+                               yaw_deg=None if c.get("yaw_deg") is None else float(c["yaw_deg"]))
+                elif kind == "turn":
+                    cmd.update(deg=float(c.get("deg", 0.0)))
+                methods.write_json(os.path.join(live.a.live_dir, f"{q}.cmd.json"), cmd)
+            self.send(json.dumps(dict(ok=True, robots=names, seq=seq)).encode(), "application/json")
 
         def log_message(self, *args):
             pass

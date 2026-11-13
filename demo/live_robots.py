@@ -1,6 +1,6 @@
 """Robot side of the continuous live demo: every robot streams what it sees, and OptiTrack gives the true boxes.
 
-The robots do not drive. Place them by hand (and move them, or the boxes, at any time): each robot runs
+Place the robots by hand, or send them from the page (below), and move the boxes at any time: each robot runs
 acquisition/static_trial.py --live, which shows its camera with the detected markers and writes, a few times per
 second, its live state (camera pose from OptiTrack, detections) and its last frame in --out. This script
 starts one such process per robot, one after the other (the robot SDK finds a robot through a port that only one
@@ -12,6 +12,9 @@ Run it in the usual environment of the captures (robot SDK, natnet):
 
     python -m demo.live_robots --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json \\
         --robot P5:6:config/checkerboard_calib_P1.json
+
+Every robot also drives where the page of the demo sends it (click a robot, then a point of the map: see
+acquisition/live_drive.py), on a path clear of the boxes and of the other robots; --no-drive turns this off.
 
 --robot is ID:RIGID_BODY[:CAMERA_CALIB], as in launch_all.py. The camera windows of the robots are not shown
 (the page shows the frames); --windows shows them, and 'q' in a window stops that robot only. Ctrl+C here stops
@@ -90,6 +93,8 @@ def main():
     ap.add_argument("--out", default="data/live/", help="folder of the live states (demo.live --live-dir)")
     ap.add_argument("--frame-every-s", type=float, default=0.25, help="seconds between two frames written per robot")
     ap.add_argument("--windows", action="store_true", help="show the camera window of every robot")
+    ap.add_argument("--no-drive", action="store_true",
+                    help="the robots ignore the move commands of the page (they are then moved only by hand)")
     ap.add_argument("--regions", default="config/optitrack_regions.json")
     ap.add_argument("--aruco-marker-size", type=float, default=0.077)
     ap.add_argument("--camera-offset-forward-m", type=float, default=0.12,
@@ -119,6 +124,8 @@ def main():
             cmd += ["--camera-calib", r["calib"]]
         if not a.windows:
             cmd += ["--no-window"]
+        if not a.no_drive:
+            cmd += ["--commands", os.path.join(a.out, f"{r['robot_id']}.cmd.json")]
         print(f"{r['robot_id']}: rigid body {r['rb']}, calibration {r['calib'] or 'NONE'}", flush=True)
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         connected = threading.Event()

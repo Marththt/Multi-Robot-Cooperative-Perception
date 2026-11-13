@@ -144,7 +144,7 @@ def draw_triangle(img, x, y, w, h, colour):
 
 def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
                  debug=False, p_d=1.0, seed=0, frame_out=None, frame_every_s=0.25,
-                 show_window=True):
+                 show_window=True, status_fn=None):
     """Video window with the detected markers drawn on top, in real time
     -- see the module docstring (--live). 'q' to quit.
 
@@ -184,7 +184,9 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
     time (frame_t), the pose of that frame (frame_pose), the detections of
     that frame and the camera matrix, so a reader gets a frame and the
     data that belong to it. show_window=False runs without the video
-    window (several robots on one PC: the page of the demo shows them)."""
+    window (several robots on one PC: the page of the demo shows them).
+    status_fn() -> dict merged into every state (the motion of the robot
+    driven from the page, see acquisition/live_drive.py)."""
     import random
     from vf.perception.object_position import global_position
 
@@ -370,8 +372,11 @@ def live_preview(camera, detector, robot_id, pose_fn=None, state_out=None,
                                   frame_detections=detections_state,
                                   image_size=[int(img.shape[1]), int(img.shape[0])])
         if state_out is not None:
+            extra = dict(camera_info, **frame_info)
+            if status_fn is not None:
+                extra["motion"] = status_fn()
             write_live_state(state_out, robot_id, pose, detections_state,
-                             p_d=p_d, extra=dict(camera_info, **frame_info))
+                             p_d=p_d, extra=extra)
         if show_window:
             cv2.imshow(f"debug ArUco - {robot_id} (q to quit)", display)
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -539,6 +544,10 @@ def main():
                    help="with --frame-out: seconds between two frames written")
     p.add_argument("--no-window", action="store_true",
                    help="with --live: no video window")
+    p.add_argument("--commands", default=None,
+                   help="with --live and --state-out: the robot drives to the goals written in this file by the "
+                        "live demo page (acquisition/live_drive.py), clear of the boxes and of the other robots "
+                        "whose live states are next to --state-out")
     p.add_argument("--state-out", default=None,
                    help="ONLY with --live: continuously writes this "
                         "robot's state (pose + detections with global "
@@ -773,15 +782,28 @@ def main():
                 offset_right_m=args.camera_offset_right_m)
 
         if args.live:
+            driver = None
             try:
                 pose_fn = localizer.pose if localizer is not None else None
+                if args.commands and pose_provider is not None and args.state_out:
+                    # the controller of the captures steers the rigid body, not the camera ahead of it
+                    from acquisition.live_drive import LiveDriver
+                    from vf.fusion.sensor_model import arena_from_regions
+                    driver = LiveDriver(robot.chassis, pose_provider.pose, args.commands,
+                                        os.path.dirname(args.state_out) or ".", args.robot_id,
+                                        arena_from_regions(args.regions))
+                    driver.start()
+                    print(f"driving on the commands in {args.commands}", flush=True)
                 live_preview(camera, raw_detector, args.robot_id,
                              pose_fn=pose_fn, state_out=args.state_out,
                              debug=args.debug, p_d=args.p_d,
                              seed=args.seed, frame_out=args.frame_out,
                              frame_every_s=args.frame_every_s,
-                             show_window=not args.no_window)
+                             show_window=not args.no_window,
+                             status_fn=(lambda: driver.status) if driver else None)
             finally:
+                if driver is not None:
+                    driver.close()
                 camera.stop()
                 if localizer is not None:
                     localizer.close()

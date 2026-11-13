@@ -83,7 +83,7 @@ def snapshot(live_dir, stale_s=2.0):
     now = time.time()
     robots = {}
     for name in sorted(os.listdir(live_dir)) if os.path.isdir(live_dir) else []:
-        if not name.endswith(".json") or name == "boxes.json":
+        if not name.endswith(".json") or name == "boxes.json" or name.endswith(".cmd.json"):
             continue
         s = read_json(os.path.join(live_dir, name))
         if s and s.get("pose") is not None and now - float(s.get("t", 0)) <= stale_s:
@@ -106,7 +106,7 @@ class Recent:
 
     def update(self):
         for name in os.listdir(self.dir) if os.path.isdir(self.dir) else []:
-            if not name.endswith(".json") or name == "boxes.json":
+            if not name.endswith(".json") or name == "boxes.json" or name.endswith(".cmd.json"):
                 continue
             s = read_json(os.path.join(self.dir, name))
             if s and s.get("pose") is not None:

@@ -29,6 +29,13 @@ segmentation models (Grounding DINO, SAM) once.
     .venv_demo\Scripts\activate.bat
     python -m demo.live
 
+Moving the robots from the page: click a robot (or its button in the "Move" bar), then a point of any map: the
+robot drives there on a path clear of the boxes and of the other robots and arrives facing the centre of the
+boxes (acquisition/live_drive.py, the controller of the captures). "turn left/right" turns it by 22.5 degrees,
+"face the boxes" turns it towards them, "stop" halts it, "stop all robots" halts every robot. Goals too close to a
+box or to the arena border are refused, and the reason shows next to the buttons. `--no-drive` on
+`demo.live_robots` turns this off (robots moved only by hand).
+
 Each panel shows the boxes its method finds now against the true boxes, the verdict (correct, too few, too many,
 misplaced), how old its input is and how often it was correct in the last 30 seconds; above the panels, the
 difficulty level of the scene as it is now; below, the frames of the robots with the box masks and the markers.
