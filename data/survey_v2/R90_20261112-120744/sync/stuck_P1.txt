@@ -1,0 +1,20 @@
+--- 12:08:04 driving to R90/P1/000/+0
+--- 12:08:05 arrived at R90/P1/000/+0, settling
+--- 12:08:06 capturing R90/P1/000/+0 (camera + marker detection)
+--- 12:08:07 saving R90/P1/000/+0
+--- 12:08:07 writing R90/P1/000/+0
+--- 12:08:07 driving to R90/P1/001/+0
+--- 12:08:08 arrived at R90/P1/001/+0, settling
+--- 12:08:09 capturing R90/P1/001/+0 (camera + marker detection)
+--- 12:08:10 saving R90/P1/001/+0
+--- 12:08:10 writing R90/P1/001/+0
+--- 12:08:11 driving to R90/P1/002/+0
+--- 12:08:13 arrived at R90/P1/002/+0, settling
+--- 12:08:14 capturing R90/P1/002/+0 (camera + marker detection)
+--- 12:08:15 saving R90/P1/002/+0
+--- 12:08:15 writing R90/P1/002/+0
+--- 12:08:16 driving to R90/P1/003/+0
+--- 12:08:18 arrived at R90/P1/003/+0, settling
+--- 12:08:19 capturing R90/P1/003/+0 (camera + marker detection)
+--- 12:08:19 saving R90/P1/003/+0
+--- 12:08:19 writing R90/P1/003/+0

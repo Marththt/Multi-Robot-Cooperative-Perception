@@ -1,0 +1,11 @@
+--- 12:33:55 driving to R97/P3/000/+0
+--- 12:33:58 arrived at R97/P3/000/+0, settling
+--- 12:33:59 capturing R97/P3/000/+0 (camera + marker detection)
+--- 12:34:00 saving R97/P3/000/+0
+--- 12:34:00 writing R97/P3/000/+0
+--- 12:34:00 driving to R97/P3/001/+0
+--- 12:34:02 arrived at R97/P3/001/+0, settling
+--- 12:34:03 capturing R97/P3/001/+0 (camera + marker detection)
+--- 12:34:03 saving R97/P3/001/+0
+--- 12:34:04 writing R97/P3/001/+0
+--- 12:34:04 driving to R97/P3/002/+0
