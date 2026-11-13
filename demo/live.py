@@ -191,36 +191,38 @@ def replay(run_dir, live_dir, every_s):
     rounds = sorted(k for k in frames if k[1] == 0 and k[2] == 0)
     print(f"replay: {len(rounds)} rounds of {run_dir}, {every_s:g} s each", flush=True)
     while True:
-        for key in rounds:
-            states = {}
-            for q, r in frames[key].items():
-                K, D = cams[q]
-                src = os.path.join(run_dir, r["image"].replace("\\", "/"))
-                have = os.path.exists(src)
-                if have:
-                    shutil.copyfile(src, os.path.join(live_dir, f"{q}.jpg.tmp"))
-                    os.replace(os.path.join(live_dir, f"{q}.jpg.tmp"), os.path.join(live_dir, f"{q}.jpg"))
-                dets = r.get("detections", [])
-                states[q] = dict(robot_id=q, pose=r["camera_pose"], detections=dets, p_d=1.0,
-                                 camera_matrix=K.tolist(), dist_coeffs=D.tolist(),
-                                 frame=f"{q}.jpg" if have else None,
-                                 frame_pose=r["camera_pose"], frame_detections=dets,
-                                 image_size=[int(r.get("width", 1280)), int(r.get("height", 720))])
-            end = time.time() + every_s
-            while time.time() < end:                     # rewritten as the robot processes do
-                now = time.time()
-                for q, st in states.items():
-                    write_json(os.path.join(live_dir, f"{q}.json"), dict(st, t=now, frame_t=now))
-                write_json(os.path.join(live_dir, "boxes.json"), dict(t=now, robots={}, boxes=[
-                    dict(rb_id=None, x=float(b[0]), y=float(b[1]), yaw=0.0) for b in boxes]))
-                time.sleep(0.3)
+        try:
+            replay_rounds(run_dir, live_dir, every_s, rounds, frames, cams, boxes)
+        except Exception:                                # never let the rehearsal stop
+            traceback.print_exc()
+            time.sleep(1.0)
 
 
-def write_json(path, data):
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f)
-    os.replace(tmp, path)
+def replay_rounds(run_dir, live_dir, every_s, rounds, frames, cams, boxes):
+    """One pass over the rounds of the run (see replay)."""
+    for key in rounds:
+        states = {}
+        for q, r in frames[key].items():
+            K, D = cams[q]
+            src = os.path.join(run_dir, r["image"].replace("\\", "/"))
+            have = os.path.exists(src)
+            if have:
+                shutil.copyfile(src, os.path.join(live_dir, f"{q}.jpg.tmp"))
+                methods.replace(os.path.join(live_dir, f"{q}.jpg.tmp"), os.path.join(live_dir, f"{q}.jpg"))
+            dets = r.get("detections", [])
+            states[q] = dict(robot_id=q, pose=r["camera_pose"], detections=dets, p_d=1.0,
+                             camera_matrix=K.tolist(), dist_coeffs=D.tolist(),
+                             frame=f"{q}.jpg" if have else None,
+                             frame_pose=r["camera_pose"], frame_detections=dets,
+                             image_size=[int(r.get("width", 1280)), int(r.get("height", 720))])
+        end = time.time() + every_s
+        while time.time() < end:                     # rewritten as the robot processes do
+            now = time.time()
+            for q, st in states.items():
+                methods.write_json(os.path.join(live_dir, f"{q}.json"), dict(st, t=now, frame_t=now))
+            methods.write_json(os.path.join(live_dir, "boxes.json"), dict(t=now, robots={}, boxes=[
+                dict(rb_id=None, x=float(b[0]), y=float(b[1]), yaw=0.0) for b in boxes]))
+            time.sleep(0.3)
 
 
 # ====================================================================
@@ -249,8 +251,11 @@ def handler(live):
             elif path.startswith("/frames/"):
                 full = os.path.join(live.a.work, "frames", os.path.basename(path))   # a file name only
                 if os.path.exists(full):
-                    with open(full, "rb") as f:
-                        self.send(f.read(), "image/jpeg")
+                    data = methods.read_bytes(full)           # read and closed before sending
+                    if data:
+                        self.send(data, "image/jpeg")
+                    else:
+                        self.send_error(404)
                 else:
                     self.send_error(404)
             else:

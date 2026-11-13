@@ -39,12 +39,42 @@ LAYOUT = "LIVE"
 # Input
 # ====================================================================
 
-def read_json(path):
+def read_bytes(path):
+    """The whole file, read at once and closed at once: on Windows a file open for reading cannot be replaced,
+    so the writers (which retry, see replace) are held up as briefly as possible. None if missing or busy."""
     try:
-        with open(path) as f:
-            return json.load(f)
-    except (OSError, ValueError):              # missing, or replaced while being read: next time
+        with open(path, "rb") as f:
+            return f.read()
+    except OSError:
         return None
+
+
+def read_json(path):
+    data = read_bytes(path)
+    try:
+        return json.loads(data) if data else None
+    except ValueError:                          # replaced while being read: next time
+        return None
+
+
+def replace(tmp, path, attempts=20):
+    """os.replace that waits for a reader to close the file (Windows refuses to replace an open file).
+    Returns False if the file stayed busy: the caller skips this update, the next one will go through."""
+    for _ in range(attempts):
+        try:
+            os.replace(tmp, path)
+            return True
+        except PermissionError:
+            time.sleep(0.01)
+    return False
+
+
+def write_json(path, data):
+    """Atomic write (temporary file + rename), so a reader never sees half a file."""
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f)
+    return replace(tmp, path)
 
 
 def snapshot(live_dir, stale_s=2.0):
@@ -302,7 +332,8 @@ class ImageNets:
             for _ in range(3):
                 if not s.get("frame") or s.get("frame_pose") is None or s.get("camera_matrix") is None:
                     break
-                img = cv2.imread(os.path.join(live_dir, s["frame"]))
+                data = read_bytes(os.path.join(live_dir, s["frame"]))
+                img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR) if data else None
                 again = read_json(os.path.join(live_dir, f"{q}.json"))
                 if img is not None and again and again.get("frame_t") == s.get("frame_t"):
                     out[q] = (img, s)
@@ -388,7 +419,7 @@ class ImageNets:
         tmp = os.path.join(folder, name + ".tmp")
         cv2.imwrite(tmp + ".jpg", cv2.resize(view, (640, 360), interpolation=cv2.INTER_AREA),
                     [cv2.IMWRITE_JPEG_QUALITY, 80])
-        os.replace(tmp + ".jpg", os.path.join(folder, name))
+        replace(tmp + ".jpg", os.path.join(folder, name))
         return name
 
 
