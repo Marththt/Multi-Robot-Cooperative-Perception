@@ -1,0 +1,46 @@
+cd "C:\GNN for vision fault\Multi-Robot-Cooperative-Perception"
+Get-CimInstance Win32_Process -Filter "name='python.exe'" | Where-Object { $_.CommandLine -like '*evaluate_runs*sim_replay_all*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+Set-Content -Path run_day9_F.bat -Encoding Ascii -Value @'
+@echo off
+cd /d "%~dp0"
+call .venv\Scripts\activate.bat
+call :run > run_day9_F.log 2>&1
+exit /b 0
+
+:run
+echo BLOCK F started %date% %time%: classical methods on the simulated replays, simulator fidelity
+python -m pipeline.evaluate_runs --survey-dir data/sim_replay_all/ --ground-truth data/sim_replay_all/ground_truth.json --regions config/optitrack_regions.json --sensor-calib config/sensor_calib.json --full-only --out results/evaluation_sim_replay_all/ || exit /b 1
+python -m sim.fidelity --real-survey-dir data/survey_all/ --real-ground-truth config/ground_truth_positions.json --sim-dir data/sim_replay_all/ --sensor-calib config/sensor_calib.json --layouts L5,L7,L9,L11,R02,R04,R06,R08,R10,R12,R14,R16,R18,R20,R22,R24,R26,R28,R30,R32,R34,R36,R39,R41,R43,R45,R47,R49,R51,R53,R55,R57,R59,R69,R71,R74,R81,R83,R85,R87,R89,R91,R93,R95,R97,R99,R101,R103 --real-scenes results/evaluation_all/scenes.csv --sim-scenes results/evaluation_sim_replay_all/scenes.csv --out results/fidelity_all/ || exit /b 1
+echo BLOCK F DONE %date% %time%
+exit /b 0
+'@
+Set-Content -Path run_day9_resume.bat -Encoding Ascii -Value @'
+@echo off
+cd /d "%~dp0"
+call .venv\Scripts\activate.bat
+if not exist results\evaluation_all\scenes.csv goto :missing
+if not exist config\sensor_model.json goto :missing
+if not exist config\sensor_model_fidelity.json goto :missing
+if not exist data\sim_replay_all\ground_truth.json goto :missing
+if exist run_day9_A.done del run_day9_A.done
+if exist run_day9_Y.done del run_day9_Y.done
+for /f %%i in ('python -c "import torch; print(torch.cuda.device_count())"') do set NGPU=%%i
+set GPU_A=0
+set GPU_Y=0
+if %NGPU% GEQ 2 set GPU_A=1
+start "day9 A (marker network)" cmd /c run_day9_A.bat
+start "day9 Y (YOLO)" cmd /c run_day9_Y.bat
+start "day9 F (simulator fidelity)" cmd /c run_day9_F.bat
+echo Blocks A, Y and F started on %NGPU% GPU(s) %date% %time%. Logs: run_day9_A.log, run_day9_Y.log, run_day9_F.log
+:wait
+if not exist run_day9_A.done (timeout /t 120 /nobreak > nul & goto :wait)
+if not exist run_day9_Y.done (timeout /t 120 /nobreak > nul & goto :wait)
+echo Blocks A and Y done %date% %time%, now block S (validation in simulation, up to 50 robots)
+call run_day9_S.bat
+echo Block S done %date% %time%, now block H (YOLO + marker network on the real scenes)
+call run_day9_H.bat
+echo ALL DONE %date% %time%: see run_day9_H.log and results\yolo_gnn\real_tables.txt
+goto :eof
+:missing
+echo Block 0 did not reach the simulated replays: send run_day9_0.log
+'@
