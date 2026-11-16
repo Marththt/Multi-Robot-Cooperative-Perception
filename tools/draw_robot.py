@@ -6,7 +6,7 @@ import math
 from matplotlib.patches import Polygon
 
 LENGTH_M, WIDTH_M = 0.32, 0.24
-CAMERA_AHEAD_M = 0.15             # the lens is this far ahead of the chassis centre (bevnet/real.py)
+CAMERA_AHEAD_M = 0.15             # the lens is this far ahead of the chassis centre (yolo_gnn/camera.py)
 
 
 def draw_robot(ax, x, y, yaw, colour="#2a78d6", fill="#d6e4f7", axis_m=0.22, label=None, zorder=5):

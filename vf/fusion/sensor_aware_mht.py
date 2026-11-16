@@ -35,7 +35,7 @@ import numpy as np
 
 from vf.fusion.data_association import GATE_THRESHOLD, top_k_combinations
 
-APOTHEM_M = 0.087                    # box centre -> marker (centre of a face)
+APOTHEM_M = 0.235 / (2 * math.sqrt(3))   # box centre -> marker (centre of a face), faces 23.5 cm (sim/geometry.py)
 OCCLUDER_RADIUS_M = 0.13             # another box blocks a line of sight passing this close to its centre
 FACES = np.array([0.0, 2 * math.pi / 3, 4 * math.pi / 3])
 PERIOD = 2 * math.pi / 3             # orientation of a triangular box is defined modulo 120 deg

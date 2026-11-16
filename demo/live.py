@@ -28,7 +28,7 @@ frames of all the robots in one batch and, on CUDA, in half precision (--no-half
 --image-thread: in a thread of this process).
 
 The camera pitch and yaw offset needed by the image networks are fitted continuously on the markers the robots
-see (as bevnet/real.py does on a run); --camera-calib loads fixed values, --write-camera-calib saves the fitted
+see (as yolo_gnn/camera.py does on a run); --camera-calib loads fixed values, --write-camera-calib saves the fitted
 ones every few seconds.
 
 Rehearsal without robots: --replay plays a recorded run as if it were live (one round every --replay-every
@@ -277,7 +277,7 @@ def image_worker(a, out):
 def replay(run_dir, live_dir, every_s):
     """Writes, round after round of a recorded run, the files the robot processes (static_trial --live) and
     demo/boxes.py write: per robot the first frame of the round with its state, and the true boxes."""
-    from bevnet import real
+    from yolo_gnn import camera as real
     _layout, boxes, frames, cams = real.load_run(run_dir)
     os.makedirs(live_dir, exist_ok=True)
     rounds = sorted(k for k in frames if k[1] == 0 and k[2] == 0)

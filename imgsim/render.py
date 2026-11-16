@@ -9,8 +9,8 @@ the robot:
               1280 x 720; height above the floor and downward pitch measured on the real frames (1,669
               detections of marker 0: pitch 10-13 deg, 22 deg on one robot; marker centre 9 cm below the
               camera), with a small random pitch and roll per capture
-  boxes       triangular prisms, 30 cm faces, 40 cm tall, white with a blue tape band near the top and the
-              bottom, the ArUco marker (DICT_4X4_50, id 0, 77 mm) on a white paper square at mid-height,
+  boxes       triangular prisms, 23.5 cm faces, 30 cm tall (measured), white with a blue tape band near the top
+              and the bottom, the ArUco marker (DICT_4X4_50, id 0, 77 mm) on a white paper square at mid-height,
               as on the real boxes; each face lit by one random light direction
   obstacles   the cylinders of scenario E3, grey, 55 cm tall; with obstacle_style "random" every obstacle gets
               its own shape (obstacle_shapes), height, colour and surface pattern (obstacle_look)

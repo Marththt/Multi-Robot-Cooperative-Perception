@@ -243,7 +243,7 @@ class Gnn:
 # ====================================================================
 
 class CameraCalibration:
-    """Pitch and yaw offset of every camera, fitted continuously on the live markers, as bevnet/real.py does
+    """Pitch and yaw offset of every camera, fitted continuously on the live markers, as yolo_gnn/camera.py does
     on a run: for each detected marker near a true box, the angle between where it is seen and where the box
     puts it; the median of the last `keep` of them per robot. Fixed values can be loaded instead (load)."""
 
@@ -261,7 +261,7 @@ class CameraCalibration:
 
     def get(self, q):
         """(pitch [deg], yaw offset [deg]) of robot q."""
-        from bevnet import real
+        from yolo_gnn import camera as real
         if self.fixed and q in self.fixed:
             return self.fixed[q]
         dv = [v for v, _ in self.offsets[q]]
@@ -273,8 +273,8 @@ class CameraCalibration:
     def add(self, q, state, truth):
         """The markers of the last saved frame of robot q, against the true boxes."""
         import cv2
-        from bevnet import geometry as geo
-        from bevnet import real
+        from yolo_gnn import camera as geo
+        from yolo_gnn import camera as real
         if self.fixed or not truth or state.get("camera_matrix") is None or state.get("frame_pose") is None:
             return
         K = np.array(state["camera_matrix"], float)

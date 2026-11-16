@@ -24,9 +24,11 @@ layout instead; the output records which choice was made.
 
 import argparse
 import math
+import os
 from collections import defaultdict
 
 import numpy as np
+import pandas as pd
 
 from gnn.dataset import build_scenes, load_calibration
 from sim.geometry import blocked, box_polygon, faces_seen, marker_point, viewing_angle, wrap
@@ -78,10 +80,12 @@ def candidate_faces(cam, yaw, j, truth, thetas):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--survey-dir", required=True)
+    ap.add_argument("--survey-dir", nargs="+", required=True, help="one or more survey folders")
     ap.add_argument("--ground-truth", required=True)
     ap.add_argument("--sensor-calib", required=True, help="pipeline/calibrate.py --out of the same runs")
-    ap.add_argument("--layouts", default="L5,L7,L10")
+    ap.add_argument("--layouts", default="L5,L7,L10", help="calibration layouts, comma separated, or \"all\"")
+    ap.add_argument("--dump", default=None,
+                    help="also write the boxes in view and the detection errors to this folder (CSV, for the figures)")
     ap.add_argument("--rare-events", choices=["calibration", "all"], default="calibration",
                     help="layouts used for false detections and two-face reports")
     ap.add_argument("--hfov-deg", type=float, default=88.0)
@@ -89,8 +93,11 @@ def main():
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 
-    layouts = [l.strip() for l in a.layouts.split(",") if l.strip()]
-    scenes = build_scenes(a.survey_dir, a.ground_truth, a.sensor_calib)
+    scenes = [s for d in a.survey_dir for s in build_scenes(d, a.ground_truth, a.sensor_calib)]
+    if a.layouts.strip() == "all":
+        layouts = sorted({s["layout"] for s in scenes})
+    else:
+        layouts = [l.strip() for l in a.layouts.split(",") if l.strip()]
     cal = [s for s in scenes if s["layout"] in layouts]
     rare = cal if a.rare_events == "calibration" else scenes
     if not cal:
@@ -100,7 +107,7 @@ def main():
     calib = load_calibration(a.sensor_calib)
 
     # ---- detection, two faces, position error
-    X, y = [], []
+    X, y, bearings = [], [], []
     two_events, two_expect = 0, []
     err = []          # (run, robot, d, a, along, across)
     view_err = []
@@ -124,6 +131,7 @@ def main():
                 best = cands[0]
                 hits = [i for i in mine if s["label"][i] == j and gaps[i, j] <= FALSE_DET_MIN_M]
                 X.append([1.0, best[0], best[0] ** 2, d, best[1]])
+                bearings.append(b)
                 y.append(1.0 if hits else 0.0)
                 if hits and len(cands) > 1:
                     two_expect.append((cands[1][0], cands[1][1], d))
@@ -138,6 +146,13 @@ def main():
                     e = s["pos"][i] - c
                     err.append((s["run"], robot, d, ang, float(e @ u), float(u[0] * e[1] - u[1] * e[0])))
     X, y = np.array(X), np.array(y)
+    if a.dump:
+        os.makedirs(a.dump, exist_ok=True)
+        pd.DataFrame({"angle_rad": X[:, 1], "distance_m": X[:, 3], "bearing_rad": bearings, "occluded": X[:, 4],
+                      "detected": y}).to_csv(
+            os.path.join(a.dump, "boxes_in_view.csv"), index=False)
+        pd.DataFrame(err, columns=["run", "robot", "distance_m", "angle_rad", "along_m", "across_m"]).to_csv(
+            os.path.join(a.dump, "detection_errors.csv"), index=False)
     w = fit_logistic(X, y)
     p_second = [1 / (1 + math.exp(-(w[0] + w[1] * q[0] + w[2] * q[0] ** 2 + w[3] * q[2] + w[4] * q[1])))
                 for q in two_expect]

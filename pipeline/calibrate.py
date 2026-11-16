@@ -1,6 +1,7 @@
 """Sensor calibration from real runs with OptiTrack ground truth.
 
-Input : processed captures (<survey_dir>/L*_*/P*.jsonl + ground_truth.json, one feature vector per box).
+Input : processed captures (<survey_dir>/<run>/P*.jsonl + ground_truth.json, one feature vector per box), from
+        one or more survey folders.
 Output: the measured characteristics of the sensor, printed and (with --out) written to a JSON file
         that pipeline/evaluate_runs.py reads with --sensor-calib:
 
@@ -10,7 +11,8 @@ Output: the measured characteristics of the sensor, printed and (with --out) wri
                      lateral residual, i.e. the isotropic error the fusion algorithms should assume
         p_d          share of the boxes inside a robot's field of view that produce a feature vector
 
-Usage : python -m pipeline.calibrate <survey_dir> [--camera-offset 0.12] [--out config/sensor_calib.json]
+Usage : python -m pipeline.calibrate <survey_dir> [<survey_dir> ...] [--camera-offset 0.12]
+                                     [--out config/sensor_calib.json]
 
 The camera offset is the distance of the camera ahead of the body pivot. Runs saved with
 survey.py --camera-offset-forward-m 0.12 already store the camera pose: use --camera-offset 0 (default
@@ -30,7 +32,7 @@ import numpy as np
 import pandas as pd
 
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-ap.add_argument('dir')
+ap.add_argument('dir', nargs='+', help="survey folders (all their runs with ground truth are used)")
 ap.add_argument('--camera-offset', type=float, default=None, help="camera ahead of the body pivot [m]")
 ap.add_argument('--hfov-deg', type=float, default=88.0, help="horizontal field of view used for p_d")
 ap.add_argument('--r-max', type=float, default=3.0, help="maximum detection distance used for p_d [m]")
@@ -38,10 +40,12 @@ ap.add_argument('--out', default=None, help="write the calibration to this JSON 
 a = ap.parse_args()
 
 rows, captures, spurious, total = [], {}, 0, 0
-for run in sorted(glob.glob(os.path.join(a.dir, 'L*_*'))):
+runs = sorted(r for d in a.dir for r in glob.glob(os.path.join(d, '*_*'))
+              if os.path.exists(os.path.join(r, 'ground_truth.json')))
+for run in runs:
     gt = json.load(open(os.path.join(run, 'ground_truth.json')))
     key = [k for k in gt if '_' in k][0]
-    B = np.array([[b['x'], b['y']] for b in gt[key]])
+    B = np.array([[b['x'], b['y']] for b in gt[key] if b.get('class_name', 'box') == 'box'])
     run_name = os.path.basename(run)
     for f in glob.glob(os.path.join(run, 'P*.jsonl')):
         for line in open(f):
@@ -61,7 +65,7 @@ for run in sorted(glob.glob(os.path.join(a.dir, 'L*_*'))):
                              bx=B[j][0], by=B[j][1], d=r['distance'], b=r['bearing_rad']))
 df = pd.DataFrame(rows)
 if df.empty:
-    raise SystemExit(f"no detection with ground truth found in {a.dir}")
+    raise SystemExit(f"no detection with ground truth found in {', '.join(a.dir)}")
 
 
 def geometry(delta):
@@ -124,7 +128,7 @@ if a.out:
     calib = dict(range_fit=[round(A, 4), round(B, 4)], bearing_fit=[round(k, 4), round(b0, 5)],
                  sigma_pos=round(sigma_pos, 4), p_d=round(p_d, 3), camera_offset=round(float(delta), 3),
                  residual_distance_m=round(sd, 4), residual_lateral_m=round(sl, 4),
-                 detections=int(len(df)), spurious=int(spurious), source=os.path.abspath(a.dir))
+                 detections=int(len(df)), spurious=int(spurious), source=[os.path.abspath(d) for d in a.dir])
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, 'w') as f:
         json.dump(calib, f, indent=2)

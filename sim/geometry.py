@@ -9,7 +9,8 @@ import math
 
 import numpy as np
 
-APOTHEM_M = 0.087                       # box centre -> face centre (side about 0.30 m)
+BOX_SIDE_M = 0.235                      # face width of the real boxes (measured 23-24 cm)
+APOTHEM_M = BOX_SIDE_M / (2 * math.sqrt(3))   # box centre -> face centre, 6.8 cm
 MIN_CENTER_DISTANCE_M = 2 * APOTHEM_M   # two boxes touching face to face; closer centres are impossible
 FACE_ANGLES = (0.0, 2 * math.pi / 3, 4 * math.pi / 3)
 

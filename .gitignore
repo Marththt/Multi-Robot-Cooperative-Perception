@@ -17,12 +17,18 @@ desktop.ini
 
 # Simulated runs (regenerated from sim/specs/ and the seeds with python -m sim.generate)
 data/sim_*/
+data/scale/
+
+# Frames of the scalability sets segmented by YOLO (python -m yolo_gnn.segment_sim)
+data/yolo_sim_eval/
 
 # Real scenes with combined rounds (regenerated with python -m pipeline.combine_rounds)
 data/real_combined/
 
-# Image datasets (regenerated with python -m bevnet.data / bevnet.real / bevnet.twin)
+# Image datasets (old image networks; YOLO: python -m yolo_gnn.train_seg / yolo_gnn.segment_real)
 data/bev*/
+data/yolo_sim/
+data/yolo_real/
 
 # Files set aside for deletion
 _to_delete/
