@@ -1,0 +1,28 @@
+cd "C:\GNN for vision fault\Multi-Robot-Cooperative-Perception"
+git stash
+git pull --no-rebase --no-edit
+Set-Content -Path run_day10_B.bat -Encoding Ascii -Value @'
+@echo off
+cd /d "%~dp0"
+call .venv\Scripts\activate.bat
+python -c "import e2e.model, e2e.data, e2e.real, e2e.train" || goto :oldcode
+call :run > run_day10_B.log 2>&1
+for %%p in (results\e2e data\e2e_real\fig_e2e_real_check.jpg run_day10_B.log) do if exist %%p git add -f %%p
+git commit -m "day 10, block B: end-to-end network (images -> boxes, graph over the robots), trained in simulation only"
+git pull --no-rebase --no-edit && git push
+echo BLOCK B finished %date% %time%: see run_day10_B.log and results\e2e\summary.csv
+goto :eof
+
+:run
+echo BLOCK B started %date% %time%
+python -m e2e.data --sets train,val --train-runs 30000 --val-runs 1000 --out data/e2e/ || exit /b 1
+python -m e2e.data --sets G0,E3,S1 --test-runs 1000 --out data/e2e/ || exit /b 1
+python -m e2e.real --runs "data/survey_all/*" --out data/e2e_real/ --check || exit /b 1
+python -m e2e.train --train data/e2e/train --val data/e2e/val --tests "data/e2e/G0_*" "data/e2e/E3_*" "data/e2e/S1_*" data/e2e_real/real --mht results/evaluation_all/scenes.csv --save-maps 8 --out results/e2e/ || exit /b 1
+echo BLOCK B DONE %date% %time%
+exit /b 0
+
+:oldcode
+echo The code on this PC is old: push from the Mac, then run run_day10_B.bat again.
+'@
+cmd /c run_day10_B.bat
