@@ -1,0 +1,32 @@
+BLOCK H started 2026-11-16 22:17:24.38
+444 scenes, 105 layouts (52 in half 1), 3 seeds, camera calibration other-layouts
+warning: 8620 frames have no cached YOLO mask (run yolo_gnn.segment_real first)
+  marker       correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {}, 'half1': {}}
+    seed 0: marker right and MHT wrong 47, MHT right and marker wrong 20, McNemar p = 0.0013
+    seed 1: marker right and MHT wrong 47, MHT right and marker wrong 27, McNemar p = 0.027
+    seed 2: marker right and MHT wrong 47, MHT right and marker wrong 23, McNemar p = 0.0056
+  same_robot   correct  78.8 ¡¾ 0.7%  too few 18.4%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {}, 'half1': {}}
+  inject       correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {'min_frac': 0.8, 'tol_sym': 0.18}, 'half1': {'min_frac': 0.8, 'tol_sym': 0.18}}
+  cannot_link  correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {'min_frac': 0.8, 'cl_robots': 2}, 'half1': {'min_frac': 0.8, 'cl_robots': 2}}
+  full         correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {'min_frac': 0.8, 'tol_sym': 0.18, 'cl_robots': 2, 'same_robot': True}, 'half1': {'min_frac': 0.8, 'tol_sym': 0.18, 'cl_robots': 2, 'same_robot': False}}
+    seed 0: full right and MHT wrong 47, MHT right and full wrong 20, McNemar p = 0.0013
+    seed 1: full right and MHT wrong 47, MHT right and full wrong 27, McNemar p = 0.027
+    seed 2: full right and MHT wrong 47, MHT right and full wrong 23, McNemar p = 0.0056
+boxes in view: 8658; found by the markers 68.1%, by the YOLO rays 0.0%; YOLO rays on no box 0 of 0
+written in results/yolo_gnn/
+444 scenes, 105 layouts (52 in half 1), 3 seeds, camera calibration same-run
+warning: 8620 frames have no cached YOLO mask (run yolo_gnn.segment_real first)
+  marker       correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {}, 'half1': {}}
+    seed 0: marker right and MHT wrong 47, MHT right and marker wrong 20, McNemar p = 0.0013
+    seed 1: marker right and MHT wrong 47, MHT right and marker wrong 27, McNemar p = 0.027
+    seed 2: marker right and MHT wrong 47, MHT right and marker wrong 23, McNemar p = 0.0056
+  same_robot   correct  78.8 ¡¾ 0.7%  too few 18.4%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {}, 'half1': {}}
+  inject       correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {'min_frac': 0.8, 'tol_sym': 0.18}, 'half1': {'min_frac': 0.8, 'tol_sym': 0.18}}
+  cannot_link  correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {'min_frac': 0.8, 'cl_robots': 2}, 'half1': {'min_frac': 0.8, 'cl_robots': 2}}
+  full         correct  78.8 ¡¾ 0.7%  too few 18.5%  too many  2.0%  RMSE 3.9 cm   thresholds {'half0': {'min_frac': 0.8, 'tol_sym': 0.18, 'cl_robots': 2, 'same_robot': True}, 'half1': {'min_frac': 0.8, 'tol_sym': 0.18, 'cl_robots': 2, 'same_robot': False}}
+    seed 0: full right and MHT wrong 47, MHT right and full wrong 20, McNemar p = 0.0013
+    seed 1: full right and MHT wrong 47, MHT right and full wrong 27, McNemar p = 0.027
+    seed 2: full right and MHT wrong 47, MHT right and full wrong 23, McNemar p = 0.0056
+boxes in view: 8658; found by the markers 68.1%, by the YOLO rays 0.0%; YOLO rays on no box 0 of 0
+written in results/yolo_gnn_same_run/
+BLOCK H DONE 2026-11-16 22:19:04.19
