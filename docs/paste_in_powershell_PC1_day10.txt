@@ -15,11 +15,15 @@ if exist run_git.lock rmdir run_git.lock
 for %%f in (A Y B S H) do if exist run_day10_%%f.done del run_day10_%%f.done
 for %%f in (A Y B S H) do if exist run_day10_%%f.ok del run_day10_%%f.ok
 for /f %%i in ('python -c "import torch; print(torch.cuda.device_count())"') do set NGPU=%%i
+rem one GPU per block when there are enough: Y on 0, A on 1, B on 2, S on 3
 set GPU_A=0
 set GPU_Y=0
 set GPU_B=0
+set GPU_S=0
 if %NGPU% GEQ 2 set GPU_A=1
 if %NGPU% GEQ 2 set GPU_B=1
+if %NGPU% GEQ 3 set GPU_B=2
+if %NGPU% GEQ 4 set GPU_S=3
 start "day10 A (scalability)" cmd /c run_day10_A.bat
 start "day10 Y (YOLO)" cmd /c run_day10_Y.bat
 start "day10 B (end-to-end)" cmd /c run_day10_B.bat
@@ -150,6 +154,7 @@ Set-Content -Path run_day10_S.bat -Encoding Ascii -Value @'
 @echo off
 cd /d "%~dp0"
 call .venv\Scripts\activate.bat
+set CUDA_VISIBLE_DEVICES=%GPU_S%
 call :run > run_day10_S.log 2>&1
 if not errorlevel 1 echo ok> run_day10_S.ok
 if not exist results\scale mkdir results\scale
