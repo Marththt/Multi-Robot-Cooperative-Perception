@@ -1,0 +1,41 @@
+cd "C:\GNN for vision fault\Multi-Robot-Cooperative-Perception"
+git stash
+git pull --no-rebase --no-edit
+# Day 10, diagnostic of the end-to-end network (Model B) on the real scenes. The camera pitch of P1 and P3 changes
+# by up to 15 deg from one layout to another (the gimbal), so the pitch fitted on the OTHER layouts can put the
+# image on the wrong floor cells. Here the pitch is fitted on the layout itself ("same-run": it uses that layout's
+# true boxes, so it is an upper bound, not a result) and the trained model is only evaluated, on GPU 2.
+# It runs alongside blocks S and H (GPU 3 and 0) and shares their commit lock.
+Set-Content -Path run_day10_E.bat -Encoding Ascii -Value @'
+@echo off
+cd /d "%~dp0"
+call .venv\Scripts\activate.bat
+set CUDA_VISIBLE_DEVICES=2
+call :run > run_day10_E.log 2>&1
+if not errorlevel 1 echo ok> run_day10_E.ok
+call :lock
+for %%p in (results\e2e\summary_real_same_run.csv results\e2e\test_scenes_real_same_run.csv data\e2e_real_same_run\fig_e2e_real_check.jpg run_day10_E.log) do if exist %%p git add -f %%p
+git commit -m "day 10, block E: end-to-end network on the real scenes with the camera pitch fitted on each layout (upper bound)"
+call :push > run_day10_E_push.log 2>&1
+rmdir run_git.lock
+exit /b
+
+:run
+echo BLOCK E started %date% %time%
+python -m e2e.real --runs "data/survey_all/*" --out data/e2e_real_same_run/ --calibrate-scope same-run --check || exit /b 1
+python -m e2e.train --eval-only --out results/e2e/ --tests data/e2e_real_same_run/real --mht results/evaluation_all/scenes.csv --results-name real_same_run || exit /b 1
+echo BLOCK E DONE %date% %time%
+exit /b 0
+
+:lock
+mkdir run_git.lock 2> nul && exit /b 0
+timeout /t 5 /nobreak > nul
+goto :lock
+
+:push
+git pull --no-rebase --no-edit && git push && exit /b 0
+timeout /t 120 /nobreak
+git pull --no-rebase --no-edit && git push
+exit /b
+'@
+Start-Process cmd.exe -ArgumentList '/k','run_day10_E.bat'
