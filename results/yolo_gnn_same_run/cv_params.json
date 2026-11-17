@@ -10,11 +10,11 @@
   "inject": {
     "half0": {
       "min_frac": 0.8,
-      "tol_sym": 0.18
+      "tol_sym": 0.25
     },
     "half1": {
-      "min_frac": 0.8,
-      "tol_sym": 0.18
+      "min_frac": 0.6,
+      "tol_sym": 0.12
     }
   },
   "cannot_link": {
@@ -24,20 +24,20 @@
     },
     "half1": {
       "min_frac": 0.8,
-      "cl_robots": 2
+      "cl_robots": 1
     }
   },
   "full": {
     "half0": {
       "min_frac": 0.8,
-      "tol_sym": 0.18,
+      "tol_sym": 0.25,
       "cl_robots": 2,
-      "same_robot": true
+      "same_robot": false
     },
     "half1": {
-      "min_frac": 0.8,
-      "tol_sym": 0.18,
-      "cl_robots": 2,
+      "min_frac": 0.6,
+      "tol_sym": 0.12,
+      "cl_robots": 1,
       "same_robot": false
     }
   },

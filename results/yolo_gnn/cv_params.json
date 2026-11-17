@@ -10,7 +10,7 @@
   "inject": {
     "half0": {
       "min_frac": 0.8,
-      "tol_sym": 0.18
+      "tol_sym": 0.12
     },
     "half1": {
       "min_frac": 0.8,
@@ -30,9 +30,9 @@
   "full": {
     "half0": {
       "min_frac": 0.8,
-      "tol_sym": 0.18,
+      "tol_sym": 0.12,
       "cl_robots": 2,
-      "same_robot": true
+      "same_robot": false
     },
     "half1": {
       "min_frac": 0.8,
