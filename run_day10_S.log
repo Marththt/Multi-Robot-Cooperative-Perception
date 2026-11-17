@@ -1,0 +1,202 @@
+BLOCK S started 2026-11-17 16:52:38.27
+tune: 300 scenes, 0 already segmented
+  tune: 20/300 scenes
+  tune: 40/300 scenes
+  tune: 60/300 scenes
+  tune: 80/300 scenes
+  tune: 100/300 scenes
+  tune: 120/300 scenes
+  tune: 140/300 scenes
+  tune: 160/300 scenes
+  tune: 180/300 scenes
+  tune: 200/300 scenes
+  tune: 220/300 scenes
+  tune: 240/300 scenes
+  tune: 260/300 scenes
+  tune: 280/300 scenes
+  tune: 300/300 scenes
+SB_b32: 200 scenes, 0 already segmented
+  SB_b32: 20/200 scenes
+  SB_b32: 40/200 scenes
+  SB_b32: 60/200 scenes
+  SB_b32: 80/200 scenes
+  SB_b32: 100/200 scenes
+  SB_b32: 120/200 scenes
+  SB_b32: 140/200 scenes
+  SB_b32: 160/200 scenes
+  SB_b32: 180/200 scenes
+  SB_b32: 200/200 scenes
+SB_b4: 200 scenes, 0 already segmented
+  SB_b4: 20/200 scenes
+  SB_b4: 40/200 scenes
+  SB_b4: 60/200 scenes
+  SB_b4: 80/200 scenes
+  SB_b4: 100/200 scenes
+  SB_b4: 120/200 scenes
+  SB_b4: 140/200 scenes
+  SB_b4: 160/200 scenes
+  SB_b4: 180/200 scenes
+  SB_b4: 200/200 scenes
+SB_b50: 200 scenes, 0 already segmented
+  SB_b50: 20/200 scenes
+  SB_b50: 40/200 scenes
+  SB_b50: 60/200 scenes
+  SB_b50: 80/200 scenes
+  SB_b50: 100/200 scenes
+  SB_b50: 120/200 scenes
+  SB_b50: 140/200 scenes
+  SB_b50: 160/200 scenes
+  SB_b50: 180/200 scenes
+  SB_b50: 200/200 scenes
+SB_b8: 200 scenes, 0 already segmented
+  SB_b8: 20/200 scenes
+  SB_b8: 40/200 scenes
+  SB_b8: 60/200 scenes
+  SB_b8: 80/200 scenes
+  SB_b8: 100/200 scenes
+  SB_b8: 120/200 scenes
+  SB_b8: 140/200 scenes
+  SB_b8: 160/200 scenes
+  SB_b8: 180/200 scenes
+  SB_b8: 200/200 scenes
+SC_n16: 200 scenes, 0 already segmented
+  SC_n16: 20/200 scenes
+  SC_n16: 40/200 scenes
+  SC_n16: 60/200 scenes
+  SC_n16: 80/200 scenes
+  SC_n16: 100/200 scenes
+  SC_n16: 120/200 scenes
+  SC_n16: 140/200 scenes
+  SC_n16: 160/200 scenes
+  SC_n16: 180/200 scenes
+  SC_n16: 200/200 scenes
+SC_n24: 200 scenes, 0 already segmented
+  SC_n24: 20/200 scenes
+  SC_n24: 40/200 scenes
+  SC_n24: 60/200 scenes
+  SC_n24: 80/200 scenes
+  SC_n24: 100/200 scenes
+  SC_n24: 120/200 scenes
+  SC_n24: 140/200 scenes
+  SC_n24: 160/200 scenes
+  SC_n24: 180/200 scenes
+  SC_n24: 200/200 scenes
+SC_n32: 200 scenes, 0 already segmented
+  SC_n32: 20/200 scenes
+  SC_n32: 40/200 scenes
+  SC_n32: 60/200 scenes
+  SC_n32: 80/200 scenes
+  SC_n32: 100/200 scenes
+  SC_n32: 120/200 scenes
+  SC_n32: 140/200 scenes
+  SC_n32: 160/200 scenes
+  SC_n32: 180/200 scenes
+  SC_n32: 200/200 scenes
+SC_n4: 200 scenes, 0 already segmented
+  SC_n4: 20/200 scenes
+  SC_n4: 40/200 scenes
+  SC_n4: 60/200 scenes
+  SC_n4: 80/200 scenes
+  SC_n4: 100/200 scenes
+  SC_n4: 120/200 scenes
+  SC_n4: 140/200 scenes
+  SC_n4: 160/200 scenes
+  SC_n4: 180/200 scenes
+  SC_n4: 200/200 scenes
+SC_n50: 200 scenes, 0 already segmented
+  SC_n50: 20/200 scenes
+  SC_n50: 40/200 scenes
+  SC_n50: 60/200 scenes
+  SC_n50: 80/200 scenes
+  SC_n50: 100/200 scenes
+  SC_n50: 120/200 scenes
+  SC_n50: 140/200 scenes
+  SC_n50: 160/200 scenes
+  SC_n50: 180/200 scenes
+  SC_n50: 200/200 scenes
+SC_n8: 200 scenes, 0 already segmented
+  SC_n8: 20/200 scenes
+  SC_n8: 40/200 scenes
+  SC_n8: 60/200 scenes
+  SC_n8: 80/200 scenes
+  SC_n8: 100/200 scenes
+  SC_n8: 120/200 scenes
+  SC_n8: 140/200 scenes
+  SC_n8: 160/200 scenes
+  SC_n8: 180/200 scenes
+  SC_n8: 200/200 scenes
+SR_n32: 200 scenes, 0 already segmented
+  SR_n32: 20/200 scenes
+  SR_n32: 40/200 scenes
+  SR_n32: 60/200 scenes
+  SR_n32: 80/200 scenes
+  SR_n32: 100/200 scenes
+  SR_n32: 120/200 scenes
+  SR_n32: 140/200 scenes
+  SR_n32: 160/200 scenes
+  SR_n32: 180/200 scenes
+  SR_n32: 200/200 scenes
+SR_n4: 200 scenes, 0 already segmented
+  SR_n4: 20/200 scenes
+  SR_n4: 40/200 scenes
+  SR_n4: 60/200 scenes
+  SR_n4: 80/200 scenes
+  SR_n4: 100/200 scenes
+  SR_n4: 120/200 scenes
+  SR_n4: 140/200 scenes
+  SR_n4: 160/200 scenes
+  SR_n4: 180/200 scenes
+  SR_n4: 200/200 scenes
+SR_n50: 200 scenes, 0 already segmented
+  SR_n50: 20/200 scenes
+  SR_n50: 40/200 scenes
+  SR_n50: 60/200 scenes
+  SR_n50: 80/200 scenes
+  SR_n50: 100/200 scenes
+  SR_n50: 120/200 scenes
+  SR_n50: 140/200 scenes
+  SR_n50: 160/200 scenes
+  SR_n50: 180/200 scenes
+  SR_n50: 200/200 scenes
+SR_n8: 200 scenes, 0 already segmented
+  SR_n8: 20/200 scenes
+  SR_n8: 40/200 scenes
+  SR_n8: 60/200 scenes
+  SR_n8: 80/200 scenes
+  SR_n8: 100/200 scenes
+  SR_n8: 120/200 scenes
+  SR_n8: 140/200 scenes
+  SR_n8: 160/200 scenes
+  SR_n8: 180/200 scenes
+  SR_n8: 200/200 scenes
+overlays: data\yolo_sim_eval\fig_yolo_sim.jpg
+tune set data/scale/tune: 300 scenes
+  MHT birth density 0.1/m^2: F1 0.872
+  MHT birth density 0.2/m^2: F1 0.873
+  MHT birth density 0.4/m^2: F1 0.871
+  MHT birth density 0.8/m^2: F1 0.869
+  plan marker       F1 0.833 with {}
+  plan inject       F1 0.825 with {'min_frac': 0.8, 'tol_sym': 0.12}
+  plan cannot_link  F1 0.832 with {'min_frac': 0.8, 'cl_robots': 2}
+  plan full         F1 0.825 with {'min_frac': 0.8, 'tol_sym': 0.12, 'cl_robots': 2, 'same_robot': False}
+  scale marker       F1 0.861 with {}
+  scale inject       F1 0.854 with {'min_frac': 0.8, 'tol_sym': 0.12}
+  scale cannot_link  F1 0.861 with {'min_frac': 0.8, 'cl_robots': 2}
+  scale full         F1 0.853 with {'min_frac': 0.8, 'tol_sym': 0.12, 'cl_robots': 2, 'same_robot': True}
+parameters chosen on the tune set (3207 s)
+SB_b4   N 16.0 B  4.0 | MHT  58.0% F1 0.935 | plan marker  56.2% F1 0.925 | plan full  54.8% F1 0.924 | scale marker  62.2% F1 0.937 | scale full  59.0% F1 0.933
+SB_b8   N 16.0 B  8.0 | MHT  16.0% F1 0.882 | plan marker   8.0% F1 0.855 | plan full   6.5% F1 0.850 | scale marker  11.3% F1 0.872 | scale full  10.3% F1 0.868
+SB_b32  N 16.0 B 32.0 | MHT   0.0% F1 0.853 | plan marker   0.0% F1 0.814 | plan full   0.0% F1 0.808 | scale marker   0.0% F1 0.839 | scale full   0.0% F1 0.834
+SB_b50  N 16.0 B 50.0 | MHT   0.0% F1 0.825 | plan marker   0.0% F1 0.769 | plan full   0.0% F1 0.770 | scale marker   0.0% F1 0.803 | scale full   0.0% F1 0.803
+SC_n4   N  4.0 B  4.0 | MHT  43.5% F1 0.886 | plan marker  31.2% F1 0.824 | plan full  31.2% F1 0.827 | scale marker  34.3% F1 0.843 | scale full  34.3% F1 0.846
+SC_n8   N  8.0 B  8.0 | MHT  11.5% F1 0.856 | plan marker   4.0% F1 0.798 | plan full   4.3% F1 0.799 | scale marker   6.3% F1 0.815 | scale full   7.0% F1 0.817
+SC_n16  N 16.0 B 16.0 | MHT   2.0% F1 0.873 | plan marker   0.5% F1 0.829 | plan full   0.0% F1 0.820 | scale marker   1.2% F1 0.853 | scale full   0.7% F1 0.843
+SC_n24  N 24.0 B 24.0 | MHT   3.0% F1 0.900 | plan marker   0.5% F1 0.860 | plan full   0.5% F1 0.846 | scale marker   1.0% F1 0.887 | scale full   1.2% F1 0.872
+SC_n32  N 32.0 B 32.0 | MHT   1.0% F1 0.907 | plan marker   0.5% F1 0.868 | plan full   0.2% F1 0.849 | scale marker   1.5% F1 0.898 | scale full   0.7% F1 0.879
+SC_n50  N 50.0 B 50.0 | MHT   0.0% F1 0.914 | plan marker   0.0% F1 0.877 | plan full   0.0% F1 0.859 | scale marker   0.0% F1 0.905 | scale full   0.0% F1 0.886
+SR_n4   N  4.0 B 16.0 | MHT   0.5% F1 0.729 | plan marker   0.0% F1 0.657 | plan full   0.0% F1 0.661 | scale marker   0.2% F1 0.688 | scale full   0.2% F1 0.693
+SR_n8   N  8.0 B 16.0 | MHT   0.0% F1 0.811 | plan marker   0.0% F1 0.753 | plan full   0.0% F1 0.751 | scale marker   0.0% F1 0.777 | scale full   0.0% F1 0.775
+SR_n32  N 32.0 B 16.0 | MHT   7.5% F1 0.924 | plan marker   3.5% F1 0.892 | plan full   4.0% F1 0.874 | scale marker   8.5% F1 0.922 | scale full   8.5% F1 0.903
+SR_n50  N 50.0 B 16.0 | MHT  18.0% F1 0.949 | plan marker  10.8% F1 0.931 | plan full   7.7% F1 0.911 | scale marker  20.0% F1 0.953 | scale full  12.7% F1 0.932
+written in results/scale/: summary.csv, paired.csv, test_scenes.csv, tune.csv, chosen.json, rays.csv, fig_scaling.png
+BLOCK S DONE 2026-11-17 22:03:53.04
