@@ -1,0 +1,31 @@
+{
+  "families": [
+    "random"
+  ],
+  "n_robots": [
+    6,
+    6
+  ],
+  "n_boxes": [
+    16,
+    16
+  ],
+  "spacing_m": [
+    0.2,
+    0.2
+  ],
+  "circle_radius_m": [
+    1.5,
+    1.5
+  ],
+  "disc_radius_m": [
+    0.7,
+    0.7
+  ],
+  "false_factor": 1.0,
+  "two_face_factor": 1.0,
+  "hidden_robots": 0,
+  "scenario": "S1",
+  "level": "b16",
+  "seed": 1143
+}

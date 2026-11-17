@@ -1,0 +1,26 @@
+--- 12:01:32 driving to R87/P0/000/+0 (leg 1/7)
+--- 12:01:33 driving to R87/P0/000/+0 (leg 2/7)
+--- 12:01:35 driving to R87/P0/000/+0 (leg 3/7)
+--- 12:01:36 driving to R87/P0/000/+0 (leg 4/7)
+--- 12:01:38 driving to R87/P0/000/+0 (leg 5/7)
+--- 12:01:39 driving to R87/P0/000/+0 (leg 6/7)
+--- 12:01:41 driving to R87/P0/000/+0 (leg 7/7)
+--- 12:01:42 arrived at R87/P0/000/+0, settling
+--- 12:01:43 capturing R87/P0/000/+0 (camera + marker detection)
+--- 12:01:44 saving R87/P0/000/+0
+--- 12:01:44 writing R87/P0/000/+0
+--- 12:01:44 driving to R87/P0/001/+0
+--- 12:01:46 arrived at R87/P0/001/+0, settling
+--- 12:01:47 capturing R87/P0/001/+0 (camera + marker detection)
+--- 12:01:47 saving R87/P0/001/+0
+--- 12:01:48 writing R87/P0/001/+0
+--- 12:01:48 driving to R87/P0/002/+0
+--- 12:01:49 arrived at R87/P0/002/+0, settling
+--- 12:01:50 capturing R87/P0/002/+0 (camera + marker detection)
+--- 12:01:51 saving R87/P0/002/+0
+--- 12:01:51 writing R87/P0/002/+0
+--- 12:01:51 driving to R87/P0/003/+0
+--- 12:01:53 arrived at R87/P0/003/+0, settling
+--- 12:01:54 capturing R87/P0/003/+0 (camera + marker detection)
+--- 12:01:55 saving R87/P0/003/+0
+--- 12:01:55 writing R87/P0/003/+0
