@@ -1,0 +1,171 @@
+BLOCK A started 2026-11-17 11:10:48.52
+previous data/scale/train moved to _to_delete\scale_train_20261117-111048
+previous data/scale/val moved to _to_delete\scale_val_20261117-111048
+previous data/scale/tune moved to _to_delete\scale_tune_20261117-111048
+previous data/scale/SC_n4 moved to _to_delete\scale_SC_n4_20261117-111048
+previous data/scale/SC_n8 moved to _to_delete\scale_SC_n8_20261117-111048
+previous data/scale/SC_n16 moved to _to_delete\scale_SC_n16_20261117-111048
+previous data/scale/SC_n24 moved to _to_delete\scale_SC_n24_20261117-111048
+previous data/scale/SC_n32 moved to _to_delete\scale_SC_n32_20261117-111048
+previous data/scale/SC_n50 moved to _to_delete\scale_SC_n50_20261117-111048
+previous data/scale/SR_n4 moved to _to_delete\scale_SR_n4_20261117-111048
+previous data/scale/SR_n8 moved to _to_delete\scale_SR_n8_20261117-111048
+previous data/scale/SR_n32 moved to _to_delete\scale_SR_n32_20261117-111048
+previous data/scale/SR_n50 moved to _to_delete\scale_SR_n50_20261117-111048
+previous data/scale/SB_b4 moved to _to_delete\scale_SB_b4_20261117-111048
+previous data/scale/SB_b8 moved to _to_delete\scale_SB_b8_20261117-111048
+previous data/scale/SB_b32 moved to _to_delete\scale_SB_b32_20261117-111048
+previous data/scale/SB_b50 moved to _to_delete\scale_SB_b50_20261117-111048
+17 set(s), 25100 scenes: 59 parts on 59 process(es)
+  data/scale/SC_n4\part00
+  data/scale/SR_n4\part00
+  data/scale/SC_n8\part00
+  data/scale/SR_n8\part00
+  data/scale/SB_b4\part00
+  data/scale/SC_n16\part00
+  data/scale/SB_b8\part00
+  data/scale/SB_b50\part00
+  data/scale/SB_b32\part00
+  data/scale/SC_n24\part00
+  data/scale/SR_n50\part00
+  data/scale/SR_n32\part00
+  data/scale/SC_n32\part00
+  data/scale/SC_n50\part00
+  data/scale/tune\part00
+  data/scale/train\part34
+  data/scale/train\part09
+  data/scale/train\part27
+  data/scale/train\part05
+  data/scale/train\part25
+  data/scale/train\part33
+  data/scale/train\part20
+  data/scale/train\part01
+  data/scale/val\part01
+  data/scale/train\part07
+  data/scale/train\part37
+  data/scale/train\part18
+  data/scale/train\part35
+  data/scale/train\part30
+  data/scale/train\part00
+  data/scale/train\part28
+  data/scale/train\part26
+  data/scale/train\part03
+  data/scale/val\part02
+  data/scale/val\part03
+  data/scale/train\part38
+  data/scale/train\part29
+  data/scale/train\part06
+  data/scale/train\part36
+  data/scale/train\part12
+  data/scale/train\part13
+  data/scale/train\part11
+  data/scale/train\part16
+  data/scale/train\part14
+  data/scale/train\part02
+  data/scale/train\part31
+  data/scale/val\part00
+  data/scale/train\part08
+  data/scale/train\part39
+  data/scale/train\part32
+  data/scale/train\part23
+  data/scale/train\part24
+  data/scale/train\part22
+  data/scale/train\part21
+  data/scale/train\part17
+  data/scale/train\part19
+  data/scale/train\part10
+  data/scale/train\part15
+  data/scale/train\part04
+  train: 20000 scenes
+  val: 2000 scenes
+  tune: 300 scenes
+  SC_n4: 200 scenes
+  SC_n8: 200 scenes
+  SC_n16: 200 scenes
+  SC_n24: 200 scenes
+  SC_n32: 200 scenes
+  SC_n50: 200 scenes
+  SR_n4: 200 scenes
+  SR_n8: 200 scenes
+  SR_n32: 200 scenes
+  SR_n50: 200 scenes
+  SB_b4: 200 scenes
+  SB_b8: 200 scenes
+  SB_b32: 200 scenes
+  SB_b50: 200 scenes
+seeds: results/scale/seeds.csv
+variant detection_full_full_h2 -> results/scale/gnn/detection_full_full_h2
+70000 training scenes, 4000 validation scenes (310 s to load)
+    seed 0 epoch   1: loss 0.1723  validation exact  39.7%  correct  38.6%  (2126 s)
+    seed 0 epoch   2: loss 0.1101  validation exact  40.0%  correct  39.4%  (963 s)
+    seed 0 epoch   3: loss 0.1018  validation exact  38.8%  correct  38.3%  (997 s)
+    seed 0 epoch   4: loss 0.0974  validation exact  40.6%  correct  39.8%  (1035 s)
+    seed 0 epoch   5: loss 0.0948  validation exact  41.1%  correct  40.6%  (1074 s)
+    seed 0 epoch   6: loss 0.0929  validation exact  40.6%  correct  40.0%  (848 s)
+    seed 0 epoch   7: loss 0.0915  validation exact  41.2%  correct  40.6%  (884 s)
+    seed 0 epoch   8: loss 0.0903  validation exact  41.6%  correct  40.8%  (588 s)
+    seed 0 epoch   9: loss 0.0894  validation exact  38.8%  correct  38.2%  (210 s)
+    seed 0 epoch  10: loss 0.0888  validation exact  41.4%  correct  40.5%  (198 s)
+    seed 0 epoch  11: loss 0.0878  validation exact  41.4%  correct  40.6%  (200 s)
+    seed 0 epoch  12: loss 0.0872  validation exact  40.5%  correct  39.9%  (192 s)
+    seed 0 epoch  13: loss 0.0863  validation exact  40.2%  correct  39.5%  (198 s)
+    seed 0 epoch  14: loss 0.0858  validation exact  40.1%  correct  39.4%  (195 s)
+    seed 0 epoch  15: loss 0.0855  validation exact  41.1%  correct  40.6%  (192 s)
+    seed 0 epoch  16: loss 0.0852  validation exact  41.3%  correct  40.8%  (197 s)
+    seed 0: kept epoch 8 (validation correct 40.8%)
+    seed 1 epoch   1: loss 0.1772  validation exact  38.4%  correct  37.9%  (117 s)
+    seed 1 epoch   2: loss 0.1132  validation exact  39.7%  correct  38.9%  (160 s)
+    seed 1 epoch   3: loss 0.1033  validation exact  40.7%  correct  40.0%  (165 s)
+    seed 1 epoch   4: loss 0.0975  validation exact  40.6%  correct  40.1%  (196 s)
+    seed 1 epoch   5: loss 0.0949  validation exact  40.4%  correct  39.6%  (188 s)
+    seed 1 epoch   6: loss 0.0933  validation exact  40.0%  correct  39.1%  (180 s)
+    seed 1 epoch   7: loss 0.0914  validation exact  41.1%  correct  40.4%  (181 s)
+    seed 1 epoch   8: loss 0.0903  validation exact  41.5%  correct  40.7%  (186 s)
+    seed 1 epoch   9: loss 0.0892  validation exact  41.1%  correct  40.5%  (190 s)
+    seed 1 epoch  10: loss 0.0883  validation exact  39.9%  correct  39.1%  (182 s)
+    seed 1 epoch  11: loss 0.0877  validation exact  41.0%  correct  40.5%  (197 s)
+    seed 1 epoch  12: loss 0.0868  validation exact  41.1%  correct  40.5%  (188 s)
+    seed 1 epoch  13: loss 0.0859  validation exact  41.3%  correct  40.8%  (189 s)
+    seed 1 epoch  14: loss 0.0854  validation exact  41.1%  correct  40.5%  (197 s)
+    seed 1 epoch  15: loss 0.0850  validation exact  39.4%  correct  38.9%  (198 s)
+    seed 1 epoch  16: loss 0.0842  validation exact  41.0%  correct  40.4%  (198 s)
+    seed 1 epoch  17: loss 0.0841  validation exact  40.4%  correct  39.6%  (198 s)
+    seed 1 epoch  18: loss 0.0838  validation exact  40.9%  correct  40.4%  (197 s)
+    seed 1 epoch  19: loss 0.0836  validation exact  41.8%  correct  40.8%  (195 s)
+    seed 1 epoch  20: loss 0.0831  validation exact  40.6%  correct  39.9%  (195 s)
+    seed 1 epoch  21: loss 0.0827  validation exact  41.0%  correct  40.3%  (195 s)
+    seed 1: kept epoch 13 (validation correct 40.8%)
+    seed 2 epoch   1: loss 0.1784  validation exact  40.8%  correct  39.6%  (107 s)
+    seed 2 epoch   2: loss 0.1088  validation exact  40.6%  correct  39.8%  (138 s)
+    seed 2 epoch   3: loss 0.1014  validation exact  40.3%  correct  39.6%  (163 s)
+    seed 2 epoch   4: loss 0.0973  validation exact  39.1%  correct  38.4%  (178 s)
+    seed 2 epoch   5: loss 0.0946  validation exact  39.6%  correct  39.0%  (180 s)
+    seed 2 epoch   6: loss 0.0929  validation exact  41.0%  correct  40.5%  (189 s)
+    seed 2 epoch   7: loss 0.0917  validation exact  40.7%  correct  40.0%  (178 s)
+    seed 2 epoch   8: loss 0.0902  validation exact  41.2%  correct  40.4%  (181 s)
+    seed 2 epoch   9: loss 0.0893  validation exact  40.8%  correct  39.9%  (173 s)
+    seed 2 epoch  10: loss 0.0885  validation exact  41.4%  correct  40.7%  (180 s)
+    seed 2 epoch  11: loss 0.0879  validation exact  38.4%  correct  37.5%  (191 s)
+    seed 2 epoch  12: loss 0.0873  validation exact  40.8%  correct  40.2%  (197 s)
+    seed 2 epoch  13: loss 0.0866  validation exact  41.0%  correct  40.3%  (188 s)
+    seed 2 epoch  14: loss 0.0861  validation exact  40.4%  correct  39.9%  (191 s)
+    seed 2 epoch  15: loss 0.0856  validation exact  40.6%  correct  39.7%  (197 s)
+    seed 2 epoch  16: loss 0.0849  validation exact  41.4%  correct  40.8%  (193 s)
+    seed 2 epoch  17: loss 0.0847  validation exact  41.6%  correct  40.9%  (194 s)
+    seed 2 epoch  18: loss 0.0840  validation exact  42.1%  correct  41.2%  (196 s)
+    seed 2 epoch  19: loss 0.0835  validation exact  40.7%  correct  40.1%  (192 s)
+    seed 2 epoch  20: loss 0.0833  validation exact  40.5%  correct  39.9%  (199 s)
+    seed 2 epoch  21: loss 0.0836  validation exact  41.8%  correct  40.9%  (198 s)
+    seed 2 epoch  22: loss 0.0827  validation exact  39.7%  correct  39.0%  (196 s)
+    seed 2 epoch  23: loss 0.0825  validation exact  41.2%  correct  40.5%  (195 s)
+    seed 2 epoch  24: loss 0.0824  validation exact  41.3%  correct  40.6%  (193 s)
+    seed 2 epoch  25: loss 0.0822  validation exact  41.0%  correct  40.4%  (192 s)
+    seed 2 epoch  26: loss 0.0819  validation exact  41.8%  correct  41.2%  (195 s)
+    seed 2: kept epoch 18 (validation correct 41.2%)
+
+written in results/scale/gnn/detection_full_full_h2: summary.csv, mcnemar.csv, test_scenes.csv, models
+variant detection_full_full_h2 -> results/scale/gnn/detection_full_full_h2
+  REAL   ( 3.9 viewpoints) GNN P_D  95.5¡¾0.3%, RMSE*  5.3¡¾0.1 cm, false 0.04 | MHT P_D  94.8%, RMSE*  5.5 cm, false 0.18
+
+written in results/scale/gnn/detection_full_full_h2: summary_real_all.csv, mcnemar_real_all.csv, test_scenes_real_all.csv
+BLOCK A DONE 2026-11-17 16:51:36.01

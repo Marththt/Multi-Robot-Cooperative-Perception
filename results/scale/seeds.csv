@@ -1,0 +1,18 @@
+set,scenario,level,family,scenes,seed,scene_seed_rule
+train,train,,area,20000,1501,seed * 1000003 + scene index
+val,val,,area,2000,1502,seed * 1000003 + scene index
+tune,tune,,area,300,1503,seed * 1000003 + scene index
+SC_n4,SC,n4,area,200,1600,seed * 1000003 + scene index
+SC_n8,SC,n8,area,200,1601,seed * 1000003 + scene index
+SC_n16,SC,n16,area,200,1602,seed * 1000003 + scene index
+SC_n24,SC,n24,area,200,1603,seed * 1000003 + scene index
+SC_n32,SC,n32,area,200,1604,seed * 1000003 + scene index
+SC_n50,SC,n50,area,200,1605,seed * 1000003 + scene index
+SR_n4,SR,n4,area,200,1606,seed * 1000003 + scene index
+SR_n8,SR,n8,area,200,1607,seed * 1000003 + scene index
+SR_n32,SR,n32,area,200,1608,seed * 1000003 + scene index
+SR_n50,SR,n50,area,200,1609,seed * 1000003 + scene index
+SB_b4,SB,b4,area,200,1610,seed * 1000003 + scene index
+SB_b8,SB,b8,area,200,1611,seed * 1000003 + scene index
+SB_b32,SB,b32,area,200,1612,seed * 1000003 + scene index
+SB_b50,SB,b50,area,200,1613,seed * 1000003 + scene index
