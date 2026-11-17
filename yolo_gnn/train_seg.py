@@ -209,7 +209,8 @@ def render_yolo_scene(task):
 def write_yaml(data_dir):
     yaml_path = os.path.abspath(os.path.join(data_dir, "dataset.yaml"))
     with open(yaml_path, "w") as f:
-        f.write(f'path: "{os.path.abspath(data_dir)}"\n')
+        # forward slashes: a Windows path in double quotes is read as escapes ("\G...") by the YAML parser
+        f.write(f"path: '{os.path.abspath(data_dir).replace(os.sep, '/')}'\n")
         f.write("train: images/train\n")
         f.write("val: images/val\n")
         f.write("names:\n  0: box\n")

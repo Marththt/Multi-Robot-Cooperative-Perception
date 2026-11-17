@@ -2,8 +2,10 @@
 few robots up to 50, with as many boxes.
 
 Scene ("area" family):
-  side      L = max(MIN_SIDE_M, sqrt((N + B) / density)): the area grows with the number of objects, so the
-            density of robots and boxes stays that of the lab (about 1.25 objects per m^2 in the lab disc)
+  side      L = max(MIN_SIDE_M, sqrt((N + B) / density), robot_side(N)): the area grows with the number of
+            objects, so the density of robots and boxes stays that of the lab (about 1.25 objects per m^2 in the
+            lab disc); robot_side keeps room for many robots with few boxes (SB_b4 4.5 m instead of 4.0 m,
+            SB_b8 4.5 m instead of 4.4 m, SR_n50 7.7 m instead of 7.3 m; the other test sets unchanged)
   boxes     centres uniform in the square (MARGIN_M from its sides), at least s_min apart, yaw uniform in
             [0, 120) deg, no two prisms overlapping
   robots    camera positions uniform in the square, clear of the box centres and of each other
@@ -67,6 +69,7 @@ ROBOT_BODY_BEHIND_M = 0.15          # body centre behind the camera (imgsim.rend
 HEADING_STEPS = 72                  # candidate directions of the heading rule (5 deg)
 FOV_MARGIN_DEG = 4.0                # a box counts for the heading rule when this far inside the field of view
 PART = 500                          # scenes per parallel part
+ROBOT_FILL = 0.40                   # largest share of the usable area covered by the robot discs (robot_side)
 
 
 @dataclass
@@ -121,8 +124,17 @@ def _float(rng, lo_hi):
     return float(rng.uniform(lo_hi[0], lo_hi[1]))
 
 
+def robot_side(n_robots):
+    """Smallest side that holds n_robots cameras ROBOT_SEPARATION_M + 2 ROBOT_BODY_BEHIND_M apart with the discs
+    of the robots filling at most ROBOT_FILL of the area they can use: random placement jams near 55%, so many
+    robots and few boxes (SB_b4: N = 16 in 4 m) failed with the density rule alone."""
+    r = (ROBOT_SEPARATION_M + 2 * ROBOT_BODY_BEHIND_M) / 2
+    usable = math.sqrt(n_robots * math.pi * r * r / ROBOT_FILL)
+    return usable - 2 * r + 2 * (MARGIN_M + ROBOT_BODY_BEHIND_M + ROBOT_SIZE_M[0] / 2)
+
+
 def area_side(n_robots, n_boxes, density):
-    return max(MIN_SIDE_M, math.sqrt((n_robots + n_boxes) / density))
+    return max(MIN_SIDE_M, math.sqrt((n_robots + n_boxes) / density), robot_side(n_robots))
 
 
 def body_centre(x, y, yaw):
