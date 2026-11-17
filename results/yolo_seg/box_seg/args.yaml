@@ -1,8 +1,8 @@
 task: segment
 mode: train
 model: yolov8n-seg.pt
-data: /Users/alessiomartinelli/Desktop/Tesi/tesi_codice /Multi-Robot-Cooperative-Perception/data/yolo_sim/dataset.yaml
-epochs: 15
+data: C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\data\yolo_sim\dataset.yaml
+epochs: 40
 time: null
 patience: 100
 batch: 16
@@ -10,16 +10,16 @@ imgsz: 960
 save: true
 save_period: -1
 cache: false
-device: mps
+device: "0"
 workers: 8
-project: /Users/alessiomartinelli/Desktop/Tesi/tesi_codice /Multi-Robot-Cooperative-Perception/results/yolo_seg
+project: C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\results\yolo_seg
 name: box_seg
 exist_ok: true
 pretrained: true
 cls_remap: true
 optimizer: auto
 verbose: true
-seed: 0
+seed: 1
 deterministic: true
 single_cls: false
 rect: false
@@ -92,7 +92,7 @@ dlog: 1.0
 dgrad: 0.5
 dlam: 1.0
 nbs: 64
-hsv_h: 0.03
+hsv_h: 0.02
 hsv_s: 0.6
 hsv_v: 0.6
 degrees: 0.0
@@ -112,4 +112,4 @@ auto_augment: randaugment
 erasing: 0.1
 cfg: null
 tracker: tracktrack.yaml
-save_dir: /Users/alessiomartinelli/Desktop/Tesi/tesi_codice /Multi-Robot-Cooperative-Perception/results/yolo_seg/box_seg
+save_dir: C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\results\yolo_seg\box_seg

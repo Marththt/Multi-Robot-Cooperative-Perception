@@ -1,0 +1,7 @@
+test,method,scenes,viewpoints,pd_pct,pd_pct_sd,rmse_all_cm,rmse_all_cm_sd,false_per_scene,false_per_scene_sd,exact_pct,exact_pct_sd,correct_pct,correct_pct_sd,too_few_pct,too_few_pct_sd,too_many_pct,too_many_pct_sd,rmse_median_cm,rmse_median_cm_sd,ospa_mean,ospa_mean_sd
+REAL,gnn,444,3.9,95.639,0.221,5.238,0.06,0.028,0.004,79.505,0.663,78.754,0.646,18.468,0.973,2.027,0.319,3.881,0.022,0.047,0.0
+REAL,zone_class,444,,65.547,,10.533,,0.831,,22.297,,9.91,,60.36,,17.342,,6.83,,0.102,
+REAL,union,444,,97.177,,5.02,,0.957,,39.865,,34.91,,5.18,,54.955,,4.1,,0.068,
+REAL,phd,444,,60.932,,9.958,,0.115,,19.369,,17.568,,77.252,,3.378,,3.58,,0.091,
+REAL,cphd,444,,76.703,,8.316,,0.412,,28.378,,20.495,,55.18,,16.441,,4.12,,0.08,
+REAL,mht,444,,94.803,,5.481,,0.18,,66.667,,64.189,,19.369,,13.964,,3.91,,0.053,
