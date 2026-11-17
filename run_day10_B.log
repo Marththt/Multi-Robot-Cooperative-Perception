@@ -1,0 +1,85 @@
+BLOCK B started 2026-11-17 11:10:48.57
+2 set(s), 31000 scenes in 124 shards on 60 process(es)
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\imgsim\render.py:746: RuntimeWarning: invalid value encountered in cast
+  img = np.clip(img, 0, 255).astype(np.uint8)
+  10/124 shards (train)
+  20/124 shards (train)
+  30/124 shards (train)
+  40/124 shards (train)
+  50/124 shards (train)
+  60/124 shards (train)
+  70/124 shards (train)
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\imgsim\render.py:746: RuntimeWarning: invalid value encountered in cast
+  img = np.clip(img, 0, 255).astype(np.uint8)
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\imgsim\render.py:746: RuntimeWarning: invalid value encountered in cast
+  img = np.clip(img, 0, 255).astype(np.uint8)
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\imgsim\render.py:746: RuntimeWarning: invalid value encountered in cast
+  img = np.clip(img, 0, 255).astype(np.uint8)
+  80/124 shards (train)
+  90/124 shards (train)
+  100/124 shards (train)
+  110/124 shards (train)
+  120/124 shards (train)
+  124/124 shards (train)
+done
+16 set(s), 16000 scenes in 64 shards on 60 process(es)
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\imgsim\render.py:746: RuntimeWarning: invalid value encountered in cast
+  img = np.clip(img, 0, 255).astype(np.uint8)
+  10/64 shards (E3_h0_random)
+  20/64 shards (E3_h0_random)
+  30/64 shards (S1_b12_random)
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\imgsim\render.py:746: RuntimeWarning: invalid value encountered in cast
+  img = np.clip(img, 0, 255).astype(np.uint8)
+  40/64 shards (E3_h1_random)
+  50/64 shards (S1_b16_random)
+  60/64 shards (E3_h2_circle)
+  64/64 shards (E3_h2_circle)
+done
+  105 layouts, 444 stops, 2220 frame sets -> data/e2e_real/real
+  check figure: data/e2e_real/fig_e2e_real_check.jpg
+device cuda, output results/e2e/
+615,411 parameters
+30000 training scenes, 1000 validation scenes
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\e2e\train.py:244: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  sched.step()
+  epoch   1: loss 0.7815  validation correct  75.9% (threshold 0.35)  (715 s)
+  epoch   2: loss 0.3230  validation correct  80.6% (threshold 0.40)  (665 s)
+  epoch   3: loss 0.2763  validation correct  84.9% (threshold 0.35)  (664 s)
+  epoch   4: loss 0.2521  validation correct  84.9% (threshold 0.30)  (663 s)
+  epoch   5: loss 0.2361  validation correct  87.4% (threshold 0.30)  (663 s)
+  epoch   6: loss 0.2239  validation correct  88.3% (threshold 0.30)  (663 s)
+  epoch   7: loss 0.2151  validation correct  86.8% (threshold 0.40)  (663 s)
+  epoch   8: loss 0.2074  validation correct  88.3% (threshold 0.30)  (663 s)
+  epoch   9: loss 0.2004  validation correct  88.1% (threshold 0.30)  (662 s)
+  epoch  10: loss 0.1936  validation correct  87.9% (threshold 0.25)  (662 s)
+kept epoch 6 (validation correct 88.3%, threshold 0.30)
+  E3_h0_circle         all                    e2e          1000 scenes  correct 100.0%  too few   0.0%  too many   0.0%  F1 100.0%  RMSE 0.8 cm
+  E3_h0_random         all                    e2e          1000 scenes  correct  99.9%  too few   0.0%  too many   0.1%  F1 100.0%  RMSE 1.0 cm
+  E3_h1_circle         all                    e2e          1000 scenes  correct 100.0%  too few   0.0%  too many   0.0%  F1 100.0%  RMSE 1.0 cm
+  E3_h1_random         all                    e2e          1000 scenes  correct  98.9%  too few   0.4%  too many   0.7%  F1  99.9%  RMSE 1.3 cm
+  E3_h2_circle         all                    e2e          1000 scenes  correct  97.7%  too few   2.0%  too many   0.3%  F1  99.8%  RMSE 1.3 cm
+  E3_h2_random         all                    e2e          1000 scenes  correct  93.2%  too few   4.3%  too many   1.9%  F1  99.2%  RMSE 1.8 cm
+  G0_nominal_circle    all                    e2e          1000 scenes  correct 100.0%  too few   0.0%  too many   0.0%  F1 100.0%  RMSE 0.8 cm
+  G0_nominal_random    all                    e2e          1000 scenes  correct 100.0%  too few   0.0%  too many   0.0%  F1 100.0%  RMSE 1.0 cm
+  S1_b12_circle        all                    e2e          1000 scenes  correct  96.8%  too few   2.2%  too many   1.0%  F1  99.9%  RMSE 1.1 cm
+  S1_b12_random        all                    e2e          1000 scenes  correct  89.1%  too few   7.1%  too many   3.6%  F1  99.5%  RMSE 1.6 cm
+  S1_b16_circle        all                    e2e          1000 scenes  correct  72.7%  too few  24.1%  too many   2.4%  F1  99.1%  RMSE 1.6 cm
+  S1_b16_random        all                    e2e          1000 scenes  correct  49.9%  too few  43.1%  too many   3.6%  F1  97.9%  RMSE 2.1 cm
+  S1_b4_circle         all                    e2e          1000 scenes  correct 100.0%  too few   0.0%  too many   0.0%  F1 100.0%  RMSE 0.8 cm
+  S1_b4_random         all                    e2e          1000 scenes  correct  99.9%  too few   0.1%  too many   0.0%  F1 100.0%  RMSE 1.1 cm
+  S1_b8_circle         all                    e2e          1000 scenes  correct  99.9%  too few   0.1%  too many   0.0%  F1 100.0%  RMSE 0.9 cm
+  S1_b8_random         all                    e2e          1000 scenes  correct  99.3%  too few   0.4%  too many   0.3%  F1 100.0%  RMSE 1.2 cm
+  real                 all                    e2e           444 scenes  correct  10.6%  too few  14.0%  too many  69.4%  F1  78.8%  RMSE 6.1 cm
+  real                 easy                   e2e           151 scenes  correct   6.6%  too few  15.9%  too many  68.9%  F1  71.4%  RMSE 6.4 cm
+  real                 hard                   e2e           216 scenes  correct  13.9%  too few  17.1%  too many  63.9%  F1  80.8%  RMSE 6.1 cm
+  real                 medium                 e2e            77 scenes  correct   9.1%  too few   1.3%  too many  85.7%  F1  83.5%  RMSE 5.6 cm
+  real                 all (with MHT)         e2e           444 scenes  correct  10.6%  too few  14.0%  too many  69.4%  F1  78.8%  RMSE 6.1 cm
+  real                 all (with MHT)         mht_sensor    444 scenes  correct  73.4%  too few  13.7%  too many  11.3%  F1  96.8%  RMSE 3.7 cm
+  real                 easy (with MHT)        e2e           151 scenes  correct   6.6%  too few  15.9%  too many  68.9%  F1  71.4%  RMSE 6.4 cm
+  real                 easy (with MHT)        mht_sensor    151 scenes  correct  84.1%  too few   4.6%  too many  11.3%  F1  97.9%  RMSE 3.2 cm
+  real                 hard (with MHT)        e2e           216 scenes  correct  13.9%  too few  17.1%  too many  63.9%  F1  80.8%  RMSE 6.1 cm
+  real                 hard (with MHT)        mht_sensor    216 scenes  correct  64.8%  too few  21.8%  too many  11.1%  F1  95.7%  RMSE 3.9 cm
+  real                 medium (with MHT)      e2e            77 scenes  correct   9.1%  too few   1.3%  too many  85.7%  F1  83.5%  RMSE 5.6 cm
+  real                 medium (with MHT)      mht_sensor     77 scenes  correct  76.6%  too few   9.1%  too many  11.7%  F1  97.9%  RMSE 3.9 cm
+written in results/e2e/
+BLOCK B DONE 2026-11-17 13:59:29.67
