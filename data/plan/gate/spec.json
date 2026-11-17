@@ -1,0 +1,32 @@
+{
+  "families": [
+    "circle",
+    "random"
+  ],
+  "n_robots": [
+    3,
+    16
+  ],
+  "n_boxes": [
+    2,
+    16
+  ],
+  "spacing_m": [
+    0.2,
+    0.6
+  ],
+  "circle_radius_m": [
+    1.2,
+    2.0
+  ],
+  "disc_radius_m": [
+    0.5,
+    1.0
+  ],
+  "false_factor": 1.0,
+  "two_face_factor": 1.0,
+  "hidden_robots": 0,
+  "scenario": "gate",
+  "level": "",
+  "seed": 1002
+}

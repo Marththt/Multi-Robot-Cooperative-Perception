@@ -1,0 +1,72 @@
+{
+  "hfov_deg": 88.0,
+  "r_min_m": 0.15,
+  "r_max_m": 3.0,
+  "range_fit": [
+    1.1019,
+    -0.1242
+  ],
+  "bearing_fit": [
+    1.0157,
+    0.00182
+  ],
+  "camera_offset_m": 0.0,
+  "detect_w": [
+    3.9479,
+    1.6655,
+    -3.667,
+    0.1191,
+    -6.7257
+  ],
+  "two_face_q": 0.0841,
+  "view_noise_sd_rad": 0.0757,
+  "along_mean": [
+    0.0595,
+    -0.0073,
+    -0.0655
+  ],
+  "along_sd": [
+    0.009,
+    0.0066
+  ],
+  "across_sd": [
+    0.0547,
+    -0.0065
+  ],
+  "bias_sd_along_rel": 0.022,
+  "bias_sd_across_rel": 0.016,
+  "false_rate": 0.1205,
+  "false_near_share": 0.222,
+  "false_near_range_m": [
+    1.65,
+    3.16
+  ],
+  "false_far_range_m": [
+    4.81,
+    7.99
+  ],
+  "false_edge_share": 0.556,
+  "false_edge_band_deg": [
+    38.0,
+    44.0
+  ],
+  "source": {
+    "layouts": [
+      "L4",
+      "L5",
+      "L6",
+      "L7",
+      "L8",
+      "L9",
+      "L10",
+      "L11"
+    ],
+    "rare_events": "all",
+    "survey_dir": "data/survey_rounds/",
+    "box_captures": 896,
+    "detections": 607,
+    "two_face_events": 6,
+    "false_detections": 27,
+    "false_captures": 224
+  }
+}
