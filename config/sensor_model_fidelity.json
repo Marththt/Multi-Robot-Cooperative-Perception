@@ -1,0 +1,115 @@
+{
+  "hfov_deg": 88.0,
+  "r_min_m": 0.15,
+  "r_max_m": 3.0,
+  "range_fit": [
+    1.0826,
+    -0.1175
+  ],
+  "bearing_fit": [
+    1.0328,
+    -0.00833
+  ],
+  "camera_offset_m": 0.0,
+  "detect_w": [
+    3.7477,
+    2.366,
+    -2.6945,
+    -1.7468,
+    -7.1151
+  ],
+  "two_face_q": 0.02,
+  "view_noise_sd_rad": 0.1015,
+  "along_mean": [
+    0.0411,
+    0.0034,
+    -0.0569
+  ],
+  "along_sd": [
+    0.0092,
+    0.0073
+  ],
+  "across_sd": [
+    0.0539,
+    -0.0053
+  ],
+  "bias_sd_along_rel": 0.0218,
+  "bias_sd_across_rel": 0.0172,
+  "false_rate": 0.1513,
+  "false_near_share": 0.293,
+  "false_near_range_m": [
+    1.12,
+    3.5
+  ],
+  "false_far_range_m": [
+    3.56,
+    7.99
+  ],
+  "false_edge_share": 0.569,
+  "false_edge_band_deg": [
+    38.0,
+    44.0
+  ],
+  "source": {
+    "layouts": [
+      "L4",
+      "L6",
+      "L8",
+      "L10",
+      "R01",
+      "R03",
+      "R05",
+      "R07",
+      "R09",
+      "R11",
+      "R13",
+      "R15",
+      "R17",
+      "R19",
+      "R21",
+      "R23",
+      "R25",
+      "R27",
+      "R29",
+      "R31",
+      "R33",
+      "R35",
+      "R38",
+      "R40",
+      "R42",
+      "R44",
+      "R46",
+      "R48",
+      "R50",
+      "R52",
+      "R54",
+      "R56",
+      "R58",
+      "R60",
+      "R70",
+      "R73",
+      "R75",
+      "R82",
+      "R84",
+      "R86",
+      "R88",
+      "R90",
+      "R92",
+      "R94",
+      "R96",
+      "R98",
+      "R100",
+      "R102",
+      "R104"
+    ],
+    "rare_events": "calibration",
+    "survey_dir": [
+      "data/survey_all/"
+    ],
+    "box_captures": 4088,
+    "detections": 2282,
+    "two_face_events": 8,
+    "false_detections": 123,
+    "false_captures": 813
+  }
+}

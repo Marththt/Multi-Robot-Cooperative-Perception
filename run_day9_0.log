@@ -1,0 +1,132 @@
+detections: 5046 (260 spurious, farther than 0.4 m from every box)
+camera offset scan   A      B   |   k     b0   | residual distance [cm], lateral [cm]
+  0.00 m         1.083 -0.117 | 1.033 -0.0083 | 3.7 5.3
+  0.02 m         1.083 -0.097 | 1.011 -0.0083 | 3.7 5.2
+  0.04 m         1.084 -0.077 | 0.989 -0.0083 | 3.7 5.1
+  0.06 m         1.084 -0.057 | 0.966 -0.0083 | 3.8 5.1
+  0.08 m         1.085 -0.037 | 0.944 -0.0083 | 3.8 5.0
+  0.10 m         1.085 -0.017 | 0.921 -0.0083 | 3.8 5.0
+  0.12 m         1.086 +0.003 | 0.898 -0.0083 | 3.8 4.9
+  0.14 m         1.087 +0.022 | 0.874 -0.0082 | 3.9 4.9
+  0.16 m         1.088 +0.042 | 0.851 -0.0082 | 3.9 4.9
+  0.18 m         1.089 +0.062 | 0.827 -0.0081 | 4.0 4.9
+  0.20 m         1.090 +0.081 | 0.802 -0.0080 | 4.0 5.0
+
+camera offset used: 0.000 m ahead of the body pivot
+range   : d_meas = 1.083 * d_true -0.117   -> d = (d_meas +0.117) / 1.083
+bearing : b_meas = 1.033 * b_true -0.0083  -> b = (b_meas +0.0083) / 1.033
+residual after calibration: distance std 3.7 cm, lateral std 5.3 cm
+sigma_pos (RMS of the two): 4.6 cm
+p_d: 5578 of 8658 boxes in the field of view detected = 0.64
+per robot (A, B, k, b0):
+  P0: 1.046 -0.107 | 1.035 -0.0079   (n=1195)
+  P1: 1.070 -0.111 | 1.037 -0.0000   (n=1162)
+  P3: 1.084 -0.120 | 1.051 -0.0208   (n=1180)
+  P5: 1.117 -0.121 | 1.005 -0.0044   (n=1249)
+
+written config/sensor_calib.json
+calibration layouts: L10, L11, L4, L5, L6, L7, L8, L9, R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R100, R101, R102, R103, R104, R11, R12, R13, R14, R15, R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29, R30, R31, R32, R33, R34, R35, R36, R38, R39, R40, R41, R42, R43, R44, R45, R46, R47, R48, R49, R50, R51, R52, R53, R54, R55, R56, R57, R58, R59, R60, R61, R62, R63, R64, R65, R66, R67, R68, R69, R70, R71, R73, R74, R75, R81, R82, R83, R84, R85, R86, R87, R88, R89, R90, R91, R92, R93, R94, R95, R96, R97, R98, R99 (444 scenes); rare events from all
+detection: 4758 of 8658 boxes in view reported (0.55); model mean 0.55; w = [3.54, 2.279, -2.436, -1.736, -7.047]
+   best face   0-30  deg, unoccluded: real 0.87  model 0.87  (n=2631)
+   best face  30-45  deg, unoccluded: real 0.86  model 0.87  (n=1353)
+   best face  45-60  deg, unoccluded: real 0.87  model 0.82  (n=1308)
+   best face  60-75  deg, unoccluded: real 0.57  model 0.67  (n=247)
+   best face  75-120 deg, unoccluded: real 0.28  model 0.33  (n=120)
+two faces: 14 events, q = 0.015
+error along: mean +0.045 -0.000*d -0.057*cos(a); noise 0.010 + 0.007*d; robot range-scale bias sd 0.022 m/m
+error across: noise 0.055 + -0.005*d; robot bearing-offset sd 0.018 rad; viewing-angle noise 5.9 deg
+false detections: 264 in 1724 captures (0.153 per capture), 75 near (< 3.5 m raw)
+written config/sensor_model.json
+calibration layouts: L10, L11, L4, L5, L6, L7, L8, L9, R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R100, R101, R102, R103, R104, R11, R12, R13, R14, R15, R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29, R30, R31, R32, R33, R34, R35, R36, R38, R39, R40, R41, R42, R43, R44, R45, R46, R47, R48, R49, R50, R51, R52, R53, R54, R55, R56, R57, R58, R59, R60, R61, R62, R63, R64, R65, R66, R67, R68, R69, R70, R71, R73, R74, R75, R81, R82, R83, R84, R85, R86, R87, R88, R89, R90, R91, R92, R93, R94, R95, R96, R97, R98, R99 (444 scenes); rare events from all
+detection: 4758 of 8658 boxes in view reported (0.55); model mean 0.55; w = [3.54, 2.279, -2.436, -1.736, -7.047]
+   best face   0-30  deg, unoccluded: real 0.87  model 0.87  (n=2631)
+   best face  30-45  deg, unoccluded: real 0.86  model 0.87  (n=1353)
+   best face  45-60  deg, unoccluded: real 0.87  model 0.82  (n=1308)
+   best face  60-75  deg, unoccluded: real 0.57  model 0.67  (n=247)
+   best face  75-120 deg, unoccluded: real 0.28  model 0.33  (n=120)
+two faces: 14 events, q = 0.015
+error along: mean +0.045 -0.000*d -0.057*cos(a); noise 0.010 + 0.007*d; robot range-scale bias sd 0.022 m/m
+error across: noise 0.055 + -0.005*d; robot bearing-offset sd 0.018 rad; viewing-angle noise 5.9 deg
+false detections: 264 in 1724 captures (0.153 per capture), 75 near (< 3.5 m raw)
+written results/sensor_model_dump/sensor_model.json
+written results/sensor_model_dump/measurements.png
+written results/sensor_model_dump/fig_layouts.png
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\vf\fusion\phd.py:215: RuntimeWarning: invalid value encountered in multiply
+  updated += (float(ups1_k @ rho) / den) * psi[k] * s
+sensor settings: range fit [1.0826, -0.1175], bearing fit [1.0328, -0.00833], sigma_pos 0.046 m, p_d 0.64, union threshold 0.138 m, camera offset 0.000 m
+
+=== all robots fused, per method (all scenes) ===
+  method                 scenes     P_D   RMSE*   false   exact   OSPA
+  zone + class              444   65.5%  10.5cm    0.83     22%  0.102
+  union                     444   97.2%   5.0cm    0.96     40%  0.068
+  MHT                       444   94.8%   5.5cm    0.18     67%  0.053
+  PHD                       444   60.9%  10.0cm    0.11     19%  0.091
+  CPHD                      444   76.7%   8.3cm    0.41     28%  0.080
+  MHT with sensor model     444   96.5%   4.8cm    0.14     75%  0.046
+  PHD (order average)       444   76.3%   8.2cm    0.12     34%  0.073
+  CPHD (order average)      444   77.7%   8.1cm    0.35     30%  0.078
+  P_D = true boxes found; RMSE* = over all true boxes, a missed box = 0.15 m; false = estimates with no true box, per scene
+
+written in results/evaluation_all/: scenes.csv, summary.csv and the figures
+calibration layouts: L4, L6, L8, L10, R01, R03, R05, R07, R09, R11, R13, R15, R17, R19, R21, R23, R25, R27, R29, R31, R33, R35, R38, R40, R42, R44, R46, R48, R50, R52, R54, R56, R58, R60, R70, R73, R75, R82, R84, R86, R88, R90, R92, R94, R96, R98, R100, R102, R104 (208 scenes); rare events from calibration
+detection: 2274 of 4088 boxes in view reported (0.56); model mean 0.56; w = [3.748, 2.366, -2.695, -1.747, -7.115]
+   best face   0-30  deg, unoccluded: real 0.88  model 0.88  (n=1224)
+   best face  30-45  deg, unoccluded: real 0.87  model 0.88  (n=667)
+   best face  45-60  deg, unoccluded: real 0.87  model 0.82  (n=615)
+   best face  60-75  deg, unoccluded: real 0.59  model 0.66  (n=110)
+   best face  75-120 deg, unoccluded: real 0.22  model 0.29  (n=60)
+two faces: 8 events, q = 0.020
+error along: mean +0.041 +0.003*d -0.057*cos(a); noise 0.009 + 0.007*d; robot range-scale bias sd 0.022 m/m
+error across: noise 0.054 + -0.005*d; robot bearing-offset sd 0.017 rad; viewing-angle noise 5.8 deg
+false detections: 123 in 813 captures (0.151 per capture), 36 near (< 3.5 m raw)
+written config/sensor_model_fidelity.json
+  L11: 50 simulated runs of 28 captures
+  L5: 50 simulated runs of 28 captures
+  L7: 50 simulated runs of 28 captures
+  L9: 50 simulated runs of 28 captures
+  R02: 50 simulated runs of 16 captures
+  R04: 50 simulated runs of 16 captures
+  R06: 50 simulated runs of 16 captures
+  R08: 50 simulated runs of 16 captures
+  R101: 50 simulated runs of 16 captures
+  R103: 50 simulated runs of 14 captures
+  R10: 50 simulated runs of 16 captures
+  R12: 50 simulated runs of 16 captures
+  R14: 50 simulated runs of 16 captures
+  R16: 50 simulated runs of 16 captures
+  R18: 50 simulated runs of 16 captures
+  R20: 50 simulated runs of 12 captures
+  R22: 50 simulated runs of 16 captures
+  R24: 50 simulated runs of 16 captures
+  R26: 50 simulated runs of 16 captures
+  R28: 50 simulated runs of 16 captures
+  R30: 50 simulated runs of 16 captures
+  R32: 50 simulated runs of 16 captures
+  R34: 50 simulated runs of 16 captures
+  R36: 50 simulated runs of 16 captures
+  R39: 50 simulated runs of 16 captures
+  R41: 50 simulated runs of 16 captures
+  R43: 50 simulated runs of 14 captures
+  R45: 50 simulated runs of 16 captures
+  R47: 50 simulated runs of 16 captures
+  R49: 50 simulated runs of 16 captures
+  R51: 50 simulated runs of 16 captures
+  R53: 50 simulated runs of 16 captures
+  R55: 50 simulated runs of 16 captures
+  R57: 50 simulated runs of 16 captures
+  R59: 50 simulated runs of 16 captures
+  R69: 50 simulated runs of 16 captures
+  R71: 50 simulated runs of 10 captures
+  R74: 50 simulated runs of 16 captures
+  R81: 50 simulated runs of 16 captures
+  R83: 50 simulated runs of 16 captures
+  R85: 50 simulated runs of 16 captures
+  R87: 50 simulated runs of 16 captures
+  R89: 50 simulated runs of 16 captures
+  R91: 50 simulated runs of 15 captures
+  R93: 50 simulated runs of 16 captures
+  R95: 50 simulated runs of 16 captures
+  R97: 50 simulated runs of 15 captures
+  R99: 50 simulated runs of 16 captures
+C:\GNN for vision fault\Multi-Robot-Cooperative-Perception\vf\fusion\phd.py:215: RuntimeWarning: invalid value encountered in multiply
+  updated += (float(ups1_k @ rho) / den) * psi[k] * s

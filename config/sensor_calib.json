@@ -1,18 +1,20 @@
 {
   "range_fit": [
-    1.1019,
-    -0.1242
+    1.0826,
+    -0.1175
   ],
   "bearing_fit": [
-    1.0157,
-    0.00182
+    1.0328,
+    -0.00833
   ],
-  "sigma_pos": 0.0446,
-  "p_d": 0.782,
+  "sigma_pos": 0.046,
+  "p_d": 0.644,
   "camera_offset": 0.0,
-  "residual_distance_m": 0.0383,
-  "residual_lateral_m": 0.0502,
-  "detections": 608,
-  "spurious": 26,
-  "source": "Z:\\Vision-fault\\statico\\survey_rounds"
+  "residual_distance_m": 0.0372,
+  "residual_lateral_m": 0.0533,
+  "detections": 4786,
+  "spurious": 260,
+  "source": [
+    "C:\\GNN for vision fault\\Multi-Robot-Cooperative-Perception\\data\\survey_all"
+  ]
 }

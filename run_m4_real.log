@@ -1,0 +1,13 @@
+variant detection_full_full_h2 -> results/plan/M4/gnn/detection_full_full_h2
+  REAL   ( 4.0 viewpoints) GNN P_D  99.4¡¾0.2%, RMSE*  3.7¡¾0.1 cm, false 0.00 | MHT P_D  99.6%, RMSE*  3.8 cm, false 0.14
+  REAL3  ( 3.9 viewpoints) GNN P_D  95.5¡¾0.2%, RMSE*  5.5¡¾0.1 cm, false 0.02 | MHT P_D  95.3%, RMSE*  5.6 cm, false 0.19
+
+written in results/plan/M4/gnn/detection_full_full_h2: summary_real.csv, mcnemar_real.csv, test_scenes_real.csv
+[main f5772cd1] M4 graph network on the real campaigns
+ 3 files changed, 1437 insertions(+)
+ create mode 100644 results/plan/M4/gnn/detection_full_full_h2/mcnemar_real.csv
+ create mode 100644 results/plan/M4/gnn/detection_full_full_h2/summary_real.csv
+ create mode 100644 results/plan/M4/gnn/detection_full_full_h2/test_scenes_real.csv
+Already up to date.
+To https://github.com/Marththt/Multi-Robot-Cooperative-Perception.git
+   aa9dc532..f5772cd1  main -> main
