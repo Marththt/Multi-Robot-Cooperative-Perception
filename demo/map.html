@@ -4,87 +4,128 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
+  /* Arena grey ground, white instruments on it; colour only where it carries meaning:
+     green / red / amber = verdict, blue = robots, orange = YOLO rays. */
   :root {
-    --bg: #f6f5f2; --card: #ffffff; --ink: #14140f; --ink2: #55544e; --line: #dddcd6;
-    --good: #0f7b3f; --good-bg: #e3f3e8; --bad: #b3261e; --bad-bg: #fbe9e7; --warn: #8a5a00; --warn-bg: #fdf1d6;
-    --robot: #2a78d6; --muted-bg: #eeede8;
+    --ground: #e7ebee; --panel: #ffffff; --ink: #0f1820; --slate: #56636e; --faint: #8a959e; --line: #cfd6dc;
+    --good: #17804a; --good-soft: #e1f2e8; --bad: #c2392d; --bad-soft: #fbe8e5; --warn: #9a6400; --warn-soft: #fbf0d6;
+    --robot: #2867d6; --robot-soft: #d9e5f8; --ray: #e07a1f; --map: #fbfcfd; --grid: #e4e9ed;
+    --font: "IBM Plex Sans", system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
-  header { padding: 14px 22px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; border-bottom: 1px solid var(--line); background: var(--card); }
-  h1 { font-size: 22px; margin: 0; font-weight: 650; }
-  #status { margin-left: auto; color: var(--ink2); font-size: 15px; }
-  #status::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--robot); margin-right: 8px; animation: pulse 1.4s infinite; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.45 var(--font); font-variant-numeric: tabular-nums; }
+  button { font: inherit; }
+  :focus-visible { outline: 3px solid var(--robot); outline-offset: 2px; }
+
+  /* header: what is on the floor now */
+  header { display: grid; grid-template-columns: 1fr auto; gap: 4px 24px; align-items: start; padding: 18px 28px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+  #scene { grid-column: 1; margin: 0; color: var(--slate); font-size: 16px; max-width: 80ch; }
+  #scene b { color: var(--ink); font-weight: 600; }
+  #scene .lv { font-weight: 600; }
+  #scene .lv.easy { color: var(--good); } #scene .lv.medium { color: var(--warn); } #scene .lv.hard { color: var(--bad); }
+  #status { grid-column: 2; grid-row: 1 / span 2; align-self: center; display: inline-flex; align-items: center; gap: 8px; color: var(--slate); font-size: 15px; white-space: nowrap; }
+  #status::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--good); animation: pulse 1.4s infinite; }
   #status.off::before { background: var(--bad); animation: none; }
-  @keyframes pulse { 50% { opacity: .25; } }
-  @media (prefers-reduced-motion: reduce) { #status::before { animation: none; } }
-  main { padding: 14px 22px 26px; }
-  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
-  .chip { font-size: 14px; padding: 3px 10px; border-radius: 999px; background: var(--muted-bg); color: var(--ink2); font-variant-numeric: tabular-nums; }
-  .chip b { color: var(--ink); }
-  .chip.hard { background: var(--bad-bg); color: var(--bad); } .chip.medium { background: var(--warn-bg); color: var(--warn); } .chip.easy { background: var(--good-bg); color: var(--good); }
-  .chip.hard b, .chip.medium b, .chip.easy b { color: inherit; }
-  button { font: inherit; font-size: 14px; padding: 3px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--ink); cursor: pointer; }
-  button:hover { border-color: var(--ink2); }
-  button:focus-visible { outline: 3px solid var(--robot); outline-offset: 2px; }
-  .drive { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 12px; padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
-  .drive b { font-weight: 650; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { #status::before { animation: none; } .score i { transition: none !important; } }
+
+  main { padding: 18px 28px 32px; max-width: 1680px; margin: 0 auto; }
+
+  /* drive toolbar */
+  .drive { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 16px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+  .drive .what { font-weight: 600; margin-right: 4px; }
+  .drive button { font-size: 14px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); cursor: pointer; }
+  .drive button:hover { border-color: var(--slate); }
   .drive button[aria-pressed="true"] { background: var(--robot); color: #fff; border-color: var(--robot); }
-  .drive .hint { color: var(--ink2); }
+  .drive button.stop { border-color: var(--bad); color: var(--bad); }
+  .drive .hint { color: var(--slate); }
   .drive .st-driving { color: var(--robot); } .drive .st-failed, .drive .st-blocked, .drive .st-refused { color: var(--bad); } .drive .st-reached { color: var(--good); }
-  button.stop { border-color: var(--bad); color: var(--bad); }
+  .drive .end { margin-left: auto; }
   canvas.pick { cursor: crosshair; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 10px; display: flex; flex-direction: column; min-width: 0; }
-  .card h2 { font-size: 17px; margin: 0; font-weight: 650; min-height: 2.8em; display: flex; align-items: flex-end; }
-  .card .in { color: var(--ink2); font-size: 13.5px; margin: 1px 0 8px; }
-  .verdict { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-weight: 650; font-size: 16px; padding: 3px 11px; border-radius: 7px; background: var(--muted-bg); color: var(--ink2); }
-  .verdict.correct { background: var(--good-bg); color: var(--good); }
-  .verdict.few, .verdict.many { background: var(--bad-bg); color: var(--bad); }
-  .verdict.misplaced { background: var(--warn-bg); color: var(--warn); }
-  canvas { width: 100%; aspect-ratio: 1; margin-top: 8px; border-radius: 6px; background: #fbfbf9; border: 1px solid var(--line); }
-  .foot { color: var(--ink2); font-size: 14px; margin-top: 7px; display: flex; flex-direction: column; gap: 1px; font-variant-numeric: tabular-nums; min-height: 4.3em; }
-  .old { color: var(--bad); }
-  .score { margin-top: 6px; height: 7px; border-radius: 4px; background: var(--muted-bg); overflow: hidden; }
+
+  /* the three methods, side by side */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .method { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 16px 14px; display: flex; flex-direction: column; min-width: 0; }
+  .method.proposed { border: 2px solid var(--ink); padding: 15px 15px 13px; }
+  .name { display: flex; align-items: baseline; gap: 10px; }
+  .name h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .role { font-size: 13px; color: var(--slate); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+  .method.proposed .role { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .uses { margin: 2px 0 12px; color: var(--slate); font-size: 14px; }
+
+  /* the verdict band: the one thing to read from the back of the room */
+  .verdict { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; border-radius: 8px 8px 0 0; font-size: 21px; font-weight: 600; background: #eef1f3; color: var(--slate); }
+  .verdict .sym { font-size: 24px; width: 1.1em; text-align: center; }
+  .verdict.correct { background: var(--good); color: #fff; }
+  .verdict.few, .verdict.many { background: var(--bad); color: #fff; }
+  .verdict.misplaced { background: var(--warn-soft); color: var(--warn); }
+  canvas { display: block; width: 100%; aspect-ratio: 1; background: var(--map); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 8px 8px; }
+
+  .stats { margin-top: 10px; display: grid; gap: 2px; font-size: 15px; min-height: 3.1em; }
+  .stats .found { font-weight: 500; }
+  .stats .time { color: var(--faint); font-size: 13px; }
+  .stats .time.old { color: var(--bad); }
+  .run { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px; color: var(--slate); }
+  .run b { color: var(--ink); font-weight: 600; }
+  .score { margin-top: 6px; height: 8px; border-radius: 4px; background: var(--bad-soft); overflow: hidden; }
+  .score.empty { background: #eef1f3; }
   .score i { display: block; height: 100%; background: var(--good); transition: width .3s; }
-  h3 { font-size: 15px; font-weight: 650; color: var(--ink2); margin: 20px 0 8px; }
-  .frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-  figure img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #222; }
-  figcaption { padding: 6px 10px; font-size: 14px; color: var(--ink2); }
-  figcaption b { color: var(--ink); }
-  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink2); font-size: 14px; margin-top: 12px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .legend svg { flex: none; }
+
+  /* legend and window controls, right under the maps */
+  .under { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 14px; color: var(--slate); font-size: 14px; }
+  .under span { display: inline-flex; align-items: center; gap: 7px; }
+  .under svg { flex: none; }
+  #reset { margin-left: auto; font-size: 14px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); cursor: pointer; }
+  #reset:hover { border-color: var(--slate); }
+
+  /* camera strip */
+  .cams { margin-top: 28px; }
+  .cams h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  .cams p { margin: 0 0 12px; color: var(--slate); font-size: 14px; }
+  .cams p .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin: 0 4px 0 2px; }
+  .frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  figure img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #1d242b; }
+  figcaption { padding: 7px 11px; font-size: 14px; color: var(--slate); }
+  figcaption b { color: var(--ink); font-weight: 600; margin-right: 6px; }
+  figcaption small { display: block; color: var(--faint); font-size: 12.5px; }
+
+  @media (max-width: 640px) {
+    header, main { padding-left: 16px; padding-right: 16px; }
+    header { grid-template-columns: 1fr; }
+    #status { grid-column: 1; grid-row: auto; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>Cooperative box localisation: live comparison</h1>
+  <h1>Where are the boxes? Three methods, same robots, live</h1>
+  <p id="scene">Waiting for the first state of the robots.</p>
   <span id="status">connecting</span>
 </header>
 <main>
-  <div class="bar">
-    <span class="chip" id="scene"></span>
-    <span class="chip" id="level" hidden></span>
-    <span class="chip" id="robots"></span>
-    <span class="chip">bars: correct over the last <b>30 s</b></span>
-    <button id="reset" title="Start the count of the last 30 s again">Reset count</button>
-  </div>
   <div class="drive" id="drive" hidden></div>
   <div class="grid" id="grid"></div>
-  <div class="legend" aria-label="Legend">
-    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fff" stroke="#14140f" stroke-width="1.6"/></svg>true box (OptiTrack)</span>
-    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fbe9e7" stroke="#b3261e" stroke-width="1.6" stroke-dasharray="3 2"/></svg>true box not found</span>
-    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#0f7b3f" stroke="#fff" stroke-width="2"/></svg>estimate on a box (within 15 cm)</span>
-    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#fff" stroke="#b3261e" stroke-width="2.4"/><path d="M5.5 5.5l7 7M12.5 5.5l-7 7" stroke="#b3261e" stroke-width="2"/></svg>estimate with no box</span>
-    <span><svg width="18" height="18"><circle cx="9" cy="9" r="2.6" fill="#9a9990"/></svg>single detection</span>
-    <span><svg width="26" height="18"><path d="M2 9h22" stroke="rgba(214,120,20,0.8)" stroke-width="1.6"/></svg>YOLO ray (model C)</span>
-    <span><svg width="26" height="18"><rect x="2" y="4" width="13" height="10" fill="#d6e4f7" stroke="#2a78d6" stroke-width="1.6"/><path d="M15 9h9" stroke="#2a78d6" stroke-width="1.8"/></svg>robot and camera direction</span>
+  <div class="under" aria-label="Legend">
+    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fff" stroke="#0f1820" stroke-width="1.6"/></svg>box (OptiTrack)</span>
+    <span><svg width="20" height="18"><polygon points="10,2 18,16 2,16" fill="#fbe8e5" stroke="#c2392d" stroke-width="1.6" stroke-dasharray="3 2"/></svg>box not found</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#17804a" stroke="#fff" stroke-width="2"/></svg>estimate on a box (within 15 cm)</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#fff" stroke="#c2392d" stroke-width="2.4"/><path d="M5.5 5.5l7 7M12.5 5.5l-7 7" stroke="#c2392d" stroke-width="2"/></svg>estimate with no box</span>
+    <span><svg width="18" height="18"><circle cx="9" cy="9" r="2.6" fill="#8a959e"/></svg>marker detection</span>
+    <span><svg width="26" height="18"><path d="M2 9h22" stroke="#e07a1f" stroke-width="1.8"/></svg>YOLO ray (model C)</span>
+    <span><svg width="26" height="18"><rect x="2" y="4" width="13" height="10" fill="#d9e5f8" stroke="#2867d6" stroke-width="1.6"/><path d="M15 9h9" stroke="#2867d6" stroke-width="1.8"/></svg>robot, camera direction</span>
+    <button id="reset" title="Start the count of the last 30 s again">Restart the 30 s count</button>
   </div>
-  <h3 id="framesTitle" hidden>What the robots see: boxes segmented by YOLO (coloured outlines) and detected markers (red)</h3>
-  <div class="frames" id="frames"></div>
+  <section class="cams" id="cams" hidden>
+    <h3>What the robots see</h3>
+    <p>Each box segmented by YOLO has its own coloured outline; the ArUco markers read are in <span class="swatch" style="background:#c2392d"></span>red rectangles.</p>
+    <div class="frames" id="frames"></div>
+  </section>
 </main>
 <script>
 "use strict";
@@ -94,6 +135,8 @@ const CUTOFF = 0.15, WINDOW_S = 30, OLD_S = 3;
 const DETECTION_METHODS = new Set(["mht_sensor", "gnn", "yolo_gnn"]);
 const POLL_MS = 80;                          // state asked about twelve times per second
 const DELAY_S = 0.15;                        // robots and boxes drawn where they were 0.15 s ago, interpolated
+const C = { ink: "#0f1820", slate: "#56636e", faint: "#8a959e", grid: "#e4e9ed", good: "#17804a", bad: "#c2392d",
+            badSoft: "#fbe8e5", robot: "#2867d6", robotSoft: "#d9e5f8", robotText: "#1b4fa8", ray: "rgba(224, 122, 31, 0.6)" };
 let state = null, built = false, selected = null, lastB = null, driveKey = "";
 let dirty = true, clockOffset = null, drawnKey = "";
 const buf = {};                              // "robot:P0" / "box:11" -> timed poses [[t, x, y, yaw], ...]
@@ -104,6 +147,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const setHTML = (el, html) => { if (el.innerHTML !== html && el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; } };
 const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 function absorb() {                         // a new state: server clock and timed poses
   const off = state.now - performance.now() / 1000;
@@ -143,14 +187,17 @@ function place() {                           // poses of this frame; true when t
   drawnKey = key;
   return changed;
 }
-function verdictHtml(r) {
-  if (!r) return `<span class="verdict">waiting</span>`;
-  if (r.verdict === null) return `<span class="verdict">${r.n_est} found (no boxes from OptiTrack)</span>`;
+
+function verdictHtml(r, err) {               // the band above each map
+  const band = (cls, sym, text, title) => `<div class="verdict ${cls}"${title ? ` title="${esc(title)}"` : ""}><span class="sym" aria-hidden="true">${sym}</span>${text}</div>`;
+  if (err) return band("", "&ndash;", "Not available", err);
+  if (!r) return band("", "&hellip;", "Waiting for the first result");
+  if (r.verdict === null) return band("", "?", `${plural(r.n_est, "box", "boxes")} found, no OptiTrack boxes to check`);
   const d = r.n_est - r.n_true;
-  if (r.verdict === "correct") return `<span class="verdict correct">&#10003; correct</span>`;
-  if (r.verdict === "too few") return `<span class="verdict few">&minus; ${-d} box${d === -1 ? "" : "es"} missing</span>`;
-  if (r.verdict === "too many") return `<span class="verdict many">+ ${d} box${d === 1 ? "" : "es"} too many</span>`;
-  return `<span class="verdict misplaced">&#9651; right count, one misplaced</span>`;
+  if (r.verdict === "correct") return band("correct", "&#10003;", "Correct");
+  if (r.verdict === "too few") return band("few", "&minus;", `${plural(-d, "box", "boxes")} missing`);
+  if (r.verdict === "too many") return band("many", "+", `${plural(d, "box", "boxes")} too many`);
+  return band("misplaced", "&#9651;", "Right count, a box misplaced");
 }
 
 function match(est, truth) {                 // one to one, nearest pairs first, within the cut-off (as the server)
@@ -177,15 +224,15 @@ function draw(canvas, key, B) {
   g.clearRect(0, 0, size, size);
   const s = size / (2 * B.half);
   const X = x => (x - B.cx + B.half) * s, Y = y => size - (y - B.cy + B.half) * s;       // Motive y upwards
-  g.lineWidth = 1; g.strokeStyle = "#ebeae4";                                             // 50 cm grid
+  g.lineWidth = 1; g.strokeStyle = C.grid;                                                // 50 cm grid
   for (let v = Math.ceil((B.cx - B.half) * 2) / 2; v < B.cx + B.half; v += 0.5) { g.beginPath(); g.moveTo(X(v), 0); g.lineTo(X(v), size); g.stroke(); }
   for (let v = Math.ceil((B.cy - B.half) * 2) / 2; v < B.cy + B.half; v += 0.5) { g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(size, Y(v)); g.stroke(); }
-  g.fillStyle = "#55544e"; g.font = "11px system-ui, sans-serif";
+  g.fillStyle = C.slate; g.font = "11px 'IBM Plex Sans', system-ui, sans-serif";
   g.fillRect(size / 2 - 0.25 * s, size - 9, 0.5 * s, 2); g.textAlign = "center"; g.fillText("50 cm", size / 2, size - 13); g.textAlign = "left";
   for (const [name, r] of Object.entries(state.robots)) {                                 // goals of moving robots
     const m = r.motion;
     if (!m || m.state !== "driving" || !m.goal) continue;
-    g.strokeStyle = "#2a78d6"; g.lineWidth = 1.5; g.setLineDash([5, 4]);
+    g.strokeStyle = C.robot; g.lineWidth = 1.5; g.setLineDash([5, 4]);
     const p = drawn.robots[name] || r.pose;
     g.beginPath(); g.moveTo(X(p[0]), Y(p[1])); g.lineTo(X(m.goal[0]), Y(m.goal[1])); g.stroke(); g.setLineDash([]);
     g.beginPath(); g.arc(X(m.goal[0]), Y(m.goal[1]), 6, 0, 2 * Math.PI); g.stroke();
@@ -200,12 +247,12 @@ function draw(canvas, key, B) {
     // the robot (30 x 25 cm, to scale) behind the camera, which is on its front edge (pose = camera pose)
     const sel = name === selected, L = Math.max(ROBOT_L * s, 8), Wd = Math.max(ROBOT_W * s, 7);
     g.save(); g.translate(x, y); g.rotate(a);
-    g.fillStyle = sel ? "#2a78d6" : "#d6e4f7"; g.strokeStyle = "#2a78d6"; g.lineWidth = sel ? 3 : 1.6;
+    g.fillStyle = sel ? C.robot : C.robotSoft; g.strokeStyle = C.robot; g.lineWidth = sel ? 3 : 1.6;
     g.beginPath(); g.rect(-L, -Wd / 2, L, Wd); g.fill(); g.stroke();
     g.lineWidth = 1.8; g.beginPath(); g.moveTo(0, 0); g.lineTo(18, 0); g.stroke();
-    g.fillStyle = "#2a78d6"; g.beginPath(); g.arc(0, 0, 2.5, 0, 2 * Math.PI); g.fill();
+    g.fillStyle = C.robot; g.beginPath(); g.arc(0, 0, 2.5, 0, 2 * Math.PI); g.fill();
     g.restore();
-    g.fillStyle = "#1d5fb0"; g.font = "600 11px system-ui, sans-serif"; g.textAlign = "center";
+    g.fillStyle = C.robotText; g.font = "600 11px 'IBM Plex Sans', system-ui, sans-serif"; g.textAlign = "center";
     g.fillText(name, x - (L + 12) * Math.cos(a), y - (L + 12) * Math.sin(a) + 4); g.textAlign = "left";
   }
   const res = state.results[key], truth = state.truth || [];
@@ -218,26 +265,26 @@ function draw(canvas, key, B) {
       k ? g.lineTo(x, y) : g.moveTo(x, y);
     }
     g.closePath();
-    g.fillStyle = found ? "#ffffff" : "#fbe9e7"; g.fill();
-    g.setLineDash(found ? [] : [5, 3]); g.strokeStyle = found ? "#14140f" : "#b3261e"; g.lineWidth = 1.7; g.stroke(); g.setLineDash([]);
+    g.fillStyle = found ? "#ffffff" : C.badSoft; g.fill();
+    g.setLineDash(found ? [] : [5, 3]); g.strokeStyle = found ? C.ink : C.bad; g.lineWidth = 1.7; g.stroke(); g.setLineDash([]);
   });
   if (key === "yolo_gnn") {                                                               // YOLO rays (model C)
-    g.strokeStyle = "rgba(214, 120, 20, 0.55)"; g.lineWidth = 1.4;
+    g.strokeStyle = C.ray; g.lineWidth = 1.4;
     for (const [x0, y0, a, d] of state.rays || []) {
       const t = Math.min(d + 0.4, 3.2);
       g.beginPath(); g.moveTo(X(x0), Y(y0)); g.lineTo(X(x0 + t * Math.cos(a)), Y(y0 + t * Math.sin(a))); g.stroke();
     }
   }
   if (DETECTION_METHODS.has(key)) {                                                       // what these methods read
-    g.fillStyle = "#9a9990";
+    g.fillStyle = C.faint;
     for (const d of state.detections) { g.beginPath(); g.arc(X(d[0]), Y(d[1]), 2.6, 0, 2 * Math.PI); g.fill(); }
   }
   if (res) res.boxes.forEach((b, i) => {                                                  // estimates
     const x = X(b[0]), y = Y(b[1]);
     g.beginPath(); g.arc(x, y, 7.5, 0, 2 * Math.PI);
-    if (eOk[i]) { g.fillStyle = "#0f7b3f"; g.fill(); g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.stroke(); }
+    if (eOk[i]) { g.fillStyle = C.good; g.fill(); g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.stroke(); }
     else {
-      g.fillStyle = "#ffffff"; g.fill(); g.strokeStyle = "#b3261e"; g.lineWidth = 2.4; g.stroke();
+      g.fillStyle = "#ffffff"; g.fill(); g.strokeStyle = C.bad; g.lineWidth = 2.4; g.stroke();
       g.beginPath(); g.moveTo(x - 3.6, y - 3.6); g.lineTo(x + 3.6, y + 3.6); g.moveTo(x + 3.6, y - 3.6); g.lineTo(x - 3.6, y + 3.6); g.lineWidth = 2; g.stroke();
     }
   });
@@ -245,11 +292,15 @@ function draw(canvas, key, B) {
 
 function build() {
   $("grid").innerHTML = state.methods.map(m =>
-    `<section class="card" aria-label="${esc(m.label)}"><h2>${esc(m.label)}</h2><div class="in">input: ${esc(m.input)}</div>
-      <div id="v_${m.key}"></div>
+    `<section class="method${m.role === "proposed" ? " proposed" : ""}" aria-label="${esc(m.label)}">
+      <div class="name"><h2>${esc(m.short || m.label)}</h2>${m.role ? `<span class="role">${esc(m.role)}</span>` : ""}</div>
+      <p class="uses">${esc(m.input)}</p>
+      <div id="v_${m.key}" aria-live="polite"></div>
       <canvas data-key="${m.key}" role="img" aria-label="Top-down map of ${esc(m.label)}"></canvas>
-      <div class="foot" id="f_${m.key}"></div>
-      <div class="score" aria-hidden="true"><i id="s_${m.key}" style="width:0"></i></div></section>`).join("");
+      <div class="stats" id="f_${m.key}"></div>
+      <div class="run"><span id="r_${m.key}">Last 30 s: no result yet</span>
+        <div class="score empty" id="sb_${m.key}" aria-hidden="true"><i id="s_${m.key}" style="width:0"></i></div></div>
+    </section>`).join("");
   built = true;
 }
 
@@ -274,8 +325,25 @@ function setFrame(q, src) {                  // the new frame replaces the old o
     next.src = "/frames/" + src;
     img.dataset.src = src;
   }
-  const c = state.camera[q];
-  setHTML(fig.querySelector("figcaption"), `<b>${esc(q)}</b>` + (c ? ` &middot; camera pitch ${c[0]}&deg;, yaw offset ${c[1]}&deg;` : ""));
+  const c = state.camera[q], r = state.robots[q];
+  setHTML(fig.querySelector("figcaption"), `<b>${esc(q)}</b>` + (r ? `reads ${plural(r.n, "marker", "markers")}` : "") +
+    (c ? `<small>camera pitch ${c[0]}&deg;, yaw offset ${c[1]}&deg;</small>` : ""));
+}
+
+function sceneText() {                       // one sentence about what is on the floor
+  const truth = state.truth, nr = Object.keys(state.robots).length;
+  if (!nr) return "Waiting for the first state of the robots.";
+  let t = truth === null ? `No boxes from OptiTrack, ` : `<b>${plural(truth.length, "box", "boxes")}</b> on the floor, `;
+  t += `<b>${plural(nr, "robot", "robots")}</b>.`;
+  const lv = state.level;
+  if (lv) {
+    const why = [];
+    if (lv.gap_cm) why.push(`closest boxes ${lv.gap_cm} cm apart`);
+    why.push(lv.min_clear_views ? `least seen box in clear view of ${plural(lv.min_clear_views, "robot", "robots")}`
+                                : "a box in clear view of no robot");
+    t += ` <span class="lv ${esc(lv.level)}">${esc(lv.level[0].toUpperCase() + lv.level.slice(1))} scene</span>: ${why.join(", ")}.`;
+  }
+  return t;
 }
 
 function render() {
@@ -283,37 +351,29 @@ function render() {
   if (!built) build();
   if ($("status").textContent !== state.status) $("status").textContent = state.status;
   $("status").className = state.status.startsWith("live") ? "" : "off";
-  const truth = state.truth, nr = Object.keys(state.robots).length;
-  setHTML($("scene"), truth === null ? "no boxes from OptiTrack" : `<b>${truth.length}</b> box${truth.length === 1 ? "" : "es"} on the floor`);
-  setHTML($("robots"), `<b>${nr}</b> robot${nr === 1 ? "" : "s"}` + (nr ? ": " +
-    Object.entries(state.robots).map(([q, r]) => `${esc(q)} sees ${r.n}`).join(", ") : ""));
-  const lv = state.level;
-  $("level").hidden = !lv;
-  if (lv) {
-    $("level").className = "chip " + lv.level;
-    setHTML($("level"), `scene <b>${lv.level}</b>` + (lv.gap_cm ? ` &middot; closest boxes ${lv.gap_cm} cm` : "") +
-      ` &middot; least seen box: ${lv.min_clear_views} robot${lv.min_clear_views === 1 ? "" : "s"}`);
-  }
+  setHTML($("scene"), sceneText());
   renderDrive();
   absorb();
   const B = bounds(); lastB = B;
   for (const m of state.methods) {
     const res = state.results[m.key], err = state.unavailable[m.key];
-    setHTML($("v_" + m.key), err ? `<span class="verdict" title="${esc(err)}">not available</span>` : verdictHtml(res));
+    setHTML($("v_" + m.key), verdictHtml(res, err));
     const h = record(m.key, res), ok = h.filter(e => e[1]).length;
     let foot = "";
     if (res) {
       const age = Math.max(0, state.now - res.t);
-      if (res.verdict !== null) foot += `<span>found ${res.n_matched} of ${res.n_true}${res.rmse_cm === null ? "" : ` &middot; error ${res.rmse_cm} cm`}</span>`;
-      foot += `<span class="${age > OLD_S ? "old" : ""}">input ${age.toFixed(1)} s old &middot; computed in ${res.seconds} s</span>`;
+      if (res.verdict !== null) foot += `<span class="found">${res.n_matched} of ${res.n_true} boxes found${res.rmse_cm === null ? "" : `, error ${res.rmse_cm} cm`}</span>`;
+      foot += `<span class="time${age > OLD_S ? " old" : ""}">input ${age.toFixed(1)} s old, computed in ${res.seconds} s</span>`;
     }
-    if (h.length) foot += `<span>correct in ${ok} of ${h.length} updates (${Math.round(100 * ok / h.length)}%)</span>`;
     setHTML($("f_" + m.key), foot);
+    setHTML($("r_" + m.key), h.length ? `Last 30 s: correct in <b>${ok} of ${h.length}</b> updates (${Math.round(100 * ok / h.length)}%)`
+                                      : "Last 30 s: no result yet");
+    $("sb_" + m.key).classList.toggle("empty", !h.length);
     $("s_" + m.key).style.width = (h.length ? 100 * ok / h.length : 0) + "%";
   }
   dirty = true;                              // the maps are drawn by the animation loop (frame)
   const frames = Object.entries(state.frames);
-  $("framesTitle").hidden = !frames.length;
+  $("cams").hidden = !frames.length;
   for (const [q, f] of frames) setFrame(q, f);
   document.querySelectorAll("figure[data-q]").forEach(f => { if (!(f.dataset.q in state.frames)) f.remove(); });
 }
@@ -331,12 +391,12 @@ function renderDrive() {                     // move the robots from the page (a
   const key = names.join() + "|" + selected + "|" + st;
   if (key === driveKey) return;              // rebuilt only when something changed, so clicks are not lost
   driveKey = key;
-  bar.innerHTML = `<b>Move</b>` + names.map(q => `<button data-robot="${esc(q)}" aria-pressed="${q === selected}">${esc(q)}</button>`).join("") +
-    (selected ? ` <span class="hint">click a point of any map to send ${esc(selected)} there (it arrives facing the boxes)</span>
-      <button data-cmd="turn" data-deg="22.5">turn left</button><button data-cmd="turn" data-deg="-22.5">turn right</button>
-      <button data-cmd="face">face the boxes</button><button data-cmd="stop" class="stop">stop</button> ${st}`
-      : ` <span class="hint">pick a robot, or click it on a map</span>`) +
-    ` <button data-cmd="stopall" class="stop" style="margin-left:auto">stop all robots</button>`;
+  bar.innerHTML = `<span class="what">Move a robot</span>` + names.map(q => `<button data-robot="${esc(q)}" aria-pressed="${q === selected}">${esc(q)}</button>`).join("") +
+    (selected ? ` <span class="hint">click a point on any map to send ${esc(selected)} there, facing the boxes</span>
+      <button data-cmd="turn" data-deg="22.5">Turn left</button><button data-cmd="turn" data-deg="-22.5">Turn right</button>
+      <button data-cmd="face">Face the boxes</button><button data-cmd="stop" class="stop">Stop ${esc(selected)}</button> ${st}`
+      : ` <span class="hint">pick a robot here or click it on a map</span>`) +
+    ` <button data-cmd="stopall" class="stop end">Stop all robots</button>`;
   document.querySelectorAll("canvas[data-key]").forEach(c => c.classList.toggle("pick", !!selected));
 }
 

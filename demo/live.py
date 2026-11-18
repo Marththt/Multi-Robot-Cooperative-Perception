@@ -53,8 +53,11 @@ from demo import methods
 
 LABELS = {"mht_sensor": "MHT", "gnn": "Graph network (model A)",
           "yolo_gnn": "YOLO + graph network (model C)"}
-INPUT = {"mht_sensor": "detections", "gnn": "detections",
-         "yolo_gnn": "detections + YOLO rays of the camera frames"}
+INPUT = {"mht_sensor": "ArUco markers, hand-written sensor model",
+         "gnn": "ArUco markers, graph network trained in simulation",
+         "yolo_gnn": "ArUco markers and YOLO box rays, same graph network"}
+SHORT = {"mht_sensor": "MHT", "gnn": "Model A", "yolo_gnn": "Model C"}
+ROLE = {"mht_sensor": "baseline", "gnn": "", "yolo_gnn": "proposed"}
 IMAGE_KEYS = ["yolo_gnn"]
 PAGE = os.path.join(os.path.dirname(__file__), "map.html")
 TRACK_S = 0.6                                            # timed poses sent to the page
@@ -65,7 +68,7 @@ class Live:
         self.a = a
         self.lock = threading.Lock()
         self.recent_lock = threading.Lock()
-        self.state = dict(status="starting", methods=[dict(key=k, label=LABELS[k], input=INPUT[k]) for k in LABELS],
+        self.state = dict(status="starting", methods=[dict(key=k, label=LABELS[k], short=SHORT[k], role=ROLE[k], input=INPUT[k]) for k in LABELS],
                           unavailable={}, results={}, robots={}, truth=None, level=None, detections=[], frames={},
                           camera={}, rays=[], loops={})
         os.makedirs(a.work, exist_ok=True)
