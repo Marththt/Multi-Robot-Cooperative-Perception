@@ -6,7 +6,7 @@ Run every command from the repository root. Scripts are run as modules (`python 
 
 The robots stand still and stream what they see. Place them, move them by hand, move, add or take away boxes, put
 other objects in the way, at any time: the page follows within a second for MHT, MHT with sensor model and the
-graph network, within a few seconds for the two image networks.
+graph network (model A), within a second or two for YOLO + graph network (model C).
 
 `demo/live.py` only reads the files the robots write, so it runs in its own terminal and its own Python environment
 (the robot SDK needs an old Python; the networks need a recent one with `torch`). One-time setup on the capture PC,
@@ -15,7 +15,7 @@ from the repository root:
     py -3.11 -m venv .venv_demo
     .venv_demo\Scripts\activate.bat
     pip install torch --index-url https://download.pytorch.org/whl/cu128
-    pip install transformers pillow opencv-python numpy scipy matplotlib
+    pip install "ultralytics==8.4.213" pillow opencv-python numpy scipy matplotlib
 
 Terminal 1 (the usual capture environment): the robots and OptiTrack. It starts one camera process per robot, one
 after the other, and writes the boxes OptiTrack tracks inside the arena (every box must be a rigid body in Motive,
@@ -23,8 +23,9 @@ after the other, and writes the boxes OptiTrack tracks inside the arena (every b
 
     python -m demo.live_robots --robot P0:8 --robot P1:7 --robot P3:10:config/checkerboard_calib_P1.json --robot P5:6:config/checkerboard_calib_P1.json
 
-Terminal 2 (demo environment): the methods and the page, http://localhost:8000. The first start downloads the
-segmentation models (Grounding DINO, SAM) once.
+Terminal 2 (demo environment): the methods and the page, http://localhost:8000. Model C reads the YOLO weights
+`results/yolo_seg/box_seg/weights/best.pt` and the thresholds `results/yolo_gnn/cv_params.json` (both in the
+repository); on its map, the YOLO rays of the robots are drawn in orange.
 
     .venv_demo\Scripts\activate.bat
     python -m demo.live
@@ -38,9 +39,10 @@ box or to the arena border are refused, and the reason shows next to the buttons
 
 Each panel shows the boxes its method finds now against the true boxes, the verdict (correct, too few, too many,
 misplaced), how old its input is and how often it was correct in the last 30 seconds; above the panels, the
-difficulty level of the scene as it is now; below, the frames of the robots with the box masks and the markers.
+difficulty level of the scene as it is now; below, the frames of the robots with the boxes segmented by YOLO and
+the markers.
 
-Camera angles for the image networks: by default the pitch and yaw offset of each camera are fitted continuously on
+Camera angles for the YOLO rays: by default the pitch and yaw offset of each camera are fitted continuously on
 the markers the robots see. To fix them before the demo, leave the robots looking at some boxes for a minute while
 saving them, then start the demo with the file:
 
@@ -52,8 +54,8 @@ Rehearsal without robots: a recorded run played as if it were live, one round ev
     python -m demo.live --replay data/survey_v2/R01_20261109-153345F --replay-every 4
 
 Other options: `--window-s` (seconds of detections pooled per object, default 1), `--no-images` (only the methods
-on the detections, for a PC without GPU), `--gnn`, `--image`, `--image-markers` (variant folders in `results/`),
-`--port`. A method whose packages or model files are missing is shown as "not available" and the others keep
+on the detections, without model C), `--gnn` (marker network, models A and C), `--yolo`, `--yolo-params`,
+`--yolo-fold` (thresholds chosen on half 0 or 1 of the layouts, default 1), `--device`, `--port`. A method whose packages or model files are missing is shown as "not available" and the others keep
 working.
 
 ## Record the box positions (OptiTrack)

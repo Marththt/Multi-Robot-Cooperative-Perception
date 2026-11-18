@@ -9,14 +9,15 @@ The wrappers reuse the code of the offline evaluation, so the robots' data are p
   Classical   MHT and MHT with sensor model    the state is written as one round of a run and read back with
                                                pipeline/build_scans.load_points + pipeline/analyze_rounds.fuse
   Gnn         graph network on the detections  the same round read with gnn/dataset.build_scenes, gnn/model
-  ImageNets   image network, masks alone and   frames segmented with bevnet/segment.py, scene built as in
-              masks + detected markers         bevnet/real.build_scene, prediction as bevnet/train.py
+  YoloGnn     YOLO + graph network (model C)   the marker network of Gnn, plus the YOLO bearing rays of the
+                                               saved frames (yolo_gnn/segment.py, yolo_gnn/hybrid.frame_rays,
+                                               group_rays), injection and cannot-link as yolo_gnn/evaluate.run
 
 A capture keeps, for every marker, the reading with the median distance among the 5 frames of a stop; live, the
-methods on the detections get the same from the frames of the last second (Recent.pooled), while the image
-networks read the last saved frame.
+methods on the detections get the same from the frames of the last second (Recent.pooled). YoloGnn groups the
+rays of the last saved frames of every robot taken from the same pose (up to 5, as the 5 readings of a stop).
 
-Heavy packages (torch, transformers) are imported inside the wrappers, so a method whose packages or model
+Heavy packages (torch, ultralytics) are imported inside the wrappers, so a method whose packages or model
 files are missing is reported as unavailable and the others keep working.
 """
 
@@ -25,7 +26,6 @@ import collections
 import json
 import math
 import os
-import pickle
 import time
 import types
 
@@ -239,7 +239,7 @@ class Gnn:
 
 
 # ====================================================================
-# Image networks
+# YOLO + graph network (model C)
 # ====================================================================
 
 class CameraCalibration:
@@ -298,117 +298,142 @@ class CameraCalibration:
                                     math.degrees(math.atan(obs[0]) - math.atan(pc[0] / pc[2]))))
 
 
-class ImageNets:
-    """The image network on masks alone ('image') and on masks + detected markers ('image_mk'). The frames
-    of the robots are segmented once per update and both networks read the same masks."""
+def read_frames(live_dir, robots):
+    """{robot: (image, state)} with the last saved frame of every robot and the state written with it
+    (read twice: a frame replaced in between is read again)."""
+    import cv2
+    out = {}
+    for q, s in robots.items():
+        for _ in range(3):
+            if not s.get("frame") or s.get("frame_pose") is None or s.get("camera_matrix") is None:
+                break
+            data = read_bytes(os.path.join(live_dir, s["frame"]))
+            img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR) if data else None
+            again = read_json(os.path.join(live_dir, f"{q}.json"))
+            if img is not None and again and again.get("frame_t") == s.get("frame_t"):
+                out[q] = (img, s)
+                break
+            s = again or s
+    return out
 
-    SCALE = 0.2                                          # network images: 256 x 144
 
-    def __init__(self, models, work_dir, device="auto", half=True):
-        import torch
-        from bevnet import geometry as geo
-        from bevnet.model import BevNet
-        from bevnet.segment import BoxSegmenter
-        self.device = torch.device(("cuda" if torch.cuda.is_available() else "cpu") if device == "auto" else device)
-        self.seg = BoxSegmenter(device=device, half=half)     # half precision on CUDA only
+class YoloGnn:
+    """Model C: the marker network (Gnn) with the YOLO bearing rays, as yolo_gnn/evaluate.run does on a scene.
+
+    Every new saved frame of a robot is segmented by YOLO and turned into rays (hybrid.frame_rays) with the camera
+    pitch and yaw offset of CameraCalibration. The rays of the last `readings` frames taken from the same pose
+    (within still_m and still_deg) are grouped as the 5 readings of a stop (hybrid.group_rays, min_frac). As in
+    the evaluation, only the robots that detect at least one marker give rays, unless no robot detects any.
+    Thresholds: the fixed ones of results/yolo_gnn/cv_params.json and those chosen for the full variant on one
+    of the two halves of the layouts (fold)."""
+
+    def __init__(self, weights, gnn_dir, sensor_calib, params_path, fold=1, work_dir="data/demo_work",
+                 device="auto", readings=5, still_m=0.03, still_deg=2.0):
+        from gnn.dataset import load_calibration
+        from yolo_gnn.hybrid import Params
+        from yolo_gnn.segment import YoloSegmenter
+        self.gnn = Gnn(gnn_dir, sensor_calib)
+        self.seg = YoloSegmenter(weights, device=device)
+        self.device = self.seg.device
+        with open(params_path) as f:
+            cv = json.load(f)
+        chosen = dict(cv["fixed"], **cv["full"][f"half{fold}"])
+        fields = Params.__dataclass_fields__
+        self.p = Params(**{k: v for k, v in chosen.items() if k in fields})
+        self.offset = load_calibration(sensor_calib)["camera_offset"]
         self.work = work_dir
-        self.models = {}
-        for key, folder in models.items():
-            with open(os.path.join(folder, "variant.json")) as f:
-                v = json.load(f)
-            net = BevNet(v["channels"], v["message"], len(geo.HEIGHTS_M), v.get("encoder", "small"),
-                         pretrained=False).to(self.device)
-            net.load_state_dict(torch.load(os.path.join(folder, "model.pt"), map_location=self.device))
-            net.eval()
-            self.models[key] = (net, float(v["threshold"]))
+        self.run_dir = os.path.join(work_dir, "round_c")
         self.calibration = CameraCalibration()
+        self.readings = collections.defaultdict(lambda: collections.deque(maxlen=readings))  # q -> (frame_t, pose, rays)
+        self.still_m, self.still_rad = still_m, math.radians(still_deg)
 
-    def frames(self, live_dir, robots):
-        """{robot: (image, state)} with the last saved frame of every robot and the state written with it
-        (read twice: a frame replaced in between is read again)."""
-        import cv2
-        out = {}
-        for q, s in robots.items():
-            for _ in range(3):
-                if not s.get("frame") or s.get("frame_pose") is None or s.get("camera_matrix") is None:
-                    break
-                data = read_bytes(os.path.join(live_dir, s["frame"]))
-                img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR) if data else None
-                again = read_json(os.path.join(live_dir, f"{q}.json"))
-                if img is not None and again and again.get("frame_t") == s.get("frame_t"):
-                    out[q] = (img, s)
-                    break
-                s = again or s
-        return out
-
-    def run(self, live_dir, robots, truth):
-        """({key: [[x, y], ...]}, {robot: overlay file}, {robot: [pitch, yaw offset]})."""
-        import cv2
-        from bevnet import geometry as geo
-        from bevnet import real
-        from bevnet.data import BevDataset
-        from bevnet.train import loader, predict_iter
-        frames = self.frames(live_dir, robots)
-        if not frames:
-            return {k: [] for k in self.models}, {}, {}
-        names = sorted(frames)
-        for q in names:
-            self.calibration.add(q, frames[q][1], truth)
-        poses, pitch, Ks, Ds, small, mk = [], [], [], [], {}, {}
+    def update_rays(self, live_dir, robots, truth):
+        """Segments the frames not seen yet; returns {robot: overlay file}."""
+        from yolo_gnn.camera import camera_pose
+        from yolo_gnn.hybrid import frame_rays
+        frames = read_frames(live_dir, robots)
+        new = [q for q in sorted(frames)
+               if not self.readings[q] or self.readings[q][-1][0] != frames[q][1].get("frame_t")]
         overlays = {}
-        segmented = self.seg.many([frames[q][0] for q in names])     # all the frames in one batch
-        for q, (mask, _rects, _labels) in zip(names, segmented):
+        for q, (_mask, rects, labels) in zip(new, self.seg.many([frames[q][0] for q in new])):
             img, s = frames[q]
-            H, W = img.shape[:2]
-            w, h = int(round(1280 * self.SCALE)), int(round(720 * self.SCALE))
-            small[q] = (cv2.resize(mask, (w, h), interpolation=cv2.INTER_AREA) > 127).astype(np.uint8) * 255
-            mk[q] = np.zeros_like(small[q])
-            for det in s.get("frame_detections", []):
-                if det.get("bbox") is None:
-                    continue
-                bx, by, bw, bh = det["bbox"]
-                cv2.rectangle(mk[q], (int(round(bx * w / W)), int(round(by * h / H))),
-                              (int(round((bx + bw) * w / W)), int(round((by + bh) * h / H))), 255, -1)
-            p_deg, yaw_off = self.calibration.get(q)
-            x, y, yaw = real.camera_pose(dict(camera_pose=s["frame_pose"]))
-            poses.append([x, y, yaw + math.radians(yaw_off)])
-            pitch.append(p_deg)
+            self.calibration.add(q, s, truth)
+            pitch_deg, yaw_off = self.calibration.get(q)
+            x, y, yaw = camera_pose(dict(camera_pose=s["frame_pose"]))
+            pose = (x, y, yaw + math.radians(yaw_off))
             K = np.array(s["camera_matrix"], float)
-            K[0] *= w / W
-            K[1] *= h / H
-            Ks.append(K.tolist())
-            Ds.append(list(s.get("dist_coeffs") or [0, 0, 0, 0, 0]))
-            overlays[q] = self.overlay(q, img, mask, s)
-        poses = np.array(poses, float)
-        centre = poses[:, :2].mean(0)
-        poses[:, :2] -= centre
-        boxes = (np.array([b[:2] for b in truth], np.float32) - centre) if truth else np.zeros((0, 2), np.float32)
-        out = {}
-        for key, (net, threshold) in self.models.items():
-            markers = key == "image_mk"
-            jpgs = [cv2.imencode(".png", np.dstack([small[q], mk[q], small[q]]) if markers else small[q])[1].tobytes()
-                    for q in names]
-            scene = dict(run=LAYOUT, family="real", boxes=boxes.astype(np.float32), poses=poses.astype(np.float32),
-                         pitch=np.radians(pitch).astype(np.float32), roll=np.zeros(len(names), np.float32),
-                         height=real.CAMERA_HEIGHT_M, camera="real", jpgs=jpgs, n_robots=len(names),
-                         n_boxes=len(boxes), robots=names, K=Ks, D=Ds, centre=centre.tolist())
-            folder = os.path.join(self.work, key)
-            os.makedirs(folder, exist_ok=True)
-            with open(os.path.join(folder, "shard_0000.pkl"), "wb") as f:
-                pickle.dump([scene], f, protocol=pickle.HIGHEST_PROTOCOL)
-            with open(os.path.join(folder, "meta.json"), "w") as f:
-                json.dump(dict(set=key, scenario="live", scenes=1, camera="real", K=Ks[0], D=Ds[0],
-                               size=[256, 144], scale=self.SCALE, marker_channel=markers), f)
-            heat, off, *_ = next(predict_iter(net, loader(BevDataset([folder]), 1, False, 0), self.device))
-            out[key] = [[float(x + centre[0]), float(y + centre[1])] for x, y in geo.decode(heat, off, threshold)]
-        return out, overlays, {q: list(self.calibration.get(q)) for q in names}
+            D = np.array(s.get("dist_coeffs") or [0, 0, 0, 0, 0], float)
+            rays = frame_rays(labels, K, D, pose, math.radians(pitch_deg), self.p)
+            self.readings[q].append((s.get("frame_t"), pose, rays))
+            overlays[q] = self.overlay(q, img, labels, rects, s)
+        return overlays
 
-    def overlay(self, q, img, mask, state):
-        """The frame with the box mask tinted green and the detected markers outlined in red (for the page)."""
+    def stop_rays(self, q, qi):
+        """Rays of robot q (index qi in the scene) from its last frames taken at the pose of the latest one."""
+        from yolo_gnn.hybrid import group_rays, wrap
+        rs = list(self.readings.get(q, []))
+        if not rs:
+            return []
+        last = rs[-1][1]
+        same = [r for _t, pose, r in rs if math.hypot(pose[0] - last[0], pose[1] - last[1]) <= self.still_m
+                and abs(wrap(pose[2] - last[2])) <= self.still_rad]
+        return group_rays(same, last[:2], qi, self.p)
+
+    def scene(self, pooled, truth):
+        """The scene of the marker network (gnn/dataset.build_scenes); with no marker detected at all, a scene of
+        the robots alone (as yolo_gnn/evaluate.all_scenes)."""
+        from gnn.dataset import build_scenes
+        write_round(self.run_dir, pooled, truth)
+        scenes = build_scenes(self.run_dir, os.path.join(self.run_dir, "ground_truth.json"), self.gnn.calib)
+        if scenes:
+            return scenes[0]
+        robots = sorted(pooled)
+        poses = [(x + self.offset * math.cos(yaw), y + self.offset * math.sin(yaw), yaw)
+                 for x, y, yaw in (pooled[q]["pose"][:3] for q in robots)]
+        boxes = np.array([b[:2] for b in truth], float) if truth else np.zeros((0, 2))
+        return dict(run=LAYOUT, layout=LAYOUT, round=0, robots=robots, poses=np.array(poses, float),
+                    det_robot=np.zeros(0, int), distance=np.zeros(0), bearing=np.zeros(0), view=np.zeros(0),
+                    pos=np.zeros((0, 2)), label=np.zeros(0, int), truth=boxes)
+
+    def run(self, live_dir, robots, pooled, truth):
+        """({"yolo_gnn": [[x, y], ...]}, {robot: overlay file}, {robot: [pitch, yaw offset]}, rays
+        [[x0, y0, angle, range, robot], ...]). robots: last state of every robot (frames); pooled: the detections
+        of the last moment (Recent.pooled), as the other methods read them."""
+        from gnn.model import decode, encode_scene
+        from gnn.train_sim import predict
+        from yolo_gnn import hybrid
+        overlays = self.update_rays(live_dir, robots, truth)
+        camera = {q: list(self.calibration.get(q)) for q in robots}
+        if not pooled:
+            return {"yolo_gnn": []}, overlays, camera, []
+        s, a, p = self.scene(pooled, truth), self.gnn.a, self.p
+        rays = [r for qi, q in enumerate(s["robots"]) for r in self.stop_rays(q, qi)]
+
+        def encode(sc):
+            return encode_scene(sc, features=a.features, edges=a.edges, comm_range=a.comm_range, gate=a.gate,
+                                association=a.association, hops=a.hops)
+
+        est = []
+        if len(s["pos"]):
+            enc = encode(s)
+            ps, pf = predict(self.gnn.model, [enc])[0]
+            est, _ = decode(s["pos"], enc["pairs"], ps, pf)
+        sc, added = (hybrid.inject(s, rays, est, p) if p.inject and rays else (s, 0))
+        if added:
+            enc = encode(sc)
+            ps, pf = predict(self.gnn.model, [enc])[0]
+        if len(sc["pos"]):
+            ps = hybrid.cannot_link(sc, enc["pairs"], ps, rays, p)
+            est, _ = decode(sc["pos"], enc["pairs"], ps, pf)
+        drawn = [[round(float(r["origin"][0]), 3), round(float(r["origin"][1]), 3), round(float(r["ang"]), 4),
+                  round(float(r["d"]), 3), s["robots"][r["robot"]]] for r in rays]
+        return {"yolo_gnn": [[float(b[0]), float(b[1])] for b in est]}, overlays, camera, drawn
+
+    def overlay(self, q, img, labels, rects, state):
+        """The frame with every YOLO box outlined in its own colour and the detected markers in red (for the page)."""
         import cv2
-        tint = img.copy()
-        tint[mask > 127] = (60, 200, 60)
-        view = cv2.addWeighted(img, 0.55, tint, 0.45, 0)
+        from yolo_gnn.segment import overlay
+        view = overlay(img, labels, [])
         for det in state.get("frame_detections", []):
             if det.get("bbox"):
                 bx, by, bw, bh = [int(round(v)) for v in det["bbox"]]

@@ -80,9 +80,10 @@
     <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#0f7b3f" stroke="#fff" stroke-width="2"/></svg>estimate on a box (within 15 cm)</span>
     <span><svg width="18" height="18"><circle cx="9" cy="9" r="6" fill="#fff" stroke="#b3261e" stroke-width="2.4"/><path d="M5.5 5.5l7 7M12.5 5.5l-7 7" stroke="#b3261e" stroke-width="2"/></svg>estimate with no box</span>
     <span><svg width="18" height="18"><circle cx="9" cy="9" r="2.6" fill="#9a9990"/></svg>single detection</span>
+    <span><svg width="26" height="18"><path d="M2 9h22" stroke="rgba(214,120,20,0.8)" stroke-width="1.6"/></svg>YOLO ray (model C)</span>
     <span><svg width="26" height="18"><rect x="2" y="4" width="13" height="10" fill="#d6e4f7" stroke="#2a78d6" stroke-width="1.6"/><path d="M15 9h9" stroke="#2a78d6" stroke-width="1.8"/></svg>robot and camera direction</span>
   </div>
-  <h3 id="framesTitle" hidden>What the robots see: box masks (green) and detected markers (red)</h3>
+  <h3 id="framesTitle" hidden>What the robots see: boxes segmented by YOLO (coloured outlines) and detected markers (red)</h3>
   <div class="frames" id="frames"></div>
 </main>
 <script>
@@ -90,7 +91,7 @@
 const BOX_R = 0.235 / Math.sqrt(3);          // centre to corner of a box [m]
 const ROBOT_L = 0.30, ROBOT_W = 0.25;        // robot footprint drawn to scale [m], camera on the front edge
 const CUTOFF = 0.15, WINDOW_S = 30, OLD_S = 3;
-const DETECTION_METHODS = new Set(["mht", "mht_sensor", "gnn"]);
+const DETECTION_METHODS = new Set(["mht", "mht_sensor", "gnn", "yolo_gnn"]);
 const POLL_MS = 80;                          // state asked about twelve times per second
 const DELAY_S = 0.15;                        // robots and boxes drawn where they were 0.15 s ago, interpolated
 let state = null, built = false, selected = null, lastB = null, driveKey = "";
@@ -220,6 +221,13 @@ function draw(canvas, key, B) {
     g.fillStyle = found ? "#ffffff" : "#fbe9e7"; g.fill();
     g.setLineDash(found ? [] : [5, 3]); g.strokeStyle = found ? "#14140f" : "#b3261e"; g.lineWidth = 1.7; g.stroke(); g.setLineDash([]);
   });
+  if (key === "yolo_gnn") {                                                               // YOLO rays (model C)
+    g.strokeStyle = "rgba(214, 120, 20, 0.55)"; g.lineWidth = 1.4;
+    for (const [x0, y0, a, d] of state.rays || []) {
+      const t = Math.min(d + 0.4, 3.2);
+      g.beginPath(); g.moveTo(X(x0), Y(y0)); g.lineTo(X(x0 + t * Math.cos(a)), Y(y0 + t * Math.sin(a))); g.stroke();
+    }
+  }
   if (DETECTION_METHODS.has(key)) {                                                       // what these methods read
     g.fillStyle = "#9a9990";
     for (const d of state.detections) { g.beginPath(); g.arc(X(d[0]), Y(d[1]), 2.6, 0, 2 * Math.PI); g.fill(); }

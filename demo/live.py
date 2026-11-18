@@ -1,6 +1,6 @@
 """Live demo: every method localises the boxes continuously while the robots stream their cameras, and a page
 in the browser shows them side by side. Move the robots by hand, move, add or take away boxes, put objects in
-the way: the panels follow within a second (the image networks within a few seconds).
+the way: the panels follow within a second (YOLO + graph network within a second or two).
 
 Two terminals (the full commands are in docs/commands.md):
 
@@ -12,8 +12,8 @@ last frame, and writes the boxes OptiTrack tracks in the arena. This server runs
 slow one never holds up the fast one:
   detections   MHT, MHT with sensor model and the graph network on the markers of the last second of every
                robot (a few times per second)
-  images       the last frame of every robot segmented (Grounding DINO + SAM) and given to the image network on
-               masks alone and on masks + markers (as fast as the GPU allows)
+  images       model C: the last frame of every robot segmented by YOLO, its bearing rays added to the marker
+               graph network (injection and cannot-link, as yolo_gnn/evaluate.py), as fast as the GPU allows
 Each panel of the page shows the boxes its method finds now against the boxes tracked by OptiTrack, with the
 verdict of the thesis (correct, too few, too many, misplaced), how old its input is and how often it was correct
 in the last 30 seconds; above the panels, the difficulty level of the scene as it is now. A robot whose state
@@ -23,11 +23,10 @@ Speed. The robots and the true boxes on the maps follow OptiTrack (30 poses per 
 demo/live_robots.py in boxes.json), read by a thread of their own whatever the methods are doing; the page gets
 the timed poses of the last moments and draws robots and boxes where they were a fraction of a second ago,
 interpolated, at the refresh rate of the screen. The map is fixed on the arena (--regions). The image loop runs
-in a process of its own (its pre- and post-processing would otherwise hold up the other loops), segments the
-frames of all the robots in one batch and, on CUDA, in half precision (--no-half: full precision;
---image-thread: in a thread of this process).
+in a process of its own (its pre- and post-processing would otherwise hold up the other loops) and segments the
+new frames of all the robots in one batch (--image-thread: in a thread of this process).
 
-The camera pitch and yaw offset needed by the image networks are fitted continuously on the markers the robots
+The camera pitch and yaw offset needed by the YOLO rays are fitted continuously on the markers the robots
 see (as yolo_gnn/camera.py does on a run); --camera-calib loads fixed values, --write-camera-calib saves the fitted
 ones every few seconds.
 
@@ -52,10 +51,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from demo import methods
 
-LABELS = {"mht": "MHT", "mht_sensor": "MHT with sensor model", "gnn": "Graph network",
-          "image": "Image network (masks)", "image_mk": "Image network (masks + markers)"}
-INPUT = {"mht": "detections", "mht_sensor": "detections", "gnn": "detections", "image": "camera frames",
-         "image_mk": "camera frames + markers"}
+LABELS = {"mht": "MHT", "mht_sensor": "MHT with sensor model", "gnn": "Graph network (model A)",
+          "yolo_gnn": "YOLO + graph network (model C)"}
+INPUT = {"mht": "detections", "mht_sensor": "detections", "gnn": "detections",
+         "yolo_gnn": "detections + YOLO rays of the camera frames"}
+IMAGE_KEYS = ["yolo_gnn"]
 PAGE = os.path.join(os.path.dirname(__file__), "map.html")
 TRACK_S = 0.6                                            # timed poses sent to the page
 
@@ -67,7 +67,7 @@ class Live:
         self.recent_lock = threading.Lock()
         self.state = dict(status="starting", methods=[dict(key=k, label=LABELS[k], input=INPUT[k]) for k in LABELS],
                           unavailable={}, results={}, robots={}, truth=None, level=None, detections=[], frames={},
-                          camera={}, loops={})
+                          camera={}, rays=[], loops={})
         os.makedirs(a.work, exist_ok=True)
         self.classical = self.gnn = self.images = None
         self.tracks = {}                                     # "robot:P0" / "box:11" -> timed poses
@@ -218,47 +218,51 @@ class Live:
             msg = q.get()
             kind = msg[0]
             if kind == "unavailable":
-                self.unavailable(["image", "image_mk"], RuntimeError(msg[1]))
+                self.unavailable(IMAGE_KEYS, RuntimeError(msg[1]))
                 return
             if kind == "error":
                 self.set(status=f"error in the image loop: {msg[1]}")
                 continue
-            _, results, truth, t_input, seconds, frames, camera = msg
+            _, results, truth, t_input, seconds, frames, camera, rays = msg
             self.publish(results, truth, t_input, seconds)
             with self.lock:
-                self.state["frames"] = {r: f"{f}?t={time.time():.2f}" for r, f in frames.items()}
+                self.state["frames"].update({r: f"{f}?t={time.time():.2f}" for r, f in frames.items()})
+                self.state["frames"] = {r: f for r, f in self.state["frames"].items() if r in camera}
+                self.state["rays"] = rays
                 self.state["camera"] = {r: [round(v, 1) for v in c] for r, c in camera.items()}
                 self.state["loops"]["images"] = round(seconds, 2)
 
 
 def image_worker(a, out):
-    """The image networks, in their own process: the last frame of every robot segmented (one batch) and given
-    to both networks, as fast as the GPU allows; every result is sent to the page server through `out`."""
+    """Model C, in its own process: the new frames of every robot segmented by YOLO (one batch), their rays added
+    to the marker network on the detections of the last moment, as fast as the GPU allows; every result is sent
+    to the page server through `out`."""
     try:
         try:
-            images = methods.ImageNets({"image": a.image, "image_mk": a.image_markers}, a.work, a.device,
-                                       half=not a.no_half)
+            images = methods.YoloGnn(a.yolo, a.gnn, a.sensor_calib, a.yolo_params, a.yolo_fold, a.work, a.device)
             if a.camera_calib:
                 images.calibration.load(a.camera_calib)
         except Exception as e:
             traceback.print_exc()
             out.put(("unavailable", f"{type(e).__name__}: {e}"))
             return
-        print(f"image networks ready on {images.device}" + (" (half precision)" if images.seg.half else ""),
-              flush=True)
+        print(f"YOLO + graph network ready on {images.device}", flush=True)
+        recent = methods.Recent(a.live_dir)
         last_save, last_frames = 0.0, None
         while True:
             t0 = time.time()
             try:
                 robots, truth, _t = methods.snapshot(a.live_dir, a.stale_s)
+                recent.add(robots)
                 frames_now = {q: s.get("frame_t") for q, s in robots.items()}
                 if not robots or frames_now == last_frames:      # nothing new to segment
                     time.sleep(0.05)
                     continue
                 last_frames = frames_now
                 t_input = min(s.get("frame_t") or s["t"] for s in robots.values())
-                results, frames, camera = images.run(a.live_dir, robots, truth)
-                out.put(("result", results, truth, t_input, time.time() - t0, frames, camera))
+                pooled = recent.pooled(a.window_s, a.stale_s)
+                results, frames, camera, rays = images.run(a.live_dir, robots, pooled, truth)
+                out.put(("result", results, truth, t_input, time.time() - t0, frames, camera, rays))
                 if a.write_camera_calib and time.time() - last_save > 5:
                     images.calibration.save(a.write_camera_calib)
                     last_save = time.time()
@@ -402,16 +406,17 @@ def main():
     ap.add_argument("--sensor-calib", default="config/sensor_calib.json")
     ap.add_argument("--sensor-model", default="config/sensor_model.json")
     ap.add_argument("--regions", default="config/optitrack_regions.json")
-    ap.add_argument("--gnn", default="results/plan/M4/gnn/detection_full_full_h2",
-                    help="variant folder of gnn/train_sim.py (variant.json, model_seed0.pt)")
-    ap.add_argument("--image", default="results/bev_mask_wp/masks_wp",
-                    help="image network on masks: variant folder of bevnet/train.py (variant.json, model.pt)")
-    ap.add_argument("--image-markers", default="results/bev_mask_mk/masks_mk", help="image network on masks + markers")
-    ap.add_argument("--device", default="auto", help="auto | cuda | cpu (segmentation and image networks)")
-    ap.add_argument("--no-images", action="store_true", help="only the methods on the detections")
-    ap.add_argument("--no-half", action="store_true", help="segmentation in full precision on CUDA too")
+    ap.add_argument("--gnn", default="results/plan_v2/M4/gnn/detection_full_full_h2",
+                    help="variant folder of gnn/train_sim.py (variant.json, model_seed0.pt), models A and C")
+    ap.add_argument("--yolo", default="results/yolo_seg/box_seg/weights/best.pt", help="YOLO-seg weights (model C)")
+    ap.add_argument("--yolo-params", default="results/yolo_gnn/cv_params.json",
+                    help="thresholds of model C chosen by yolo_gnn/evaluate.py")
+    ap.add_argument("--yolo-fold", type=int, default=1, choices=[0, 1],
+                    help="which half of the layouts the thresholds were chosen on")
+    ap.add_argument("--device", default="auto", help="auto | cuda | mps | cpu (YOLO)")
+    ap.add_argument("--no-images", action="store_true", help="only the methods on the detections (no model C)")
     ap.add_argument("--image-thread", action="store_true",
-                    help="the image networks in a thread of this process instead of a process of their own")
+                    help="model C in a thread of this process instead of a process of their own")
     ap.add_argument("--camera-calib", default=None, help="JSON {robot: [pitch deg, yaw offset deg]}: fixed values")
     ap.add_argument("--write-camera-calib", default=None, help="save the fitted camera angles to this JSON")
     ap.add_argument("--replay", default=None, help="a recorded run played as live (rehearsal without robots)")
@@ -423,7 +428,7 @@ def main():
     live = Live(a)
     threading.Thread(target=live.detection_loop, daemon=True).start()
     if a.no_images:
-        live.unavailable(["image", "image_mk"], RuntimeError("--no-images"))
+        live.unavailable(IMAGE_KEYS, RuntimeError("--no-images"))
     else:
         threading.Thread(target=live.image_loop, daemon=True).start()
     server = ThreadingHTTPServer(("0.0.0.0", a.port), handler(live))
