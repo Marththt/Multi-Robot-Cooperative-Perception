@@ -10,7 +10,7 @@ Two terminals (the full commands are in docs/commands.md):
 demo/live_robots.py keeps every robot streaming, in data/live/, its camera pose, the markers it detects and its
 last frame, and writes the boxes OptiTrack tracks in the arena. This server runs two loops side by side, so the
 slow one never holds up the fast one:
-  detections   MHT, MHT with sensor model and the graph network on the markers of the last second of every
+  detections   MHT (with sensor model) and the graph network on the markers of the last second of every
                robot (a few times per second)
   images       model C: the last frame of every robot segmented by YOLO, its bearing rays added to the marker
                graph network (injection and cannot-link, as yolo_gnn/evaluate.py), as fast as the GPU allows
@@ -51,9 +51,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from demo import methods
 
-LABELS = {"mht": "MHT", "mht_sensor": "MHT with sensor model", "gnn": "Graph network (model A)",
+LABELS = {"mht_sensor": "MHT", "gnn": "Graph network (model A)",
           "yolo_gnn": "YOLO + graph network (model C)"}
-INPUT = {"mht": "detections", "mht_sensor": "detections", "gnn": "detections",
+INPUT = {"mht_sensor": "detections", "gnn": "detections",
          "yolo_gnn": "detections + YOLO rays of the camera frames"}
 IMAGE_KEYS = ["yolo_gnn"]
 PAGE = os.path.join(os.path.dirname(__file__), "map.html")
@@ -168,7 +168,7 @@ class Live:
         try:
             self.classical = methods.Classical(self.a.sensor_calib, self.a.sensor_model, self.a.regions)
         except Exception as e:
-            self.unavailable(["mht", "mht_sensor"], e)
+            self.unavailable(["mht_sensor"], e)
         try:
             self.gnn = methods.Gnn(self.a.gnn, self.a.sensor_calib)
         except Exception as e:

@@ -5,7 +5,7 @@ Run every command from the repository root. Scripts are run as modules (`python 
 ## Live demo: every method continuously, in the browser
 
 The robots stand still and stream what they see. Place them, move them by hand, move, add or take away boxes, put
-other objects in the way, at any time: the page follows within a second for MHT, MHT with sensor model and the
+other objects in the way, at any time: the page follows within a second for MHT (with sensor model) and the
 graph network (model A), within a second or two for YOLO + graph network (model C).
 
 `demo/live.py` only reads the files the robots write, so it runs in its own terminal and its own Python environment

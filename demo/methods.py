@@ -6,7 +6,7 @@ in the last frame with distance, bearing, viewing angle and rectangle, the last 
 pose and the detections of that frame), and the boxes tracked by OptiTrack (demo/boxes.py).
 
 The wrappers reuse the code of the offline evaluation, so the robots' data are processed as in the thesis:
-  Classical   MHT and MHT with sensor model    the state is written as one round of a run and read back with
+  Classical   MHT (with sensor model)          the state is written as one round of a run and read back with
                                                pipeline/build_scans.load_points + pipeline/analyze_rounds.fuse
   Gnn         graph network on the detections  the same round read with gnn/dataset.build_scenes, gnn/model
   YoloGnn     YOLO + graph network (model C)   the marker network of Gnn, plus the YOLO bearing rays of the
@@ -31,7 +31,7 @@ import types
 
 import numpy as np
 
-CLASSICAL = ("mht", "mht_sensor")
+CLASSICAL = ("mht_sensor",)               # the MHT of the thesis; the plain MHT is not shown
 LAYOUT = "LIVE"
 
 
@@ -171,7 +171,7 @@ def write_round(run_dir, robots, truth):
 # ====================================================================
 
 class Classical:
-    """MHT and MHT with sensor model, with the settings of pipeline/evaluate_runs.py --sensor-calib."""
+    """MHT with sensor model, with the settings of pipeline/evaluate_runs.py --sensor-calib."""
 
     def __init__(self, sensor_calib, sensor_model, regions):
         from pipeline import analyze_rounds, evaluate_runs

@@ -91,7 +91,7 @@
 const BOX_R = 0.235 / Math.sqrt(3);          // centre to corner of a box [m]
 const ROBOT_L = 0.30, ROBOT_W = 0.25;        // robot footprint drawn to scale [m], camera on the front edge
 const CUTOFF = 0.15, WINDOW_S = 30, OLD_S = 3;
-const DETECTION_METHODS = new Set(["mht", "mht_sensor", "gnn", "yolo_gnn"]);
+const DETECTION_METHODS = new Set(["mht_sensor", "gnn", "yolo_gnn"]);
 const POLL_MS = 80;                          // state asked about twelve times per second
 const DELAY_S = 0.15;                        // robots and boxes drawn where they were 0.15 s ago, interpolated
 let state = null, built = false, selected = null, lastB = null, driveKey = "";
