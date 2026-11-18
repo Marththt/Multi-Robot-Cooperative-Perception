@@ -263,6 +263,10 @@ def image_worker(a, out):
                 pooled = recent.pooled(a.window_s, a.stale_s)
                 results, frames, camera, rays = images.run(a.live_dir, robots, pooled, truth)
                 out.put(("result", results, truth, t_input, time.time() - t0, frames, camera, rays))
+                if time.time() - t0 > 1.0:                    # slow update: say where the time went
+                    tm = images.timing
+                    print(f"model C: {time.time() - t0:.2f} s (YOLO {tm.get('yolo', 0):.2f} s on {tm.get('frames', 0)} "
+                          f"frames, rays + graph network {tm.get('graph', 0):.2f} s, device {images.device})", flush=True)
                 if a.write_camera_calib and time.time() - last_save > 5:
                     images.calibration.save(a.write_camera_calib)
                     last_save = time.time()

@@ -335,6 +335,8 @@ class YoloGnn:
         self.gnn = Gnn(gnn_dir, sensor_calib)
         self.seg = YoloSegmenter(weights, device=device)
         self.device = self.seg.device
+        self.seg.many([np.zeros((720, 1280, 3), np.uint8)])     # warm-up: the first call loads the GPU kernels
+        self.timing = {}
         with open(params_path) as f:
             cv = json.load(f)
         chosen = dict(cv["fixed"], **cv["full"][f"half{fold}"])
@@ -402,7 +404,10 @@ class YoloGnn:
         from gnn.model import decode, encode_scene
         from gnn.train_sim import predict
         from yolo_gnn import hybrid
+        t0 = time.time()
         overlays = self.update_rays(live_dir, robots, truth)
+        self.timing = dict(yolo=time.time() - t0, frames=len(overlays))
+        t0 = time.time()
         camera = {q: list(self.calibration.get(q)) for q in robots}
         if not pooled:
             return {"yolo_gnn": []}, overlays, camera, []
@@ -425,6 +430,7 @@ class YoloGnn:
         if len(sc["pos"]):
             ps = hybrid.cannot_link(sc, enc["pairs"], ps, rays, p)
             est, _ = decode(sc["pos"], enc["pairs"], ps, pf)
+        self.timing["graph"] = time.time() - t0
         drawn = [[round(float(r["origin"][0]), 3), round(float(r["origin"][1]), 3), round(float(r["ang"]), 4),
                   round(float(r["d"]), 3), s["robots"][r["robot"]]] for r in rays]
         return {"yolo_gnn": [[float(b[0]), float(b[1])] for b in est]}, overlays, camera, drawn
