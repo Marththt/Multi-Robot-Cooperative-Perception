@@ -24,6 +24,14 @@ markers and by the YOLO rays), mht/<set>.csv (MHT rows, reused with --reuse-mht)
     python -m yolo_gnn.evaluate_sim --tune-set data/scale/tune --sets "data/scale/S*" \\
         --gnn plan=results/plan_v2/M4/gnn/detection_full_full_h2 --gnn scale=results/scale/gnn/detection_full_full_h2 \\
         --cache data/yolo_sim_eval/cache --out results/scale/
+
+--no-markers: the YOLO variants see no marker report (the boxes come only from the injection of the rays, clustered
+by the same marker network, with the cannot-link); MHT keeps the marker reports as the reference. Only the variants
+inject and full are run. --mht-dir and --mht-density reuse the MHT rows and birth density of an earlier run:
+
+    python -m yolo_gnn.evaluate_sim --no-markers --tune-set data/scale/tune --sets data/scale/SC_n4 data/scale/SC_n16 \\
+        data/scale/SC_n50 --gnn plan=results/plan_v2/M4/gnn/detection_full_full_h2 --cache data/yolo_sim_eval/cache \\
+        --mht-dir results/scale/mht --mht-density 0.2 --max-scenes 100 --out results/scale_no_markers/
 """
 
 import argparse
@@ -119,6 +127,12 @@ def sim_rays(scenes, set_dir, cache, readings, p):
     if missing:
         print(f"warning: {name}: {missing} frames without a cached label image")
     return out
+
+
+def strip_markers(s):
+    """The scene with no marker report: robots, poses and boxes kept (--no-markers)."""
+    return dict(s, det_robot=np.zeros(0, int), distance=np.zeros(0), bearing=np.zeros(0), view=np.zeros(0),
+                pos=np.zeros((0, 2)), label=np.zeros(0, int))
 
 
 def base_predictions(scenes, a, models):
@@ -265,8 +279,16 @@ def main():
     ap.add_argument("--max-scenes", type=int, default=None, help="only the first N scenes of every set (quick tests)")
     ap.add_argument("--cutoff", type=float, default=MATCH_CUTOFF_M)
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    ap.add_argument("--no-markers", action="store_true",
+                    help="YOLO variants without the marker reports (only inject and full); MHT keeps them")
+    ap.add_argument("--mht-dir", default=None, help="folder of mht/<set>.csv to reuse (default: <out>/mht)")
+    ap.add_argument("--mht-density", type=float, default=None,
+                    help="MHT birth density chosen earlier: skips the MHT tuning on the tune set")
     ap.add_argument("--out", default="results/scale/")
     a = ap.parse_args()
+    reported = ("inject", "full") if a.no_markers else REPORTED
+    ystrip = strip_markers if a.no_markers else (lambda s: s)
+    mht_dir = a.mht_dir or os.path.join(a.out, "mht")
     if sys.platform == "win32":
         a.jobs = min(a.jobs, 60)
     os.makedirs(os.path.join(a.out, "mht"), exist_ok=True)
@@ -291,7 +313,7 @@ def main():
     print(f"tune set {a.tune_set}: {len(tune)} scenes", flush=True)
     tune_rows, chosen = [], dict(mht={}, yolo={})
     best = None
-    for density in a.mht_prior_grid:
+    for density in ([] if a.mht_density is not None else a.mht_prior_grid):
         rows = run_mht(pool, tune, a.mht_h, density, a.cutoff, a.mht_search_budget)
         score = float(np.mean([r["f1"] for r in rows]))
         tune_rows.append(dict(method="mht", gnn="", params=json.dumps(dict(prior_density=density)), f1_mean=round(score, 4),
@@ -299,11 +321,12 @@ def main():
         print(f"  MHT birth density {density:g}/m^2: F1 {score:.3f}", flush=True)
         if best is None or score > best[0]:
             best = (score, density)
-    chosen["mht"] = dict(prior_density=best[1], H=a.mht_h)
+    chosen["mht"] = dict(prior_density=a.mht_density if best is None else best[1], H=a.mht_h)
+    tune = [ystrip(s) for s in tune]
     for gname, va, models in gnns:
         enc, pred = base_predictions(tune, va, models)
         for variant, spec in VARIANTS.items():
-            if variant not in REPORTED:
+            if variant not in reported:
                 continue
             combos = [dict(zip(spec["tune"], v)) for v in itertools.product(*[GRID[k] for k in spec["tune"]])]
             scores = []
@@ -317,7 +340,8 @@ def main():
             print(f"  {gname} {variant:<12} F1 {scores[k]:.3f} with {combos[k]}", flush=True)
     write_csv(os.path.join(a.out, "tune.csv"), tune_rows)
     with open(os.path.join(a.out, "chosen.json"), "w") as f:
-        json.dump(dict(chosen, fixed=asdict(p0), tune_set=a.tune_set, readings=a.readings), f, indent=2)
+        json.dump(dict(chosen, fixed=asdict(p0), tune_set=a.tune_set, readings=a.readings, no_markers=a.no_markers),
+                  f, indent=2)
     print(f"parameters chosen on the tune set ({time.time() - t0:.0f} s)", flush=True)
 
     # ---------------------------------------------------------------- test sets
@@ -337,27 +361,29 @@ def main():
                               yolo_rays=sum(r["yolo_rays"] for r in diag),
                               yolo_false_rays=sum(r["yolo_false_rays"] for r in diag)))
 
-        mht_path = os.path.join(a.out, "mht", f"{name}.csv")
-        if a.reuse_mht and os.path.exists(mht_path):
+        mht_path = os.path.join(mht_dir, f"{name}.csv")
+        if (a.reuse_mht or a.mht_dir) and os.path.exists(mht_path):
+            runs_here = {s["run"] for s in scenes}
             with open(mht_path) as f:
-                mht = [dict(r, seed=0) for r in csv.DictReader(f)]
+                mht = [dict(r, seed=0) for r in csv.DictReader(f) if r["run"] in runs_here]
             for r in mht:
                 for k in ("n_true", "n_est", "n_matched", "correct", "dn"):
                     r[k] = int(r[k])
                 r["f1"] = float(r["f1"])
         else:
             mht = run_mht(pool, scenes, a.mht_h, chosen["mht"]["prior_density"], a.cutoff, a.mht_search_budget)
-            write_csv(mht_path, mht)
+            write_csv(os.path.join(a.out, "mht", f"{name}.csv"), mht)
         mht_by_run = {r["run"]: r for r in mht}
         summary.append(dict(meta, method="mht", gnn="", **summarize(mht, a.cutoff)))
         all_rows += [dict(r, set=name, method="mht", gnn="", seed=0) for r in mht]
         line = f"{name:<7} N {meta['n_robots']:4.1f} B {meta['n_boxes']:4.1f} | MHT {summary[-1]['correct_pct']:5.1f}% F1 {summary[-1]['f1_mean']:.3f}"
 
+        scenes = [ystrip(s) for s in scenes]
         for gname, va, models in gnns:
             t_fwd = time.time()
             enc, pred = base_predictions(scenes, va, models)
             t_fwd = time.time() - t_fwd                    # encoding + forward of every seed's model on every scene
-            for variant in REPORTED:
+            for variant in reported:
                 p = replace(p0, **VARIANTS[variant]["fixed"], **chosen["yolo"][gname][variant])
                 t1 = time.time()
                 rows = run(scenes, rays, enc, pred, models, va, p)
@@ -370,7 +396,7 @@ def main():
                 all_rows += rows
                 summary.append(dict(meta, method=variant, gnn=gname, **summarize(rows, a.cutoff),
                                     added_boxes_mean=round(float(np.mean([r["added_boxes"] for r in rows])), 3)))
-                if variant in ("marker", "full"):
+                if variant in ("marker", "full", "inject"):
                     line += f" | {gname} {variant} {summary[-1]['correct_pct']:5.1f}% F1 {summary[-1]['f1_mean']:.3f}"
                     for sd in sorted({r["seed"] for r in rows}):
                         rs = [r for r in rows if r["seed"] == sd]
