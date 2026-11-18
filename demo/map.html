@@ -46,7 +46,12 @@
   .drive .hint { color: var(--slate); }
   .drive .st-driving { color: var(--robot); } .drive .st-failed, .drive .st-blocked, .drive .st-refused { color: var(--bad); } .drive .st-reached { color: var(--good); }
   .drive .end { margin-left: auto; }
+  .drive kbd { font: inherit; font-size: 11px; color: var(--slate); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; margin-right: 5px; }
+  .drive button[aria-pressed="true"] kbd { color: #fff; border-color: rgba(255,255,255,.6); }
+  .drive .keys { color: var(--faint); font-size: 13px; flex-basis: 100%; }
   canvas.pick { cursor: crosshair; }
+  canvas.grab { cursor: grab; }
+  canvas.dragging { cursor: grabbing; }
 
   /* the three methods, side by side */
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
@@ -137,7 +142,12 @@ const POLL_MS = 80;                          // state asked about twelve times p
 const DELAY_S = 0.15;                        // robots and boxes drawn where they were 0.15 s ago, interpolated
 const C = { ink: "#0f1820", slate: "#56636e", faint: "#8a959e", grid: "#e4e9ed", good: "#17804a", bad: "#c2392d",
             badSoft: "#fbe8e5", robot: "#2867d6", robotSoft: "#d9e5f8", robotText: "#1b4fa8", ray: "rgba(224, 122, 31, 0.6)" };
+const KEEP_OUT_M = 0.45;                     // acquisition/live_drive.py refuses a goal closer than this to a box
+const DRAG_M = 0.15;                         // a drag shorter than this is a click (no command sent)
 let state = null, built = false, selected = null, lastB = null, driveKey = "";
+let drag = null, ghost = null, note = "";   // note: why the last drop was not sent
+               // robot being dragged; where it would go (drawn on every map)
+const wheel = { q: null, deg: 0, timer: null };
 let dirty = true, clockOffset = null, drawnKey = "";
 const buf = {};                              // "robot:P0" / "box:11" -> timed poses [[t, x, y, yaw], ...]
 const drawn = { robots: {}, truth: [] };     // poses drawn in this frame
@@ -288,6 +298,25 @@ function draw(canvas, key, B) {
       g.beginPath(); g.moveTo(x - 3.6, y - 3.6); g.lineTo(x + 3.6, y + 3.6); g.moveTo(x + 3.6, y - 3.6); g.lineTo(x - 3.6, y + 3.6); g.lineWidth = 2; g.stroke();
     }
   });
+  const r = ghost && state.robots[ghost.q];                                               // the robot being moved
+  if (r) {
+    const p = drawn.robots[ghost.q] || r.pose, col = ghost.near ? C.bad : C.robot;
+    const L = Math.max(ROBOT_L * s, 8), Wd = Math.max(ROBOT_W * s, 7);
+    if (!ghost.turn) {
+      g.strokeStyle = col; g.lineWidth = 1.5; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(X(p[0]), Y(p[1])); g.lineTo(X(ghost.x), Y(ghost.y)); g.stroke(); g.setLineDash([]);
+    }
+    g.save(); g.globalAlpha = 0.7; g.translate(X(ghost.x), Y(ghost.y)); g.rotate(-ghost.yaw);
+    g.fillStyle = ghost.near ? C.badSoft : C.robotSoft; g.strokeStyle = col; g.lineWidth = 2; g.setLineDash([4, 3]);
+    g.beginPath(); g.rect(-L, -Wd / 2, L, Wd); g.fill(); g.stroke(); g.setLineDash([]);
+    g.lineWidth = 2; g.beginPath(); g.moveTo(0, 0); g.lineTo(22, 0); g.stroke();
+    g.restore();
+    const label = ghost.near ? "too close to a box" : ghost.turn ? `turn ${ghost.deg > 0 ? "left" : "right"} ${Math.abs(ghost.deg)}\u00b0` : null;
+    if (label) {
+      g.font = "600 12px 'IBM Plex Sans', system-ui, sans-serif"; g.textAlign = "center"; g.fillStyle = col;
+      g.fillText(label, X(ghost.x), Y(ghost.y) - L - 10); g.textAlign = "left";
+    }
+  }
 }
 
 function build() {
@@ -388,15 +417,17 @@ function renderDrive() {                     // move the robots from the page (a
   if (selected && !names.includes(selected)) selected = null;
   const m = selected && state.robots[selected].motion;
   const st = m ? `<span class="st-${m.state}">${esc(WORDS[m.state] || m.state)}${m.note ? ": " + esc(m.note) : ""}</span>` : "";
-  const key = names.join() + "|" + selected + "|" + st;
+  const key = names.join() + "|" + selected + "|" + st + "|" + note;
   if (key === driveKey) return;              // rebuilt only when something changed, so clicks are not lost
   driveKey = key;
-  bar.innerHTML = `<span class="what">Move a robot</span>` + names.map(q => `<button data-robot="${esc(q)}" aria-pressed="${q === selected}">${esc(q)}</button>`).join("") +
-    (selected ? ` <span class="hint">click a point on any map to send ${esc(selected)} there, facing the boxes</span>
+  bar.innerHTML = `<span class="what">Move a robot</span>` + names.map((q, i) => `<button data-robot="${esc(q)}" aria-pressed="${q === selected}">${i < 9 ? `<kbd>${i + 1}</kbd>` : ""}${esc(q)}</button>`).join("") +
+    (selected ? ` <span class="hint">drag ${esc(selected)} on a map, or click where it should go; it arrives facing the boxes</span>
       <button data-cmd="turn" data-deg="22.5">Turn left</button><button data-cmd="turn" data-deg="-22.5">Turn right</button>
-      <button data-cmd="face">Face the boxes</button><button data-cmd="stop" class="stop">Stop ${esc(selected)}</button> ${st}`
-      : ` <span class="hint">pick a robot here or click it on a map</span>`) +
-    ` <button data-cmd="stopall" class="stop end">Stop all robots</button>`;
+      <button data-cmd="face">Face the boxes</button><button data-cmd="stop" class="stop">Stop ${esc(selected)}</button> ${st}` +
+      (note ? ` <span class="st-refused">${esc(note)}</span>` : "")
+      : ` <span class="hint">drag a robot on any map to where it should go</span>`) +
+    ` <button data-cmd="stopall" class="stop end">Stop all robots</button>` +
+    `<span class="keys">Mouse wheel over a robot turns it. Keys: 1&ndash;${Math.min(names.length, 9)} pick a robot, Esc cancels, Space stops all robots.</span>`;
   document.querySelectorAll("canvas[data-key]").forEach(c => c.classList.toggle("pick", !!selected));
 }
 
@@ -416,17 +447,116 @@ $("drive").addEventListener("click", e => {
   else if (selected && c) command({ robot: selected, kind: c });
 });
 
-$("grid").addEventListener("click", e => {          // a click on a map: pick a robot, or send the selected one
-  const c = e.target.closest("canvas[data-key]");
-  if (!c || !state || !lastB) return;
+function worldAt(c, e) {                     // the arena point under the pointer
   const r = c.getBoundingClientRect(), size = c.clientWidth, s = size / (2 * lastB.half);
-  const px = e.clientX - r.left, py = e.clientY - r.top;
-  const x = px / s + lastB.cx - lastB.half, y = (size - py) / s + lastB.cy - lastB.half;
+  return { x: (e.clientX - r.left) / s + lastB.cx - lastB.half, y: (size - (e.clientY - r.top)) / s + lastB.cy - lastB.half, s };
+}
+
+function robotAt(w) {                        // the robot whose body is under the point, if any
   for (const [q, rb] of Object.entries(state.robots)) {
-    const cx = rb.pose[0] - 0.15 * Math.cos(rb.pose[2]), cy = rb.pose[1] - 0.15 * Math.sin(rb.pose[2]);
-    if (Math.hypot(cx - x, cy - y) * s < Math.max(18, 0.2 * s)) { selected = q === selected ? null : q; driveKey = ""; render(); return; }
+    const p = drawn.robots[q] || rb.pose;
+    const cx = p[0] - 0.15 * Math.cos(p[2]), cy = p[1] - 0.15 * Math.sin(p[2]);
+    if (Math.hypot(cx - w.x, cy - w.y) * w.s < Math.max(18, 0.2 * w.s)) return q;
   }
-  if (selected) command({ robot: selected, kind: "goto", x: Number(x.toFixed(3)), y: Number(y.toFixed(3)), yaw_deg: null });
+  return null;
+}
+
+function facing(x, y, fallback) {            // as live_drive: the robot arrives facing the centre of the boxes
+  const t = state.truth || [];
+  if (!t.length) return fallback;
+  const cx = t.reduce((a, b) => a + b[0], 0) / t.length, cy = t.reduce((a, b) => a + b[1], 0) / t.length;
+  return Math.atan2(cy - y, cx - x);
+}
+
+function goalGhost(q, x, y) {
+  const near = (state.truth || []).some(b => Math.hypot(b[0] - x, b[1] - y) < KEEP_OUT_M);
+  return { q, x, y, yaw: facing(x, y, state.robots[q].pose[2]), near };
+}
+
+function sendGoto(q, x, y) {
+  note = "";
+  command({ robot: q, kind: "goto", x: Number(x.toFixed(3)), y: Number(y.toFixed(3)), yaw_deg: null });
+}
+
+function pick(q) { selected = q; driveKey = ""; render(); }
+
+$("grid").addEventListener("pointerdown", e => {       // press on a robot: drag it; press elsewhere: send the selected one
+  const c = e.target.closest("canvas[data-key]");
+  if (!c || !state || !lastB || e.button !== 0) return;
+  const w = worldAt(c, e);
+  drag = { c, q: robotAt(w), start: w, moved: false };
+  if (drag.q) { c.setPointerCapture(e.pointerId); c.classList.add("dragging"); e.preventDefault(); }
+});
+
+$("grid").addEventListener("pointermove", e => {
+  const c = e.target.closest("canvas[data-key]");
+  if (!drag) {                                          // hover: a hand over the robots
+    if (c && state && lastB) c.classList.toggle("grab", !!robotAt(worldAt(c, e)));
+    return;
+  }
+  if (!drag.q) return;
+  const w = worldAt(drag.c, e);
+  if (!drag.moved && Math.hypot(w.x - drag.start.x, w.y - drag.start.y) < DRAG_M) return;
+  drag.moved = true;
+  ghost = goalGhost(drag.q, w.x, w.y);
+  dirty = true;
+});
+
+$("grid").addEventListener("pointerup", e => {
+  if (!drag) return;
+  const d = drag, g = ghost;
+  drag = null; ghost = null; dirty = true;
+  d.c.classList.remove("dragging");
+  if (d.q && d.moved && g) {                            // dropped: sent, unless dropped back on the robot
+    const p = state.robots[d.q].pose;
+    note = g.near ? `not sent: ${d.q} would stop less than ${100 * KEEP_OUT_M} cm from a box` : "";
+    if (!g.near && Math.hypot(g.x - p[0], g.y - p[1]) >= DRAG_M) sendGoto(d.q, g.x, g.y);
+    pick(d.q);
+  } else if (d.q) {
+    pick(d.q === selected ? null : d.q);               // a click on a robot picks it (or lets it go)
+  } else if (selected) {
+    const w = worldAt(d.c, e);
+    sendGoto(selected, w.x, w.y);
+  }
+});
+
+$("grid").addEventListener("pointercancel", () => {
+  if (drag) drag.c.classList.remove("dragging");
+  drag = null; ghost = null; dirty = true;
+});
+
+$("grid").addEventListener("wheel", e => {              // wheel over a robot: turn it (sent when the wheel stops)
+  const c = e.target.closest("canvas[data-key]");
+  if (!c || !state || !lastB || drag) return;
+  const q = robotAt(worldAt(c, e));
+  if (!q) return;
+  e.preventDefault();
+  if (wheel.q !== q) { wheel.q = q; wheel.deg = 0; }
+  wheel.deg = Math.max(-180, Math.min(180, wheel.deg - (e.deltaMode ? e.deltaY * 33 : e.deltaY) / 100 * 22.5));
+  const deg = Math.round(wheel.deg / 7.5) * 7.5, p = state.robots[q].pose;
+  ghost = deg ? { q, x: p[0], y: p[1], yaw: p[2] + deg * Math.PI / 180, turn: true, deg } : null;
+  dirty = true;
+  clearTimeout(wheel.timer);
+  wheel.timer = setTimeout(() => {
+    if (deg) command({ robot: q, kind: "turn", deg });
+    wheel.q = null; wheel.deg = 0; ghost = null; dirty = true;
+    pick(q);
+  }, 450);
+}, { passive: false });
+
+document.addEventListener("keydown", e => {
+  if (!state || e.altKey || e.ctrlKey || e.metaKey) return;
+  const names = Object.keys(state.robots).sort();
+  if (e.key === "Escape") {
+    if (drag) { drag.c.classList.remove("dragging"); drag = null; ghost = null; dirty = true; }
+    else if (wheel.timer && wheel.q) { clearTimeout(wheel.timer); wheel.q = null; wheel.deg = 0; ghost = null; dirty = true; }
+    else pick(null);
+  } else if (e.code === "Space") {
+    e.preventDefault();
+    command({ robot: "*", kind: "stop" });
+  } else if (/^[1-9]$/.test(e.key) && names[Number(e.key) - 1]) {
+    pick(names[Number(e.key) - 1]);
+  }
 });
 
 async function poll() {                     // the next request leaves when the previous one is back
