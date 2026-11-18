@@ -190,12 +190,12 @@ Tutto addestrato **solo in simulazione**; le scene reali sono solo test.
 ### Run del giorno 9 (`docs/paste_in_powershell_PC1_day9.txt`; il giorno 8 non è mai partito ed è in `_to_delete/`)
 
 - **Prima di lanciare**: installa `ultralytics==8.4.213` vincolato alla versione di torch già presente (il pip fallisce invece di sostituire torch CUDA).
-- **`run_day9_all.bat`**: controlli sul codice e su ultralytics/CUDA, junction `data/survey_all`, blocco 0, poi A e Y in parallelo, attesa dei file `.done`, poi S (simulazione), infine H (reale).
-- **`run_day9_0.bat`**: come il vecchio blocco 0 → `results/evaluation_all`, `results/fidelity_all`, `results/sensor_model_dump`.
-- **`run_day9_A.bat`** → `results/plan_v2`: `sim.plan`, MHT, marker network (3 seed), oracolo, marker network su `real_all`. Niente RGB network. Poi `sim.scaling` (`data/scale/`) e una seconda marker network addestrata su plan_v2 + scale → `results/scale/gnn/`.
-- **`run_day9_S.bat`** → `results/scale/`: `segment_sim` (tune + tutti gli sweep, 3 letture per robot) e `evaluate_sim` con le due marker network (`plan`, `scale`).
-- **`run_day9_Y.bat`** → `results/yolo_seg/box_seg`: training YOLO-seg in simulazione e segmentazione di tutti i frame reali.
-- **`run_day9_H.bat`** → `results/yolo_gnn`, `results/yolo_gnn_same_run`, `results/yolo_gnn/real_tables.txt`: valutazione ibrida + tabelle con McNemar contro MHT e marker.
+- **`logs/run_day9_all.bat`**: controlli sul codice e su ultralytics/CUDA, junction `data/survey_all`, blocco 0, poi A e Y in parallelo, attesa dei file `.done`, poi S (simulazione), infine H (reale).
+- **`logs/run_day9_0.bat`**: come il vecchio blocco 0 → `results/evaluation_all`, `results/fidelity_all`, `results/sensor_model_dump`.
+- **`logs/run_day9_A.bat`** → `results/plan_v2`: `sim.plan`, MHT, marker network (3 seed), oracolo, marker network su `real_all`. Niente RGB network. Poi `sim.scaling` (`data/scale/`) e una seconda marker network addestrata su plan_v2 + scale → `results/scale/gnn/`.
+- **`logs/run_day9_S.bat`** → `results/scale/`: `segment_sim` (tune + tutti gli sweep, 3 letture per robot) e `evaluate_sim` con le due marker network (`plan`, `scale`).
+- **`logs/run_day9_Y.bat`** → `results/yolo_seg/box_seg`: training YOLO-seg in simulazione e segmentazione di tutti i frame reali.
+- **`logs/run_day9_H.bat`** → `results/yolo_gnn`, `results/yolo_gnn_same_run`, `results/yolo_gnn/real_tables.txt`: valutazione ibrida + tabelle con McNemar contro MHT e marker.
 
 ---
 

@@ -43,3 +43,6 @@ data/demo_work/
 # end-to-end network: rendered sets
 data/e2e/
 data/e2e_real/
+
+# Windows: "2>$null" in cmd creates a file named $null
+$null

@@ -189,6 +189,8 @@ def summarize(rows, cutoff):
         rm = rm[np.isfinite(rm)]
         vals["rmse_median_cm"].append(100 * float(np.median(rm)) if len(rm) else math.nan)
         vals["seconds_per_scene"].append(float(np.mean([float(r.get("seconds", math.nan)) for r in rs])))
+        if any("forward_seconds" in r for r in rs):                    # GNN rows only (MHT has no forward)
+            vals["forward_seconds_per_scene"].append(float(np.mean([float(r["forward_seconds"]) for r in rs])))
     out = dict(scenes=len(next(iter(per.values()))), seeds=len(per))
     for k, v in vals.items():
         out[k] = round(float(np.nanmean(v)), 4)
@@ -352,14 +354,19 @@ def main():
         line = f"{name:<7} N {meta['n_robots']:4.1f} B {meta['n_boxes']:4.1f} | MHT {summary[-1]['correct_pct']:5.1f}% F1 {summary[-1]['f1_mean']:.3f}"
 
         for gname, va, models in gnns:
+            t_fwd = time.time()
             enc, pred = base_predictions(scenes, va, models)
+            t_fwd = time.time() - t_fwd                    # encoding + forward of every seed's model on every scene
             for variant in REPORTED:
                 p = replace(p0, **VARIANTS[variant]["fixed"], **chosen["yolo"][gname][variant])
                 t1 = time.time()
                 rows = run(scenes, rays, enc, pred, models, va, p)
                 per_scene = (time.time() - t1) / max(1, len(rows))
+                # seconds: rays, injection, cannot-link and clustering only; forward_seconds: encoding + network
+                # forward, shared by the variants (one row per scene and seed, one forward per scene and seed)
                 for r in rows:
-                    r.update(set=name, method=variant, gnn=gname, seconds=per_scene, f1=f1(r))
+                    r.update(set=name, method=variant, gnn=gname, seconds=per_scene,
+                             forward_seconds=t_fwd / max(1, len(rows)), f1=f1(r))
                 all_rows += rows
                 summary.append(dict(meta, method=variant, gnn=gname, **summarize(rows, a.cutoff),
                                     added_boxes_mean=round(float(np.mean([r["added_boxes"] for r in rows])), 3)))
