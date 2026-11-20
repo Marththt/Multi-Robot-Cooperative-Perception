@@ -45,7 +45,6 @@ def heat(ax, cells, robots, boxes, vmin, vmax, cmap, fmt):
     ax.set_xticks(range(len(boxes)), boxes)
     ax.set_yticks(range(len(robots)), robots)
     ax.set_xlabel("boxes")
-    ax.set_ylabel("robots")
     return im
 
 
@@ -73,6 +72,7 @@ def main():
     for ax, c in zip(axes[0], shown):
         im = heat(ax, {k: v for k, (v, _) in grid[c].items()}, robots, boxes, 0.0, 1.0, "viridis", "{:.2f}")
         ax.set_title(name(c), fontsize=9)
+    axes[0][0].set_ylabel("robots")
     fig.colorbar(im, ax=axes[0].tolist(), shrink=0.85, label="scene F1")
     os.makedirs(a.out, exist_ok=True)
     path = os.path.join(a.out, f"fig_grid_{a.metric}.png")
@@ -90,6 +90,7 @@ def main():
         for ax, c in zip(axes[0], others):
             im = heat(ax, diffs[c], robots, boxes, -lim, lim, "RdBu", "{:+.2f}")
             ax.set_title(name(c) + " - MHT", fontsize=9)
+        axes[0][0].set_ylabel("robots")
         fig.colorbar(im, ax=axes[0].tolist(), shrink=0.85, label="scene F1 difference")
         path = os.path.join(a.out, f"fig_grid_{a.metric}_vs_mht.png")
         fig.savefig(path, dpi=160, bbox_inches="tight")
