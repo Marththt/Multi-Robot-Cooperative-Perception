@@ -26,6 +26,8 @@ Sets, each in its own folder under --out with its own seed:
   SC_n<N>       200 scenes  N = B = 4, 8, 16, 24, 32, 50 (robots and boxes grow together)
   SR_n<N>       200 scenes  B = 16, N = 4, 8, 32, 50 (more robots, same boxes; N = 16 is SC_n16)
   SB_b<B>       200 scenes  N = 16, B = 4, 8, 32, 50 (more boxes, same robots; B = 16 is SC_n16)
+  G_n<N>_b<B>   --test-runs scenes per cell, N and B every pair of 2, 4, 8, 16, 32, 50 (36 cells, the F1 map of
+                tools/fig_grid_f1.py; N = 2 is below the training range of the marker network, N 3-50)
   Test scenes: s_min 30 cm, density 1.25 per m^2, heading noise 10 deg.
 
 Every set folder holds the runs (P<k>.jsonl, as the real runs), ground_truth.json (every box), runs.csv (one row
@@ -35,6 +37,7 @@ box indices, side of every scene: the renderer of yolo_gnn/segment_sim.py redraw
     python -m sim.scaling --model config/sensor_model.json --out data/scale/            # every set
     python -m sim.scaling --sets train,val --out data/scale/
     python -m sim.scaling --sets tune,tests --out data/scale/
+    python -m sim.scaling --sets G --test-runs 100 --out data/scale/                      # the robots x boxes grid
     python -m sim.scaling --list
 """
 
@@ -84,11 +87,13 @@ class ScaleSpec:
     two_face_factor: float = 1.0
 
 
+GRID_VALUES = (2, 4, 8, 16, 32, 50)    # robots x boxes of the G grid (powers of 2 up to 50)
 TRAINING = ScaleSpec(n_robots=[3, 50], n_boxes=[2, 50], spacing_m=[0.20, 0.60], density=[0.8, 2.0])
 SWEEPS = {
     "SC": [(f"n{v}", dict(n_robots=[v, v], n_boxes=[v, v])) for v in (4, 8, 16, 24, 32, 50)],
     "SR": [(f"n{v}", dict(n_robots=[v, v], n_boxes=[16, 16])) for v in (4, 8, 32, 50)],
     "SB": [(f"b{v}", dict(n_robots=[16, 16], n_boxes=[v, v])) for v in (4, 8, 32, 50)],
+    "G": [(f"n{n}_b{b}", dict(n_robots=[n, n], n_boxes=[b, b])) for n in GRID_VALUES for b in GRID_VALUES],
 }
 
 
