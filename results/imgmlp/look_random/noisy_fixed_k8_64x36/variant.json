@@ -1,0 +1,55 @@
+{
+  "train": [
+    "data/plan_v2/train",
+    "data/imgmlp/plan_v2_train_random"
+  ],
+  "val": [
+    "data/plan_v2/val",
+    "data/imgmlp/plan_v2_val"
+  ],
+  "real": [
+    "data/survey_all/",
+    "data/imgmlp/real"
+  ],
+  "ground_truth": "config/ground_truth_positions.json",
+  "sensor_calib": "config/sensor_calib.json",
+  "measure": "noisy",
+  "noise_range_sd_m": 0.02,
+  "noise_range_sd_rel": 0.03,
+  "noise_bearing_sd_deg": 1.5,
+  "noise_scale_bias_sd": 0.02,
+  "noise_bearing_bias_sd_deg": 1.0,
+  "noise_miss_prob": 0.1,
+  "noise_false_rate": 0.15,
+  "geometry": "fixed",
+  "graph": "A",
+  "robot_gate": 4.0,
+  "k": 8,
+  "img_size": [
+    64,
+    36
+  ],
+  "gate": 1.0,
+  "hidden": 64,
+  "hops": 2,
+  "w_pos": 1.0,
+  "epochs": 40,
+  "patience": 8,
+  "batch": 32,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "seeds": 3,
+  "max_train": null,
+  "max_val": null,
+  "cutoff": 0.15,
+  "out": "results/imgmlp/look_random",
+  "noise": {
+    "range_sd_m": 0.02,
+    "range_sd_rel": 0.03,
+    "bearing_sd_deg": 1.5,
+    "scale_bias_sd": 0.02,
+    "bearing_bias_sd_deg": 1.0,
+    "miss_prob": 0.1,
+    "false_rate": 0.15
+  }
+}
