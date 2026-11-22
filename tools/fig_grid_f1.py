@@ -53,6 +53,9 @@ def main():
     ap.add_argument("--summary", default="results/scale_grid/summary.csv")
     ap.add_argument("--metric", default="f1_mean")
     ap.add_argument("--out", default="results/scale_grid/")
+    ap.add_argument("--methods", nargs="+", default=None, help="methods to show, in order (default: SHOWN)")
+    ap.add_argument("--reference", default="mht", help="method the differences are taken from")
+    ap.add_argument("--tag", default="", help="suffix of the figure names")
     a = ap.parse_args()
     import matplotlib
     matplotlib.use("Agg")
@@ -61,8 +64,13 @@ def main():
     grid = read_grid(a.summary, a.metric)
     if not grid:
         raise SystemExit(f"no G_n<N>_b<B> row with {a.metric} in {a.summary}")
-    shown = [c for c in SHOWN if c in grid] + sorted(c for c in grid if c not in SHOWN and c[0] != "mht")
-    shown = [c for c in shown if c in grid][:6]
+    if a.methods:
+        shown = [c for m in a.methods for c in sorted(grid) if c[0] == m]
+    else:
+        shown = [c for c in SHOWN if c in grid] + sorted(c for c in grid if c not in SHOWN and c[0] != "mht")
+        shown = [c for c in shown if c in grid][:6]
+    ref = (a.reference, "")
+    tag = f"_{a.tag}" if a.tag else ""
     robots = sorted({n for c in grid.values() for n, _ in c})
     boxes = sorted({b for c in grid.values() for _, b in c})
     name = lambda c: LABELS.get(c[0], c[0]) + (f" ({c[1]})" if c[1] else "")
@@ -75,24 +83,24 @@ def main():
     axes[0][0].set_ylabel("robots")
     fig.colorbar(im, ax=axes[0].tolist(), shrink=0.85, label="scene F1")
     os.makedirs(a.out, exist_ok=True)
-    path = os.path.join(a.out, f"fig_grid_{a.metric}.png")
+    path = os.path.join(a.out, f"fig_grid_{a.metric}{tag}.png")
     fig.savefig(path, dpi=160, bbox_inches="tight")
     plt.close(fig)
     print(path)
 
-    # difference from the MHT
-    if ("mht", "") in grid:
-        others = [c for c in shown if c[0] != "mht"]
-        mht = {k: v for k, (v, _) in grid[("mht", "")].items()}
+    # difference from the reference (the MHT by default)
+    if ref in grid:
+        others = [c for c in shown if c != ref]
+        mht = {k: v for k, (v, _) in grid[ref].items()}
         diffs = {c: {k: v - mht[k] for k, (v, _) in grid[c].items() if k in mht} for c in others}
         lim = max([abs(v) for d in diffs.values() for v in d.values()] + [0.05])
         fig, axes = plt.subplots(1, len(others), figsize=(3.6 * len(others) + 0.8, 3.6), squeeze=False)
         for ax, c in zip(axes[0], others):
             im = heat(ax, diffs[c], robots, boxes, -lim, lim, "RdBu", "{:+.2f}")
-            ax.set_title(name(c) + " - MHT", fontsize=9)
+            ax.set_title(name(c) + " - " + name(ref), fontsize=9)
         axes[0][0].set_ylabel("robots")
         fig.colorbar(im, ax=axes[0].tolist(), shrink=0.85, label="scene F1 difference")
-        path = os.path.join(a.out, f"fig_grid_{a.metric}_vs_mht.png")
+        path = os.path.join(a.out, f"fig_grid_{a.metric}{tag}_vs_{a.reference}.png")
         fig.savefig(path, dpi=160, bbox_inches="tight")
         plt.close(fig)
         print(path)
