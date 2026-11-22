@@ -1,0 +1,7 @@
+cd "C:\GNN for vision fault\Multi-Robot-Cooperative-Perception"
+git stash
+git pull --no-rebase --no-edit
+.venv\Scripts\python -c "import imgmlp.train, imgmlp.report; from imgmlp.measure import NoiseRanges; print('imgmlp round 2 code OK')"
+.venv\Scripts\python -c "import os; assert all(os.path.exists(f'data/imgmlp/{f}/frames.npy') for f in ('plan_v2_train', 'plan_v2_val', 'real')); print('frame caches OK')"
+Copy-Item logs\run_imgmlp2.bat run_imgmlp2.bat -Force
+Start-Process cmd -ArgumentList "/c run_imgmlp2.bat"

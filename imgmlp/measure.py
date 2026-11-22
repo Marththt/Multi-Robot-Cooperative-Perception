@@ -9,6 +9,8 @@ The model does not care which sensor gave rho and theta. Three sources:
   noisy   the ideal measurements with a simulated error: a range error that grows with the distance, a bearing
           error, a range scale error and a bearing offset per robot, missed boxes and false measurements
           (NoiseModel)
+  noisyrand  as noisy, but every scene draws its own error from broad ranges (NoiseRanges, domain
+          randomization): no sensor model is needed
   sensor  the detections stored in the set (P<k>.jsonl: the fitted ArUco sensor model in simulation, the ArUco
           detector on the real runs), read by gnn/dataset.py with the range / bearing calibration of the sensor
           (--sensor-calib), i.e. what a calibrated sensor delivers
@@ -18,7 +20,7 @@ round), without any hand-made feature, plus frame (index of the image of every r
 """
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 import numpy as np
 
@@ -67,14 +69,46 @@ class NoiseModel:
     bearing_bias_sd_deg: float = 1.0     # per robot: bearing offset
     miss_prob: float = 0.10              # a visible box is not measured
     false_rate: float = 0.15             # false measurements per robot (Poisson), uniform in range and field of view
+    range_bias_sd_m: float = 0.0         # per robot: range offset
 
     @classmethod
     def ideal(cls):
-        return cls(0, 0, 0, 0, 0, 0, 0)
+        return cls(0, 0, 0, 0, 0, 0, 0, 0)
+
+    def sd_range(self, d):
+        """Total range spread at distance d [m] (noise, scale and offset of the robot)."""
+        d = np.asarray(d, float)
+        return np.sqrt((self.range_sd_m + self.range_sd_rel * d) ** 2 + (self.scale_bias_sd * d) ** 2
+                       + self.range_bias_sd_m ** 2)
+
+    def sd_bearing_deg(self):
+        return math.hypot(self.bearing_sd_deg, self.bearing_bias_sd_deg)
+
+
+@dataclass
+class NoiseRanges:
+    """Domain randomization of the measurement error: every simulated scene draws its own NoiseModel, each field
+    uniform in [lo, hi]. The ranges are broad on purpose and are not fitted to any real sensor, so that the model
+    needs no sensor model: only rho and theta."""
+    range_sd_m: tuple = (0.0, 0.08)
+    range_sd_rel: tuple = (0.0, 0.06)
+    bearing_sd_deg: tuple = (0.0, 4.0)
+    scale_bias_sd: tuple = (0.0, 0.08)
+    bearing_bias_sd_deg: tuple = (0.0, 3.0)
+    miss_prob: tuple = (0.0, 0.7)
+    false_rate: tuple = (0.0, 0.4)
+    range_bias_sd_m: tuple = (0.0, 0.10)
+
+    def sample(self, rng):
+        return NoiseModel(**{f.name: float(rng.uniform(*getattr(self, f.name))) for f in fields(self)})
 
 
 def measured_scene(g, noise, rng, layout="sim"):
-    """Scene of one geometry.jsonl row (sim/plan.py, sim/scaling.py) with ideal or noisy measurements."""
+    """Scene of one geometry.jsonl row (sim/plan.py, sim/scaling.py) with ideal or noisy measurements. noise is a
+    NoiseModel, or a NoiseRanges (one NoiseModel drawn for this scene). The NoiseModel used is kept in
+    scene["declared"] (the uncertainty the sensor declares, imgmlp/model.py unc=True)."""
+    if isinstance(noise, NoiseRanges):
+        noise = noise.sample(rng)
     poses = [tuple(map(float, p)) for p in g["poses"]]
     boxes = np.array(g["boxes"], float).reshape(-1, 2)
     thetas = np.array(g.get("yaws") or [0.0] * len(boxes), float)
@@ -84,11 +118,12 @@ def measured_scene(g, noise, rng, layout="sim"):
     half = math.radians(HFOV_DEG) / 2
     for k in range(len(poses)):
         scale = 1 + rng.normal(0, noise.scale_bias_sd) if noise.scale_bias_sd else 1.0
+        shift = rng.normal(0, noise.range_bias_sd_m) if noise.range_bias_sd_m else 0.0
         offset = math.radians(rng.normal(0, noise.bearing_bias_sd_deg)) if noise.bearing_bias_sd_deg else 0.0
         for j, d, b, hidden in box_visibility(k, poses, boxes, thetas, obstacles):
             if hidden or (noise.miss_prob and rng.random() < noise.miss_prob):
                 continue
-            d = d * scale + (rng.normal(0, noise.range_sd_m + noise.range_sd_rel * d)
+            d = d * scale + shift + (rng.normal(0, noise.range_sd_m + noise.range_sd_rel * d)
                              if noise.range_sd_m or noise.range_sd_rel else 0.0)
             b = b + offset + (math.radians(rng.normal(0, noise.bearing_sd_deg)) if noise.bearing_sd_deg else 0.0)
             det_robot.append(k), dist.append(max(d, 0.05)), bear.append(b), label.append(j)
@@ -97,7 +132,7 @@ def measured_scene(g, noise, rng, layout="sim"):
             label.append(-1)
     return dict(run=g["run"], layout=layout, round=0, robots=robots, poses=np.array(poses, float),
                 det_robot=np.array(det_robot, int), distance=np.array(dist, float), bearing=np.array(bear, float),
-                label=np.array(label, int), truth=boxes)
+                label=np.array(label, int), truth=boxes, declared=noise)
 
 
 def sensor_scenes(set_dir, gt_path, calib_path):

@@ -31,6 +31,10 @@ Two geometry modes:
           feature is "same robot", robot edges carry nothing, and the box position is predicted from the node alone.
 
 k = 0 drops the image: the measurements alone (the ablation that tells what the image adds).
+
+unc=True appends to every report node the uncertainty the sensor declares (scene["declared"], a NoiseModel of
+imgmlp/measure.py): range spread at that distance, bearing spread, miss probability, false measurements per robot.
+In simulation it is the error the scene was drawn with; on the real scenes it is a rough value given by hand.
 """
 
 import math
@@ -45,6 +49,7 @@ from imgmlp.measure import detection_positions
 
 RING_SCALE_M = 1.3
 NODE_FEATURES = 6                    # rho, theta, x, y, cos psi, sin psi
+UNC_FEATURES = 4                     # declared: range sd / 0.1 m, bearing sd / 5 deg, miss probability, false rate
 ROBOT_FEATURES = 4                   # x, y, cos psi, sin psi
 PAIR_WIDTH = dict(fixed=PAIR_FEATURES, strict=1)
 ROBOT_EDGE_WIDTH = dict(fixed=5, strict=0)
@@ -55,7 +60,15 @@ GRAPHS = ("A", "B")
 # Encoding (numpy)
 # ====================================================================
 
-def encode_scene(s, geometry="fixed", gate=1.0, rotation=0.0, robot_gate=4.0):
+def uncertainty(s):
+    """(n, UNC_FEATURES) declared uncertainty of every report of scene s."""
+    dec, d = s["declared"], np.asarray(s["distance"], float)
+    one = np.ones(len(d))
+    return np.column_stack([dec.sd_range(d) / 0.1, one * dec.sd_bearing_deg() / 5.0, one * dec.miss_prob,
+                            one * dec.false_rate]).reshape(len(d), UNC_FEATURES)
+
+
+def encode_scene(s, geometry="fixed", gate=1.0, rotation=0.0, robot_gate=4.0, unc=False):
     """numpy arrays of one scene, in a frame centred on the robots and rotated by `rotation`."""
     poses = np.asarray(s["poses"], float).reshape(-1, 3)
     center = poses[:, :2].mean(axis=0)
@@ -67,6 +80,8 @@ def encode_scene(s, geometry="fixed", gate=1.0, rotation=0.0, robot_gate=4.0):
     n, nr = len(r_of), len(poses)
     node = np.column_stack([s["distance"], s["bearing"], rxy[r_of] / RING_SCALE_M,
                             np.cos(ryaw[r_of]), np.sin(ryaw[r_of])]).reshape(n, NODE_FEATURES)
+    if unc:
+        node = np.column_stack([node, uncertainty(s)])
     robot = np.column_stack([rxy / RING_SCALE_M, np.cos(ryaw), np.sin(ryaw)]).reshape(nr, ROBOT_FEATURES)
     local = dict(s, poses=np.column_stack([rxy, ryaw]))
     geo = detection_positions(local).reshape(n, 2)                  # fixed layer (also used for decoding)
@@ -115,6 +130,7 @@ def collate(encoded, images=None):
     r_off = np.cumsum([0] + [len(e["frame"]) for e in encoded])
     d_off = np.cumsum([0] + [len(e["node"]) for e in encoded])
     pw = encoded[0]["pair_ij"].shape[1]
+    nw = encoded[0]["node"].shape[1]
     ew = encoded[0]["redge_feat"].shape[1]
 
     def cat(key, width=None, offset=None):
@@ -127,7 +143,7 @@ def collate(encoded, images=None):
     i64 = lambda x: torch.as_tensor(np.asarray(x, np.int64))
     pairs = cat("pairs", 2, d_off)
     redges = cat("redges", 2, r_off)
-    b = dict(node=f32(cat("node", NODE_FEATURES)), robot=f32(cat("robot", ROBOT_FEATURES)),
+    b = dict(node=f32(cat("node", nw)), robot=f32(cat("robot", ROBOT_FEATURES)),
              det_robot=i64(cat("det_robot", offset=r_off)), n_robots=int(r_off[-1]), n_det=int(d_off[-1]),
              geo=f32(cat("geo", 2)), pair_a=i64(pairs[:, 0]), pair_b=i64(pairs[:, 1]),
              pair_ij=f32(cat("pair_ij", pw)), pair_ji=f32(cat("pair_ji", pw)),
@@ -160,21 +176,23 @@ class ImageMLP(nn.Module):
 
 
 class ImageDetectionGNN(nn.Module):
-    def __init__(self, k=8, img_size=(64, 36), geometry="fixed", hidden=64, hops=2, img_hidden=(256, 64), graph="A"):
+    def __init__(self, k=8, img_size=(64, 36), geometry="fixed", hidden=64, hops=2, img_hidden=(256, 64), graph="A",
+                 unc=False):
         super().__init__()
         if graph not in GRAPHS:
             raise ValueError(f"unknown graph {graph}")
         h = hidden
-        self.k, self.geometry, self.graph = k, geometry, graph
+        self.k, self.geometry, self.graph, self.unc = k, geometry, graph, unc
+        nf = NODE_FEATURES + (UNC_FEATURES if unc else 0)
         pw, ew = PAIR_WIDTH[geometry], ROBOT_EDGE_WIDTH[geometry]
         relu = lambda *s: nn.Sequential(mlp(*s), nn.ReLU())
         self.image = ImageMLP(img_size[0] * img_size[1], k, img_hidden) if k > 0 else None
         self.message = nn.ModuleList([relu(h + pw, h, h) for _ in range(hops)])
         if graph == "A":
-            self.enc = relu(NODE_FEATURES + k, h, h)
+            self.enc = relu(nf + k, h, h)
             self.update = nn.ModuleList([mlp(2 * h, h, h) for _ in range(hops)])
         else:
-            self.enc = relu(NODE_FEATURES, h, h)
+            self.enc = relu(nf, h, h)
             self.robot_enc = relu(ROBOT_FEATURES + k, h, h)
             self.robot_to_det = nn.ModuleList([relu(h, h, h) for _ in range(hops)])
             self.det_to_robot = nn.ModuleList([relu(h, h, h) for _ in range(hops)])

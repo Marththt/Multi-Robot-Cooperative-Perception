@@ -9,14 +9,20 @@ on simulated test sets and on the real scenes. No test scene is used for trainin
 A set is SET_DIR CACHE: the set folder (geometry.jsonl, and P<k>.jsonl for --measure sensor) and its frame cache
 (imgmlp/frames.py). --test NAME SET_DIR CACHE adds a simulated test set (same measurements as training).
 
-Measurements (--measure, imgmlp/measure.py): ideal | noisy (NoiseModel, --noise-* to change it) | sensor (the
-detections of the set, corrected with --sensor-calib). The real scenes always use the ArUco detections corrected
-with --sensor-calib: the calibration belongs to the sensor, the model only sees rho and theta.
+Measurements (--measure, imgmlp/measure.py): ideal | noisy (NoiseModel, --noise-* to change it) | noisyrand (every
+scene draws its own error from NoiseRanges, --rand-* LO HI to change them: no sensor model) | sensor (the detections
+of the set, corrected with --sensor-calib). The real scenes use the ArUco detections corrected with --sensor-calib
+(test "real"); --real-raw adds them without any calibration (test "real_raw": rho and theta as the detector gives
+them, i.e. no sensor model at all).
+
+--unc gives every report node the uncertainty its sensor declares (imgmlp/model.py). In simulation it is the error
+the scene was drawn with; on the real scenes it is given by hand with --declare NAME FIELD=VALUE ... (fields of
+NoiseModel, the others keep their default), one real test per NAME (real_NAME, real_raw_NAME).
 
 Graph (--graph, imgmlp/model.py): A (z appended to every report node) | B (one robot node per robot carrying z,
 linked to its reports and to the robots closer than --robot-gate; robots that measured nothing keep their node).
 
-Variant folder: <measure>_<geometry>[_B]_k<k>_<W>x<H>. Outputs: model_seed<s>.pt, variant.json, train_log.csv,
+Variant folder: <measure>_<geometry>[_B]_k<k>_<W>x<H>[_unc][_<tag>]. Outputs: model_seed<s>.pt, variant.json, train_log.csv,
 summary.csv (per test set: mean and sd over the seeds), <test>_scenes.csv (one row per scene and seed: layout,
 round, seed, correct, dn, ... as tools/real_tables.py reads them), and with k > 0 features_<test>_seed<s>.npy (z of
 every frame of the cache, rows as frames.csv) for imgmlp/probe.py.
@@ -36,19 +42,22 @@ import torch
 
 from gnn.model import decode
 from imgmlp.frames import load_cache
-from imgmlp.measure import NoiseModel, add_silent_robots, attach_frames, measured_scene, sensor_scenes
+from imgmlp.measure import NoiseModel, NoiseRanges, add_silent_robots, attach_frames, measured_scene, sensor_scenes
 from imgmlp.model import ImageDetectionGNN, collate, encode_scene, loss_fn, to_world
 from pipeline.evaluate_runs import MATCH_CUTOFF_M, scene_metrics
 
 
 def variant_name(a):
     graph = "_B" if a.graph == "B" else ""
-    return f"{a.measure}_{a.geometry}{graph}_k{a.k}_{a.img_size[0]}x{a.img_size[1]}"
+    name = f"{a.measure}_{a.geometry}{graph}_k{a.k}_{a.img_size[0]}x{a.img_size[1]}"
+    return name + ("_unc" if a.unc else "") + (f"_{a.tag}" if a.tag else "")
 
 
 def noise_model(a):
     if a.measure == "ideal":
         return NoiseModel.ideal()
+    if a.measure == "noisyrand":
+        return NoiseRanges(**{f.name: tuple(getattr(a, "rand_" + f.name)) for f in fields(NoiseRanges)})
     return NoiseModel(**{f.name: getattr(a, "noise_" + f.name) for f in fields(NoiseModel)})
 
 
@@ -75,9 +84,23 @@ def sim_set(set_dir, cache, a, seed, max_scenes=None):
     return scenes, images
 
 
-def real_set(survey_dir, cache, a):
+def declared_model(assignments):
+    """NoiseModel from ["field=value", ...] (the others keep their default)."""
+    names = {f.name for f in fields(NoiseModel)}
+    kw = {}
+    for item in assignments:
+        key, value = item.split("=")
+        if key not in names:
+            raise SystemExit(f"--declare: unknown field {key} (fields: {sorted(names)})")
+        kw[key] = float(value)
+    return NoiseModel(**kw)
+
+
+def real_set(survey_dir, cache, a, calib, declared=None):
     images, index, rows = load_cache(cache, a.img_size)
-    scenes = sensor_scenes(survey_dir, a.ground_truth, a.sensor_calib)
+    scenes = sensor_scenes(survey_dir, a.ground_truth, calib)
+    for s in scenes:
+        s["declared"] = declared
     if a.graph == "B":
         added = add_silent_robots(scenes, rows)
         if added:
@@ -90,7 +113,7 @@ def real_set(survey_dir, cache, a):
 
 def encode_all(scenes, a, rng=None):
     rot = (lambda: float(rng.uniform(0, 2 * math.pi))) if rng is not None else (lambda: 0.0)
-    return [encode_scene(s, a.geometry, a.gate, rot(), a.robot_gate) for s in scenes]
+    return [encode_scene(s, a.geometry, a.gate, rot(), a.robot_gate, a.unc) for s in scenes]
 
 
 def class_weights(enc):
@@ -131,7 +154,7 @@ def train_one(train, val, a, seed, log):
     (tr_enc, tr_img), (va_scenes, va_enc, va_img) = train, val
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    model = ImageDetectionGNN(a.k, a.img_size, a.geometry, a.hidden, a.hops, graph=a.graph)
+    model = ImageDetectionGNN(a.k, a.img_size, a.geometry, a.hidden, a.hops, graph=a.graph, unc=a.unc)
     opt = torch.optim.Adam(model.parameters(), lr=a.lr, weight_decay=a.weight_decay)
     w_same, w_false = class_weights(tr_enc)
     best, best_state, best_epoch, waited = -1.0, None, 0, 0
@@ -191,9 +214,17 @@ def main():
     ap.add_argument("--real", nargs=2, metavar=("SURVEY_DIR", "CACHE"), help="the real scenes and their frame cache")
     ap.add_argument("--ground-truth", default="config/ground_truth_positions.json")
     ap.add_argument("--sensor-calib", default="config/sensor_calib.json")
-    ap.add_argument("--measure", choices=["ideal", "noisy", "sensor"], default="noisy")
+    ap.add_argument("--measure", choices=["ideal", "noisy", "noisyrand", "sensor"], default="noisy")
     for f in fields(NoiseModel):
         ap.add_argument("--noise-" + f.name.replace("_", "-"), dest="noise_" + f.name, type=float, default=f.default)
+    for f in fields(NoiseRanges):
+        ap.add_argument("--rand-" + f.name.replace("_", "-"), dest="rand_" + f.name, type=float, nargs=2,
+                        default=list(f.default), metavar=("LO", "HI"))
+    ap.add_argument("--unc", action="store_true", help="declared uncertainty of the sensor on every report node")
+    ap.add_argument("--declare", nargs="+", action="append", default=[], metavar=("NAME", "FIELD=VALUE"),
+                    help="with --unc: uncertainty declared on the real scenes (repeatable)")
+    ap.add_argument("--real-raw", action="store_true", help="also test on the real scenes without calibration")
+    ap.add_argument("--tag", default="", help="suffix of the variant folder")
     ap.add_argument("--geometry", choices=["fixed", "strict"], default="fixed")
     ap.add_argument("--graph", choices=["A", "B"], default="A",
                     help="A: z on every report node; B: robot nodes carrying z (heterogeneous graph)")
@@ -217,6 +248,8 @@ def main():
     ap.add_argument("--eval-only", action="store_true")
     ap.add_argument("--out", default="results/imgmlp/")
     a = ap.parse_args()
+    if a.unc and a.measure in ("sensor", "ideal"):
+        raise SystemExit("--unc needs --measure noisy or noisyrand (the declared error of the simulated scenes)")
     out = os.path.join(a.out, variant_name(a))
     os.makedirs(out, exist_ok=True)
     torch.set_num_threads(max(1, os.cpu_count() or 1))
@@ -225,7 +258,7 @@ def main():
     models = []
     if a.eval_only:
         for seed in range(a.seeds):
-            m = ImageDetectionGNN(a.k, a.img_size, a.geometry, a.hidden, a.hops, graph=a.graph)
+            m = ImageDetectionGNN(a.k, a.img_size, a.geometry, a.hidden, a.hops, graph=a.graph, unc=a.unc)
             m.load_state_dict(torch.load(os.path.join(out, f"model_seed{seed}.pt")))
             models.append(m)
     else:
@@ -251,7 +284,14 @@ def main():
     if a.val:
         tests.insert(0, ("val", sim_set(*a.val, a, seed=102, max_scenes=a.max_val)))
     if a.real:
-        tests.append(("real", real_set(*a.real, a)))
+        declares = [(d[0], declared_model(d[1:])) for d in a.declare] if a.unc else [("", None)]
+        if a.unc and not declares:
+            declares = [("", NoiseModel())]
+        for tag, dec in declares:
+            suffix = f"_{tag}" if tag else ""
+            tests.append(("real" + suffix, real_set(*a.real, a, a.sensor_calib, dec)))
+            if a.real_raw:
+                tests.append(("real_raw" + suffix, real_set(*a.real, a, None, dec)))
     summary = []
     for name, (scenes, images) in tests:
         enc = encode_all(scenes, a)
@@ -275,7 +315,12 @@ def main():
         print(f"  {name:<8} {s['scenes']:5d} scenes: correct {s['correct_pct']:5.1f} ± {s['correct_sd']:.1f}%  "
               f"(exact {s['exact_pct']:.1f}%, too few {s['too_few_pct']:.1f}%, too many {s['too_many_pct']:.1f}%)",
               flush=True)
-    write_csv(os.path.join(out, "summary.csv"), summary)
+    path = os.path.join(out, "summary.csv")
+    if a.eval_only and os.path.exists(path):                    # keep the tests not evaluated again
+        with open(path) as f:
+            done = {r["test"] for r in summary}
+            summary = [r for r in csv.DictReader(f) if r["test"] not in done] + summary
+    write_csv(path, summary)
     print(f"written in {out}")
 
 
