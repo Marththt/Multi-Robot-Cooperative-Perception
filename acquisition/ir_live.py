@@ -104,10 +104,12 @@ class Rig:
         from robomaster_sdk.gimbal import PITCH_SIGN, YAW_SIGN, Gimbal
         from robomaster_sdk.ir import IRSensors
         from vf.fusion.sensor_model import arena_from_regions
-        from vf.localization.mocap_pose import MocapHub
+        from acquisition.mocap_all import AllBodiesHub
         self.arena = arena_from_regions(a.regions)
-        self.hub = MocapHub([a.rb] + list(a.box_rb), a.optitrack_server, a.optitrack_local)
+        self.hub = AllBodiesHub([a.rb], a.optitrack_server, a.optitrack_local)     # the boxes are found, not listed
         self.hub.wait_ready()
+        time.sleep(0.3)
+        print(f"boxes tracked by OptiTrack inside the arena: {[b['id'] for b in self.boxes()]}", flush=True)
         self.cleanup.append(self.hub.close)
         off = math.radians(a.yaw_offset_deg)
 
@@ -131,13 +133,8 @@ class Rig:
     def boxes(self):
         if self.a.sim:
             return self.fixed
-        x0, x1, y0, y1 = self.arena
-        out = []
-        for rb in self.a.box_rb:
-            q = self.hub.get_pose(rb)
-            if q is not None and x0 <= q[0] <= x1 and y0 <= q[1] <= y1:
-                out.append(dict(id=rb, x=float(q[0]), y=float(q[1])))
-        return out
+        return self.hub.boxes(self.arena, exclude={self.a.rb, *self.a.robot_rbs},
+                              only=set(self.a.box_rb) if self.a.box_rb else None)
 
     def start_camera(self):
         if self.a.sim:
@@ -475,8 +472,11 @@ def make_parser(with_mode=True, description=__doc__):
     ap.add_argument("--sn", default=None)
     ap.add_argument("--ip", default=None)
     ap.add_argument("--rb", type=int, help="OptiTrack rigid body of the robot")
-    ap.add_argument("--box-rb", type=int, nargs="+", default=[11, 12, 13, 14, 15, 16, 17],
-                    help="OptiTrack rigid bodies of the boxes (those inside the arena are used)")
+    ap.add_argument("--box-rb", type=int, nargs="+", default=None,
+                    help="only these OptiTrack rigid bodies are boxes (default: every rigid body tracked inside the "
+                         "arena that is not a robot)")
+    ap.add_argument("--robot-rbs", type=int, nargs="*", default=[],
+                    help="rigid bodies of the other robots, so that they are not taken for boxes")
     ap.add_argument("--regions", default="config/optitrack_regions.json")
     ap.add_argument("--optitrack-server", default="127.0.0.1")
     ap.add_argument("--optitrack-local", default="127.0.0.1")

@@ -2,7 +2,9 @@
 
 Robot side, as demo/live_robots.py but with the IR instead of the markers: one acquisition/ir_scan.py process per
 robot (started one after the other: the SDK finds a robot through a port only one process at a time can use), and
-<out>/boxes.json with the boxes OptiTrack tracks (demo/live_robots.truth_loop, reused as it is). Then the page:
+<out>/boxes.json with the boxes OptiTrack tracks, in the format of demo/live_robots.py. The boxes are found by
+themselves: every rigid body tracked inside the arena that is not one of the robots (acquisition/mocap_all.py),
+so boxes can be added or taken away during the run; --box restricts them to a list. Then the page:
 
     terminal 1 (capture environment: SDK, natnet)
         python -m acquisition.ir_live_robots --robot G1:8 --robot G2:7 --robot G3:10 --out data/live_ir/
@@ -31,7 +33,6 @@ import subprocess
 import sys
 import threading
 import time
-from types import SimpleNamespace
 
 CONNECT_TIMEOUT_S = 60.0
 
@@ -50,6 +51,36 @@ def pump(proc, tag, connected):
     connected.set()
 
 
+def truth_loop(a, robots, stop, hz=30.0):
+    """<out>/boxes.json, as demo/live_robots.truth_loop writes it, with the boxes found by acquisition/mocap_all."""
+    from acquisition.mocap_all import AllBodiesHub
+    from demo.methods import write_json
+    from vf.fusion.sensor_model import arena_from_regions
+    arena = arena_from_regions(a.regions)
+    rbs = [r["rb"] for r in robots]
+    hub = AllBodiesHub(rbs, a.optitrack_server, a.optitrack_local)
+    seen = None
+    try:
+        while not stop.is_set():
+            t0 = time.time()
+            boxes = hub.boxes(arena, exclude=set(rbs), only=set(a.box) if a.box else None)
+            ids = [b["id"] for b in boxes]
+            if ids != seen:
+                print(f"boxes tracked inside the arena: {ids}", flush=True)
+                seen = ids
+            poses = {}
+            for r in robots:
+                q = hub.get_pose(r["rb"])
+                if q is not None:
+                    poses[r["robot_id"]] = [round(float(v), 4) for v in q[:3]]
+            write_json(os.path.join(a.out, "boxes.json"), dict(
+                t=time.time(), robots=poses, boxes=[dict(class_name="box", rb_id=b["id"], x=round(b["x"], 4),
+                                                         y=round(b["y"], 4), yaw=round(b["yaw"], 4)) for b in boxes]))
+            stop.wait(max(0.0, 1.0 / hz - (time.time() - t0)))
+    finally:
+        hub.close()
+
+
 def sim_truth(a, stop):
     from demo.methods import write_json
     with open(a.ground_truth) as f:
@@ -63,8 +94,9 @@ def sim_truth(a, stop):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--robot", action="append", required=True, metavar="ID:RIGID_BODY")
-    ap.add_argument("--box", type=int, nargs="+", default=[11, 12, 13, 14, 15, 16, 17],
-                    help="OptiTrack rigid bodies of the boxes")
+    ap.add_argument("--box", type=int, nargs="+", default=None,
+                    help="only these OptiTrack rigid bodies are boxes (default: every tracked rigid body inside the "
+                         "arena that is not a robot)")
     ap.add_argument("--out", default="data/live_ir/", help="folder of the live states (demo.live --live-dir)")
     ap.add_argument("--regions", default="config/optitrack_regions.json")
     ap.add_argument("--optitrack-server", default="127.0.0.1")
@@ -90,10 +122,7 @@ def main():
     if a.sim:
         truth = threading.Thread(target=sim_truth, args=(a, stop), daemon=True)
     else:
-        from demo.live_robots import truth_loop
-        ta = SimpleNamespace(box=a.box, regions=a.regions, optitrack_server=a.optitrack_server,
-                             optitrack_local=a.optitrack_local, out=a.out, camera_offset_forward_m=0.0)
-        truth = threading.Thread(target=truth_loop, args=(ta, robots, stop), daemon=True)
+        truth = threading.Thread(target=truth_loop, args=(a, robots, stop), daemon=True)
     truth.start()
     procs = []
     for r in robots:
@@ -107,7 +136,10 @@ def main():
                     "--sim-pose", x, y, yaw, "--settle-s", "0"]
         else:
             cmd += ["--rb", str(r["rb"]), "--regions", a.regions, "--optitrack-server", a.optitrack_server,
-                    "--optitrack-local", a.optitrack_local, "--box-rb"] + [str(b) for b in a.box]
+                    "--optitrack-local", a.optitrack_local,
+                    "--robot-rbs"] + [str(q["rb"]) for q in robots if q is not r]
+            if a.box:
+                cmd += ["--box-rb"] + [str(b) for b in a.box]
         cmd += rest
         print(f"{r['robot_id']}: " + ("simulated" if a.sim else f"rigid body {r['rb']}"), flush=True)
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
