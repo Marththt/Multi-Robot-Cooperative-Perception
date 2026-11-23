@@ -1,0 +1,54 @@
+{
+ "_readme": "Sensor model of the IR on the gimbal for the MHT with sensor model (vf/fusion/sensor_aware_mht.py), used by demo.live --sensor-model config/sensor_model_ir.json with acquisition/ir_scan.py states. The ArUco model (config/sensor_model.json) does not fit the IR: its 88 deg field of view is taken around ONE heading per robot (the beam of its first reading), so a box ranged at another gimbal angle can never be associated and every robot makes duplicates. Here: field of view all around (the gimbal turns to every box), p_D 0.95 for a visible box (the scan aims at every visible box), range noise 2.4 cm (real run, 3 robots), across-beam error from the aim (1.5 deg) and the beam footprint, the report moved one apothem (6.8 cm) along the beam (face -> box centre), no viewing angle (ir_scan sends none), false readings (edge mix, slipped beam) spread over the range.",
+ "hfov_deg": 359.9,
+ "r_min_m": 0.1,
+ "r_max_m": 3.6,
+ "range_fit": [
+  1.0,
+  0.0
+ ],
+ "bearing_fit": [
+  1.0,
+  0.0
+ ],
+ "camera_offset_m": 0.0,
+ "detect_w": [
+  2.944,
+  0.0,
+  0.0,
+  0.0,
+  -7.0
+ ],
+ "two_face_q": 0.0,
+ "view_noise_sd_rad": 0.1,
+ "along_mean": [
+  -0.068,
+  0.0,
+  0.0
+ ],
+ "along_sd": [
+  0.024,
+  0.0
+ ],
+ "across_sd": [
+  0.02,
+  0.026
+ ],
+ "bias_sd_along_rel": 0.005,
+ "bias_sd_across_rel": 0.005,
+ "false_rate": 0.1,
+ "false_near_share": 1.0,
+ "false_near_range_m": [
+  0.1,
+  3.6
+ ],
+ "false_far_range_m": [
+  3.6,
+  8.0
+ ],
+ "false_edge_share": 0.0,
+ "false_edge_band_deg": [
+  170.0,
+  179.0
+ ]
+}

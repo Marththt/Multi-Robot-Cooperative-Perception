@@ -1,0 +1,169 @@
+t,readings,method,variant,dropped,verdict,n_est,n_true,n_matched,false,missed,rmse_cm
+36.0,16,mht,base,0,too few,1,2,0,1,2,
+36.0,16,gnn,base,0,too few,1,2,0,1,2,
+36.0,16,mht,pre,0,too few,1,2,0,1,2,
+36.0,16,gnn,pre,0,too few,1,2,0,1,2,
+36.0,16,mht,post,0,too few,1,2,0,1,2,
+36.0,16,gnn,post,0,too few,1,2,0,1,2,
+36.0,16,mht,pre+post,0,too few,1,2,0,1,2,
+36.0,16,gnn,pre+post,0,too few,1,2,0,1,2,
+48.0,16,mht,base,0,too few,1,2,0,1,2,
+48.0,16,gnn,base,0,too few,1,2,0,1,2,
+48.0,16,mht,pre,0,too few,1,2,0,1,2,
+48.0,16,gnn,pre,0,too few,1,2,0,1,2,
+48.0,16,mht,post,0,too few,1,2,0,1,2,
+48.0,16,gnn,post,0,too few,1,2,0,1,2,
+48.0,16,mht,pre+post,0,too few,1,2,0,1,2,
+48.0,16,gnn,pre+post,0,too few,1,2,0,1,2,
+60.0,16,mht,base,0,too few,1,2,0,1,2,
+60.0,16,gnn,base,0,too few,1,2,0,1,2,
+60.0,16,mht,pre,0,too few,1,2,0,1,2,
+60.0,16,gnn,pre,0,too few,1,2,0,1,2,
+60.0,16,mht,post,0,too few,1,2,0,1,2,
+60.0,16,gnn,post,0,too few,1,2,0,1,2,
+60.0,16,mht,pre+post,0,too few,1,2,0,1,2,
+60.0,16,gnn,pre+post,0,too few,1,2,0,1,2,
+72.0,17,mht,base,0,too few,1,2,0,1,2,
+72.0,17,gnn,base,0,too few,1,2,0,1,2,
+72.0,17,mht,pre,0,too few,1,2,0,1,2,
+72.0,17,gnn,pre,0,too few,1,2,0,1,2,
+72.0,17,mht,post,0,too few,1,2,0,1,2,
+72.0,17,gnn,post,0,too few,1,2,0,1,2,
+72.0,17,mht,pre+post,0,too few,1,2,0,1,2,
+72.0,17,gnn,pre+post,0,too few,1,2,0,1,2,
+84.0,16,mht,base,0,too few,1,2,0,1,2,
+84.0,16,gnn,base,0,too few,1,2,0,1,2,
+84.0,16,mht,pre,0,too few,1,2,0,1,2,
+84.0,16,gnn,pre,0,too few,1,2,0,1,2,
+84.0,16,mht,post,0,too few,1,2,0,1,2,
+84.0,16,gnn,post,0,too few,1,2,0,1,2,
+84.0,16,mht,pre+post,0,too few,1,2,0,1,2,
+84.0,16,gnn,pre+post,0,too few,1,2,0,1,2,
+96.0,16,mht,base,0,too few,1,2,0,1,2,
+96.0,16,gnn,base,0,too few,1,2,0,1,2,
+96.0,16,mht,pre,0,too few,1,2,0,1,2,
+96.0,16,gnn,pre,0,too few,1,2,0,1,2,
+96.0,16,mht,post,0,too few,1,2,0,1,2,
+96.0,16,gnn,post,0,too few,1,2,0,1,2,
+96.0,16,mht,pre+post,0,too few,1,2,0,1,2,
+96.0,16,gnn,pre+post,0,too few,1,2,0,1,2,
+108.0,16,mht,base,0,too few,1,2,0,1,2,
+108.0,16,gnn,base,0,too few,1,2,0,1,2,
+108.0,16,mht,pre,0,too few,1,2,0,1,2,
+108.0,16,gnn,pre,0,too few,1,2,0,1,2,
+108.0,16,mht,post,0,too few,1,2,0,1,2,
+108.0,16,gnn,post,0,too few,1,2,0,1,2,
+108.0,16,mht,pre+post,0,too few,1,2,0,1,2,
+108.0,16,gnn,pre+post,0,too few,1,2,0,1,2,
+120.0,13,mht,base,0,too few,1,2,0,1,2,
+120.0,13,gnn,base,0,too few,1,2,0,1,2,
+120.0,13,mht,pre,0,too few,1,2,0,1,2,
+120.0,13,gnn,pre,0,too few,1,2,0,1,2,
+120.0,13,mht,post,0,too few,1,2,0,1,2,
+120.0,13,gnn,post,0,too few,1,2,0,1,2,
+120.0,13,mht,pre+post,0,too few,1,2,0,1,2,
+120.0,13,gnn,pre+post,0,too few,1,2,0,1,2,
+132.0,8,mht,base,0,too few,0,2,0,0,2,
+132.0,8,gnn,base,0,too few,0,2,0,0,2,
+132.0,8,mht,pre,0,too few,0,2,0,0,2,
+132.0,8,gnn,pre,0,too few,0,2,0,0,2,
+132.0,8,mht,post,0,too few,0,2,0,0,2,
+132.0,8,gnn,post,0,too few,0,2,0,0,2,
+132.0,8,mht,pre+post,0,too few,0,2,0,0,2,
+132.0,8,gnn,pre+post,0,too few,0,2,0,0,2,
+144.0,2,mht,base,0,too few,0,2,0,0,2,
+144.0,2,gnn,base,0,too few,0,2,0,0,2,
+144.0,2,mht,pre,0,too few,0,2,0,0,2,
+144.0,2,gnn,pre,0,too few,0,2,0,0,2,
+144.0,2,mht,post,0,too few,0,2,0,0,2,
+144.0,2,gnn,post,0,too few,0,2,0,0,2,
+144.0,2,mht,pre+post,0,too few,0,2,0,0,2,
+144.0,2,gnn,pre+post,0,too few,0,2,0,0,2,
+516.0,3,mht,base,0,correct,2,2,2,0,0,2.4
+516.0,3,gnn,base,0,too few,1,2,1,0,1,5.8
+516.0,3,mht,pre,0,correct,2,2,2,0,0,2.4
+516.0,3,gnn,pre,0,too few,1,2,1,0,1,5.8
+516.0,3,mht,post,0,correct,2,2,2,0,0,2.4
+516.0,3,gnn,post,0,too few,1,2,1,0,1,5.8
+516.0,3,mht,pre+post,0,correct,2,2,2,0,0,2.4
+516.0,3,gnn,pre+post,0,too few,1,2,1,0,1,5.8
+528.0,9,mht,base,0,correct,2,2,2,0,0,2.7
+528.0,9,gnn,base,0,correct,2,2,2,0,0,2.2
+528.0,9,mht,pre,0,correct,2,2,2,0,0,2.7
+528.0,9,gnn,pre,0,correct,2,2,2,0,0,2.2
+528.0,9,mht,post,0,correct,2,2,2,0,0,2.7
+528.0,9,gnn,post,0,correct,2,2,2,0,0,2.2
+528.0,9,mht,pre+post,0,correct,2,2,2,0,0,2.7
+528.0,9,gnn,pre+post,0,correct,2,2,2,0,0,2.2
+540.0,15,mht,base,0,correct,2,2,2,0,0,2.6
+540.0,15,gnn,base,0,correct,2,2,2,0,0,2.2
+540.0,15,mht,pre,0,correct,2,2,2,0,0,2.6
+540.0,15,gnn,pre,0,correct,2,2,2,0,0,2.2
+540.0,15,mht,post,0,correct,2,2,2,0,0,2.6
+540.0,15,gnn,post,0,correct,2,2,2,0,0,2.2
+540.0,15,mht,pre+post,0,correct,2,2,2,0,0,2.6
+540.0,15,gnn,pre+post,0,correct,2,2,2,0,0,2.2
+552.0,18,mht,base,0,correct,2,2,2,0,0,2.6
+552.0,18,gnn,base,0,correct,2,2,2,0,0,2.2
+552.0,18,mht,pre,0,correct,2,2,2,0,0,2.6
+552.0,18,gnn,pre,0,correct,2,2,2,0,0,2.2
+552.0,18,mht,post,0,correct,2,2,2,0,0,2.6
+552.0,18,gnn,post,0,correct,2,2,2,0,0,2.2
+552.0,18,mht,pre+post,0,correct,2,2,2,0,0,2.6
+552.0,18,gnn,pre+post,0,correct,2,2,2,0,0,2.2
+564.0,18,mht,base,0,correct,2,2,2,0,0,2.6
+564.0,18,gnn,base,0,correct,2,2,2,0,0,2.2
+564.0,18,mht,pre,0,correct,2,2,2,0,0,2.6
+564.0,18,gnn,pre,0,correct,2,2,2,0,0,2.2
+564.0,18,mht,post,0,correct,2,2,2,0,0,2.6
+564.0,18,gnn,post,0,correct,2,2,2,0,0,2.2
+564.0,18,mht,pre+post,0,correct,2,2,2,0,0,2.6
+564.0,18,gnn,pre+post,0,correct,2,2,2,0,0,2.2
+576.0,18,mht,base,0,correct,2,2,2,0,0,2.5
+576.0,18,gnn,base,0,correct,2,2,2,0,0,2.2
+576.0,18,mht,pre,0,correct,2,2,2,0,0,2.5
+576.0,18,gnn,pre,0,correct,2,2,2,0,0,2.2
+576.0,18,mht,post,0,correct,2,2,2,0,0,2.5
+576.0,18,gnn,post,0,correct,2,2,2,0,0,2.2
+576.0,18,mht,pre+post,0,correct,2,2,2,0,0,2.5
+576.0,18,gnn,pre+post,0,correct,2,2,2,0,0,2.2
+588.0,18,mht,base,0,correct,2,2,2,0,0,2.6
+588.0,18,gnn,base,0,correct,2,2,2,0,0,2.2
+588.0,18,mht,pre,0,correct,2,2,2,0,0,2.6
+588.0,18,gnn,pre,0,correct,2,2,2,0,0,2.2
+588.0,18,mht,post,0,correct,2,2,2,0,0,2.6
+588.0,18,gnn,post,0,correct,2,2,2,0,0,2.2
+588.0,18,mht,pre+post,0,correct,2,2,2,0,0,2.6
+588.0,18,gnn,pre+post,0,correct,2,2,2,0,0,2.2
+600.0,19,mht,base,0,correct,2,2,2,0,0,2.7
+600.0,19,gnn,base,0,correct,2,2,2,0,0,2.3
+600.0,19,mht,pre,0,correct,2,2,2,0,0,2.7
+600.0,19,gnn,pre,0,correct,2,2,2,0,0,2.3
+600.0,19,mht,post,0,correct,2,2,2,0,0,2.7
+600.0,19,gnn,post,0,correct,2,2,2,0,0,2.3
+600.0,19,mht,pre+post,0,correct,2,2,2,0,0,2.7
+600.0,19,gnn,pre+post,0,correct,2,2,2,0,0,2.3
+612.0,18,mht,base,0,correct,2,2,2,0,0,2.8
+612.0,18,gnn,base,0,correct,2,2,2,0,0,2.3
+612.0,18,mht,pre,0,correct,2,2,2,0,0,2.8
+612.0,18,gnn,pre,0,correct,2,2,2,0,0,2.3
+612.0,18,mht,post,0,correct,2,2,2,0,0,2.8
+612.0,18,gnn,post,0,correct,2,2,2,0,0,2.3
+612.0,18,mht,pre+post,0,correct,2,2,2,0,0,2.8
+612.0,18,gnn,pre+post,0,correct,2,2,2,0,0,2.3
+624.0,18,mht,base,0,correct,2,2,2,0,0,2.8
+624.0,18,gnn,base,0,correct,2,2,2,0,0,2.2
+624.0,18,mht,pre,0,correct,2,2,2,0,0,2.8
+624.0,18,gnn,pre,0,correct,2,2,2,0,0,2.2
+624.0,18,mht,post,0,correct,2,2,2,0,0,2.8
+624.0,18,gnn,post,0,correct,2,2,2,0,0,2.2
+624.0,18,mht,pre+post,0,correct,2,2,2,0,0,2.8
+624.0,18,gnn,pre+post,0,correct,2,2,2,0,0,2.2
+636.0,17,mht,base,0,correct,2,2,2,0,0,2.7
+636.0,17,gnn,base,0,correct,2,2,2,0,0,2.3
+636.0,17,mht,pre,0,correct,2,2,2,0,0,2.7
+636.0,17,gnn,pre,0,correct,2,2,2,0,0,2.3
+636.0,17,mht,post,0,correct,2,2,2,0,0,2.7
+636.0,17,gnn,post,0,correct,2,2,2,0,0,2.3
+636.0,17,mht,pre+post,0,correct,2,2,2,0,0,2.7
+636.0,17,gnn,pre+post,0,correct,2,2,2,0,0,2.3

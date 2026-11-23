@@ -7,7 +7,7 @@ after each box, rewrites the live state of the robot (--state-out) in the format
 
   pose        the IR origin and the direction of the beam at that reading ("camera pose")
   detections  one: class "box", distance = horizontal distance to the face hit by the beam, bearing 0 (along the
-              beam), viewing angle 0, position = where the beam hits
+              beam), no viewing angle (the IR does not see which face it hits), position = where the beam hits
 
 demo/live.py pools the detections of the last --window-s seconds of every robot, each with the pose of its own
 state, so it must be started with a window longer than one sweep (a few seconds per box) and with a sensor
@@ -149,7 +149,7 @@ def range_box(rig, a, b, body):
     dets = []
     if r["ir_m"] is not None and r.get("ir_horiz_m") is not None and 0.0 <= r["ir_hit_height_m"] <= 0.6:
         d = r["ir_horiz_m"]
-        dets.append(dict(class_name="box", confidence=1.0, distance=d, bearing_rad=0.0, viewing_angle_rad=0.0,
+        dets.append(dict(class_name="box", confidence=1.0, distance=d, bearing_rad=0.0, viewing_angle_rad=None,
                          position=[pose[0] + d * math.cos(pose[2]), pose[1] + d * math.sin(pose[2])], bbox=None))
     truth = rig.target_truth(r, b)
     st = state(a, pose, dets, dict(

@@ -1,0 +1,801 @@
+scene,n_boxes,n_robots,detections,wrong_detections,method,variant,verdict,n_est,n_true,n_matched,false,missed,rmse_cm
+0,7,3,32,4,mht,base,correct,7,7,7,0,0,3.3
+0,7,3,32,4,gnn,base,too many,8,7,6,2,1,5.5
+0,7,3,32,4,mht,pre,correct,7,7,7,0,0,3.3
+0,7,3,32,4,gnn,pre,too few,6,7,6,0,1,5.5
+0,7,3,32,4,mht,post,correct,7,7,7,0,0,3.3
+0,7,3,32,4,gnn,post,misplaced,7,7,6,1,1,5.5
+0,7,3,32,4,mht,pre+post,correct,7,7,7,0,0,3.3
+0,7,3,32,4,gnn,pre+post,too few,6,7,6,0,1,5.5
+1,7,3,32,6,mht,base,too many,8,7,7,1,0,5.6
+1,7,3,32,6,gnn,base,misplaced,7,7,6,1,1,6.5
+1,7,3,32,6,mht,pre,too many,9,7,6,3,1,5.4
+1,7,3,32,6,gnn,pre,too few,5,7,5,0,2,5.6
+1,7,3,32,6,mht,post,misplaced,7,7,6,1,1,5.4
+1,7,3,32,6,gnn,post,too few,6,7,5,1,2,5.6
+1,7,3,32,6,mht,pre+post,too many,9,7,6,3,1,5.4
+1,7,3,32,6,gnn,pre+post,too few,5,7,5,0,2,5.6
+2,6,4,38,5,mht,base,too many,7,6,6,1,0,4.6
+2,6,4,38,5,gnn,base,too few,5,6,5,0,1,6.6
+2,6,4,38,5,mht,pre,too many,7,6,6,1,0,4.6
+2,6,4,38,5,gnn,pre,too few,5,6,5,0,1,6.6
+2,6,4,38,5,mht,post,too many,7,6,6,1,0,4.6
+2,6,4,38,5,gnn,post,too few,5,6,5,0,1,6.6
+2,6,4,38,5,mht,pre+post,too many,7,6,6,1,0,4.6
+2,6,4,38,5,gnn,pre+post,too few,5,6,5,0,1,6.6
+3,7,3,32,3,mht,base,too many,9,7,7,2,0,3.4
+3,7,3,32,3,gnn,base,misplaced,7,7,6,1,1,8.4
+3,7,3,32,3,mht,pre,too many,9,7,7,2,0,3.4
+3,7,3,32,3,gnn,pre,misplaced,7,7,6,1,1,8.4
+3,7,3,32,3,mht,post,too many,9,7,7,2,0,3.4
+3,7,3,32,3,gnn,post,misplaced,7,7,6,1,1,8.4
+3,7,3,32,3,mht,pre+post,too many,9,7,7,2,0,3.4
+3,7,3,32,3,gnn,pre+post,misplaced,7,7,6,1,1,8.4
+4,3,3,18,2,mht,base,too many,5,3,3,2,0,2.2
+4,3,3,18,2,gnn,base,correct,3,3,3,0,0,6.9
+4,3,3,18,2,mht,pre,too many,5,3,3,2,0,2.2
+4,3,3,18,2,gnn,pre,correct,3,3,3,0,0,6.9
+4,3,3,18,2,mht,post,too many,5,3,3,2,0,2.2
+4,3,3,18,2,gnn,post,correct,3,3,3,0,0,6.9
+4,3,3,18,2,mht,pre+post,too many,5,3,3,2,0,2.2
+4,3,3,18,2,gnn,pre+post,correct,3,3,3,0,0,6.9
+5,5,2,16,5,mht,base,too many,6,5,4,2,1,5.4
+5,5,2,16,5,gnn,base,too few,3,5,3,0,2,7.7
+5,5,2,16,5,mht,pre,too many,6,5,4,2,1,5.4
+5,5,2,16,5,gnn,pre,too few,3,5,3,0,2,7.7
+5,5,2,16,5,mht,post,too many,6,5,4,2,1,5.4
+5,5,2,16,5,gnn,post,too few,3,5,3,0,2,7.7
+5,5,2,16,5,mht,pre+post,too many,6,5,4,2,1,5.4
+5,5,2,16,5,gnn,pre+post,too few,3,5,3,0,2,7.7
+6,5,3,24,5,mht,base,too many,8,5,5,3,0,5.0
+6,5,3,24,5,gnn,base,too many,6,5,5,1,0,7.2
+6,5,3,24,5,mht,pre,too many,8,5,5,3,0,5.0
+6,5,3,24,5,gnn,pre,too many,6,5,5,1,0,7.2
+6,5,3,24,5,mht,post,too many,8,5,5,3,0,5.0
+6,5,3,24,5,gnn,post,too many,6,5,5,1,0,7.2
+6,5,3,24,5,mht,pre+post,too many,8,5,5,3,0,5.0
+6,5,3,24,5,gnn,pre+post,too many,6,5,5,1,0,7.2
+7,7,2,26,4,mht,base,too many,9,7,7,2,0,4.0
+7,7,2,26,4,gnn,base,correct,7,7,7,0,0,8.7
+7,7,2,26,4,mht,pre,too many,9,7,7,2,0,4.0
+7,7,2,26,4,gnn,pre,correct,7,7,7,0,0,8.7
+7,7,2,26,4,mht,post,too many,9,7,7,2,0,4.0
+7,7,2,26,4,gnn,post,correct,7,7,7,0,0,8.7
+7,7,2,26,4,mht,pre+post,too many,9,7,7,2,0,4.0
+7,7,2,26,4,gnn,pre+post,correct,7,7,7,0,0,8.7
+8,3,3,16,1,mht,base,correct,3,3,3,0,0,4.2
+8,3,3,16,1,gnn,base,correct,3,3,3,0,0,9.7
+8,3,3,16,1,mht,pre,correct,3,3,3,0,0,4.2
+8,3,3,16,1,gnn,pre,correct,3,3,3,0,0,9.7
+8,3,3,16,1,mht,post,correct,3,3,3,0,0,4.2
+8,3,3,16,1,gnn,post,correct,3,3,3,0,0,9.7
+8,3,3,16,1,mht,pre+post,correct,3,3,3,0,0,4.2
+8,3,3,16,1,gnn,pre+post,correct,3,3,3,0,0,9.7
+9,7,2,24,4,mht,base,too many,11,7,7,4,0,3.8
+9,7,2,24,4,gnn,base,too many,8,7,7,1,0,9.0
+9,7,2,24,4,mht,pre,too many,10,7,7,3,0,3.8
+9,7,2,24,4,gnn,pre,misplaced,7,7,6,1,1,8.1
+9,7,2,24,4,mht,post,too many,10,7,7,3,0,3.8
+9,7,2,24,4,gnn,post,misplaced,7,7,6,1,1,8.6
+9,7,2,24,4,mht,pre+post,too many,10,7,7,3,0,3.8
+9,7,2,24,4,gnn,pre+post,too few,6,7,5,1,2,7.7
+10,7,3,36,6,mht,base,too many,10,7,6,4,1,4.1
+10,7,3,36,6,gnn,base,correct,7,7,7,0,0,8.8
+10,7,3,36,6,mht,pre,too many,10,7,6,4,1,4.1
+10,7,3,36,6,gnn,pre,correct,7,7,7,0,0,8.8
+10,7,3,36,6,mht,post,too many,10,7,6,4,1,4.1
+10,7,3,36,6,gnn,post,correct,7,7,7,0,0,8.8
+10,7,3,36,6,mht,pre+post,too many,10,7,6,4,1,4.1
+10,7,3,36,6,gnn,pre+post,correct,7,7,7,0,0,8.8
+11,4,2,16,1,mht,base,too many,5,4,4,1,0,4.1
+11,4,2,16,1,gnn,base,correct,4,4,4,0,0,6.3
+11,4,2,16,1,mht,pre,too many,5,4,4,1,0,4.1
+11,4,2,16,1,gnn,pre,correct,4,4,4,0,0,6.3
+11,4,2,16,1,mht,post,too many,5,4,4,1,0,4.1
+11,4,2,16,1,gnn,post,correct,4,4,4,0,0,6.3
+11,4,2,16,1,mht,pre+post,too many,5,4,4,1,0,4.1
+11,4,2,16,1,gnn,pre+post,correct,4,4,4,0,0,6.3
+12,7,4,43,12,mht,base,too many,10,7,7,3,0,3.2
+12,7,4,43,12,gnn,base,too many,10,7,7,3,0,6.8
+12,7,4,43,12,mht,pre,too many,10,7,7,3,0,3.2
+12,7,4,43,12,gnn,pre,too many,9,7,7,2,0,6.8
+12,7,4,43,12,mht,post,too many,10,7,7,3,0,3.2
+12,7,4,43,12,gnn,post,too many,10,7,7,3,0,6.8
+12,7,4,43,12,mht,pre+post,too many,10,7,7,3,0,3.2
+12,7,4,43,12,gnn,pre+post,too many,9,7,7,2,0,6.8
+13,7,2,24,3,mht,base,too many,10,7,7,3,0,5.6
+13,7,2,24,3,gnn,base,misplaced,7,7,6,1,1,10.4
+13,7,2,24,3,mht,pre,too many,10,7,7,3,0,5.6
+13,7,2,24,3,gnn,pre,misplaced,7,7,6,1,1,10.4
+13,7,2,24,3,mht,post,too many,10,7,7,3,0,5.6
+13,7,2,24,3,gnn,post,misplaced,7,7,6,1,1,10.4
+13,7,2,24,3,mht,pre+post,too many,10,7,7,3,0,5.6
+13,7,2,24,3,gnn,pre+post,misplaced,7,7,6,1,1,10.4
+14,6,2,22,8,mht,base,too many,9,6,5,4,1,4.1
+14,6,2,22,8,gnn,base,too few,5,6,5,0,1,8.7
+14,6,2,22,8,mht,pre,too many,8,6,4,4,2,2.8
+14,6,2,22,8,gnn,pre,too few,4,6,4,0,2,8.3
+14,6,2,22,8,mht,post,too many,8,6,4,4,2,2.8
+14,6,2,22,8,gnn,post,too few,4,6,4,0,2,8.3
+14,6,2,22,8,mht,pre+post,too many,8,6,4,4,2,2.8
+14,6,2,22,8,gnn,pre+post,too few,4,6,4,0,2,8.3
+15,4,2,16,3,mht,base,too many,7,4,4,3,0,3.9
+15,4,2,16,3,gnn,base,too many,6,4,4,2,0,9.3
+15,4,2,16,3,mht,pre,too many,7,4,4,3,0,3.9
+15,4,2,16,3,gnn,pre,too many,6,4,4,2,0,9.3
+15,4,2,16,3,mht,post,too many,7,4,4,3,0,3.9
+15,4,2,16,3,gnn,post,too many,6,4,4,2,0,9.3
+15,4,2,16,3,mht,pre+post,too many,7,4,4,3,0,3.9
+15,4,2,16,3,gnn,pre+post,too many,6,4,4,2,0,9.3
+16,3,3,18,4,mht,base,too many,7,3,3,4,0,5.1
+16,3,3,18,4,gnn,base,correct,3,3,3,0,0,9.5
+16,3,3,18,4,mht,pre,too many,7,3,3,4,0,5.1
+16,3,3,18,4,gnn,pre,correct,3,3,3,0,0,9.5
+16,3,3,18,4,mht,post,too many,7,3,3,4,0,5.1
+16,3,3,18,4,gnn,post,correct,3,3,3,0,0,9.5
+16,3,3,18,4,mht,pre+post,too many,7,3,3,4,0,5.1
+16,3,3,18,4,gnn,pre+post,correct,3,3,3,0,0,9.5
+17,7,3,29,8,mht,base,misplaced,7,7,5,2,2,4.2
+17,7,3,29,8,gnn,base,too few,4,7,4,0,3,8.1
+17,7,3,29,8,mht,pre,misplaced,7,7,5,2,2,4.2
+17,7,3,29,8,gnn,pre,too few,4,7,4,0,3,8.1
+17,7,3,29,8,mht,post,misplaced,7,7,5,2,2,4.2
+17,7,3,29,8,gnn,post,too few,4,7,4,0,3,8.1
+17,7,3,29,8,mht,pre+post,misplaced,7,7,5,2,2,4.2
+17,7,3,29,8,gnn,pre+post,too few,4,7,4,0,3,8.1
+18,3,2,12,2,mht,base,too many,5,3,3,2,0,5.2
+18,3,2,12,2,gnn,base,correct,3,3,3,0,0,6.8
+18,3,2,12,2,mht,pre,too many,5,3,3,2,0,5.2
+18,3,2,12,2,gnn,pre,correct,3,3,3,0,0,6.8
+18,3,2,12,2,mht,post,too many,5,3,3,2,0,5.2
+18,3,2,12,2,gnn,post,correct,3,3,3,0,0,6.8
+18,3,2,12,2,mht,pre+post,too many,5,3,3,2,0,5.2
+18,3,2,12,2,gnn,pre+post,correct,3,3,3,0,0,6.8
+19,4,4,26,6,mht,base,too many,7,4,4,3,0,7.8
+19,4,4,26,6,gnn,base,too many,6,4,4,2,0,7.7
+19,4,4,26,6,mht,pre,too many,6,4,4,2,0,4.3
+19,4,4,26,6,gnn,pre,too many,5,4,4,1,0,8.3
+19,4,4,26,6,mht,post,too many,7,4,4,3,0,7.8
+19,4,4,26,6,gnn,post,too many,6,4,4,2,0,7.7
+19,4,4,26,6,mht,pre+post,too many,6,4,4,2,0,4.3
+19,4,4,26,6,gnn,pre+post,too many,5,4,4,1,0,8.3
+20,3,2,12,0,mht,base,correct,3,3,3,0,0,3.7
+20,3,2,12,0,gnn,base,correct,3,3,3,0,0,7.7
+20,3,2,12,0,mht,pre,correct,3,3,3,0,0,3.7
+20,3,2,12,0,gnn,pre,correct,3,3,3,0,0,7.7
+20,3,2,12,0,mht,post,correct,3,3,3,0,0,3.7
+20,3,2,12,0,gnn,post,correct,3,3,3,0,0,7.7
+20,3,2,12,0,mht,pre+post,correct,3,3,3,0,0,3.7
+20,3,2,12,0,gnn,pre+post,correct,3,3,3,0,0,7.7
+21,7,3,34,11,mht,base,too many,12,7,7,5,0,4.1
+21,7,3,34,11,gnn,base,too many,9,7,7,2,0,8.2
+21,7,3,34,11,mht,pre,too many,12,7,7,5,0,4.1
+21,7,3,34,11,gnn,pre,too many,9,7,7,2,0,8.2
+21,7,3,34,11,mht,post,too many,12,7,7,5,0,4.1
+21,7,3,34,11,gnn,post,too many,9,7,7,2,0,8.2
+21,7,3,34,11,mht,pre+post,too many,12,7,7,5,0,4.1
+21,7,3,34,11,gnn,pre+post,too many,9,7,7,2,0,8.2
+22,3,3,16,3,mht,base,too many,4,3,3,1,0,3.9
+22,3,3,16,3,gnn,base,too many,5,3,3,2,0,7.4
+22,3,3,16,3,mht,pre,too many,4,3,3,1,0,3.9
+22,3,3,16,3,gnn,pre,too many,5,3,3,2,0,7.4
+22,3,3,16,3,mht,post,too many,4,3,3,1,0,3.9
+22,3,3,16,3,gnn,post,too many,5,3,3,2,0,7.4
+22,3,3,16,3,mht,pre+post,too many,4,3,3,1,0,3.9
+22,3,3,16,3,gnn,pre+post,too many,5,3,3,2,0,7.4
+23,7,3,34,4,mht,base,too many,8,7,6,2,1,2.7
+23,7,3,34,4,gnn,base,too many,8,7,7,1,0,5.3
+23,7,3,34,4,mht,pre,too many,8,7,6,2,1,2.7
+23,7,3,34,4,gnn,pre,too many,8,7,7,1,0,5.3
+23,7,3,34,4,mht,post,too many,8,7,6,2,1,2.7
+23,7,3,34,4,gnn,post,too many,8,7,7,1,0,5.3
+23,7,3,34,4,mht,pre+post,too many,8,7,6,2,1,2.7
+23,7,3,34,4,gnn,pre+post,too many,8,7,7,1,0,5.3
+24,3,2,12,1,mht,base,correct,3,3,3,0,0,2.6
+24,3,2,12,1,gnn,base,correct,3,3,3,0,0,5.1
+24,3,2,12,1,mht,pre,correct,3,3,3,0,0,2.6
+24,3,2,12,1,gnn,pre,correct,3,3,3,0,0,5.1
+24,3,2,12,1,mht,post,correct,3,3,3,0,0,2.6
+24,3,2,12,1,gnn,post,correct,3,3,3,0,0,5.1
+24,3,2,12,1,mht,pre+post,correct,3,3,3,0,0,2.6
+24,3,2,12,1,gnn,pre+post,correct,3,3,3,0,0,5.1
+25,7,3,30,4,mht,base,too many,8,7,6,2,1,3.3
+25,7,3,30,4,gnn,base,too many,8,7,6,2,1,8.2
+25,7,3,30,4,mht,pre,too many,9,7,6,3,1,3.5
+25,7,3,30,4,gnn,pre,misplaced,7,7,6,1,1,8.4
+25,7,3,30,4,mht,post,too many,8,7,6,2,1,3.3
+25,7,3,30,4,gnn,post,too many,8,7,6,2,1,8.2
+25,7,3,30,4,mht,pre+post,too many,9,7,6,3,1,3.5
+25,7,3,30,4,gnn,pre+post,misplaced,7,7,6,1,1,8.4
+26,4,2,16,1,mht,base,too many,5,4,4,1,0,4.4
+26,4,2,16,1,gnn,base,too many,5,4,4,1,0,9.4
+26,4,2,16,1,mht,pre,too many,5,4,4,1,0,4.4
+26,4,2,16,1,gnn,pre,too many,5,4,4,1,0,9.4
+26,4,2,16,1,mht,post,too many,5,4,4,1,0,4.4
+26,4,2,16,1,gnn,post,too many,5,4,4,1,0,9.4
+26,4,2,16,1,mht,pre+post,too many,5,4,4,1,0,4.4
+26,4,2,16,1,gnn,pre+post,too many,5,4,4,1,0,9.4
+27,5,3,24,1,mht,base,too many,6,5,5,1,0,2.9
+27,5,3,24,1,gnn,base,correct,5,5,5,0,0,8.5
+27,5,3,24,1,mht,pre,too many,6,5,5,1,0,2.9
+27,5,3,24,1,gnn,pre,correct,5,5,5,0,0,8.5
+27,5,3,24,1,mht,post,too many,6,5,5,1,0,2.9
+27,5,3,24,1,gnn,post,correct,5,5,5,0,0,8.5
+27,5,3,24,1,mht,pre+post,too many,6,5,5,1,0,2.9
+27,5,3,24,1,gnn,pre+post,correct,5,5,5,0,0,8.5
+28,7,4,45,8,mht,base,too many,13,7,7,6,0,3.3
+28,7,4,45,8,gnn,base,too many,11,7,7,4,0,8.2
+28,7,4,45,8,mht,pre,too many,13,7,7,6,0,3.3
+28,7,4,45,8,gnn,pre,too many,9,7,7,2,0,8.2
+28,7,4,45,8,mht,post,too many,13,7,7,6,0,3.3
+28,7,4,45,8,gnn,post,too many,11,7,7,4,0,8.2
+28,7,4,45,8,mht,pre+post,too many,13,7,7,6,0,3.3
+28,7,4,45,8,gnn,pre+post,too many,9,7,7,2,0,8.2
+29,6,3,26,5,mht,base,too many,9,6,5,4,1,2.9
+29,6,3,26,5,gnn,base,misplaced,6,6,5,1,1,7.0
+29,6,3,26,5,mht,pre,too many,9,6,5,4,1,2.9
+29,6,3,26,5,gnn,pre,misplaced,6,6,5,1,1,7.0
+29,6,3,26,5,mht,post,too many,9,6,5,4,1,2.9
+29,6,3,26,5,gnn,post,misplaced,6,6,5,1,1,7.0
+29,6,3,26,5,mht,pre+post,too many,9,6,5,4,1,2.9
+29,6,3,26,5,gnn,pre+post,misplaced,6,6,5,1,1,7.0
+30,4,4,28,6,mht,base,misplaced,4,4,3,1,1,2.5
+30,4,4,28,6,gnn,base,misplaced,4,4,3,1,1,6.1
+30,4,4,28,6,mht,pre,misplaced,4,4,3,1,1,2.5
+30,4,4,28,6,gnn,pre,too few,3,4,3,0,1,6.1
+30,4,4,28,6,mht,post,misplaced,4,4,3,1,1,2.5
+30,4,4,28,6,gnn,post,misplaced,4,4,3,1,1,6.1
+30,4,4,28,6,mht,pre+post,misplaced,4,4,3,1,1,2.5
+30,4,4,28,6,gnn,pre+post,too few,3,4,3,0,1,6.1
+31,3,3,14,6,mht,base,too many,8,3,3,5,0,2.4
+31,3,3,14,6,gnn,base,too many,7,3,3,4,0,8.6
+31,3,3,14,6,mht,pre,too many,7,3,3,4,0,2.4
+31,3,3,14,6,gnn,pre,too many,6,3,3,3,0,8.6
+31,3,3,14,6,mht,post,too many,7,3,3,4,0,2.4
+31,3,3,14,6,gnn,post,too many,6,3,3,3,0,8.6
+31,3,3,14,6,mht,pre+post,too many,7,3,3,4,0,2.4
+31,3,3,14,6,gnn,pre+post,too many,6,3,3,3,0,8.6
+32,7,4,49,8,mht,base,too many,10,7,7,3,0,3.3
+32,7,4,49,8,gnn,base,too many,12,7,7,5,0,5.4
+32,7,4,49,8,mht,pre,too many,10,7,7,3,0,3.3
+32,7,4,49,8,gnn,pre,too many,12,7,7,5,0,5.4
+32,7,4,49,8,mht,post,too many,10,7,7,3,0,3.3
+32,7,4,49,8,gnn,post,too many,11,7,7,4,0,5.4
+32,7,4,49,8,mht,pre+post,too many,10,7,7,3,0,3.3
+32,7,4,49,8,gnn,pre+post,too many,11,7,7,4,0,5.4
+33,5,2,19,7,mht,base,too many,9,5,5,4,0,4.4
+33,5,2,19,7,gnn,base,too many,6,5,5,1,0,8.4
+33,5,2,19,7,mht,pre,too many,9,5,5,4,0,4.4
+33,5,2,19,7,gnn,pre,too many,6,5,5,1,0,8.4
+33,5,2,19,7,mht,post,too many,9,5,5,4,0,4.4
+33,5,2,19,7,gnn,post,too many,6,5,5,1,0,8.4
+33,5,2,19,7,mht,pre+post,too many,9,5,5,4,0,4.4
+33,5,2,19,7,gnn,pre+post,too many,6,5,5,1,0,8.4
+34,4,2,8,1,mht,base,misplaced,4,4,3,1,1,4.7
+34,4,2,8,1,gnn,base,too few,2,4,2,0,2,10.2
+34,4,2,8,1,mht,pre,misplaced,4,4,3,1,1,4.7
+34,4,2,8,1,gnn,pre,too few,2,4,2,0,2,10.2
+34,4,2,8,1,mht,post,misplaced,4,4,3,1,1,4.7
+34,4,2,8,1,gnn,post,too few,2,4,2,0,2,10.2
+34,4,2,8,1,mht,pre+post,misplaced,4,4,3,1,1,4.7
+34,4,2,8,1,gnn,pre+post,too few,2,4,2,0,2,10.2
+35,4,4,30,1,mht,base,correct,4,4,4,0,0,3.4
+35,4,4,30,1,gnn,base,correct,4,4,4,0,0,5.6
+35,4,4,30,1,mht,pre,correct,4,4,4,0,0,3.4
+35,4,4,30,1,gnn,pre,correct,4,4,4,0,0,5.6
+35,4,4,30,1,mht,post,correct,4,4,4,0,0,3.4
+35,4,4,30,1,gnn,post,correct,4,4,4,0,0,5.6
+35,4,4,30,1,mht,pre+post,correct,4,4,4,0,0,3.4
+35,4,4,30,1,gnn,pre+post,correct,4,4,4,0,0,5.6
+36,6,2,17,1,mht,base,too few,5,6,5,0,1,3.7
+36,6,2,17,1,gnn,base,too few,5,6,4,1,2,9.3
+36,6,2,17,1,mht,pre,too few,5,6,5,0,1,3.7
+36,6,2,17,1,gnn,pre,too few,5,6,4,1,2,9.3
+36,6,2,17,1,mht,post,too few,5,6,5,0,1,3.7
+36,6,2,17,1,gnn,post,too few,5,6,4,1,2,9.3
+36,6,2,17,1,mht,pre+post,too few,5,6,5,0,1,3.7
+36,6,2,17,1,gnn,pre+post,too few,5,6,4,1,2,9.3
+37,7,2,20,3,mht,base,too many,9,7,6,3,1,3.7
+37,7,2,20,3,gnn,base,misplaced,7,7,6,1,1,9.0
+37,7,2,20,3,mht,pre,too many,8,7,6,2,1,3.7
+37,7,2,20,3,gnn,pre,too few,6,7,6,0,1,9.0
+37,7,2,20,3,mht,post,too many,8,7,6,2,1,3.7
+37,7,2,20,3,gnn,post,too few,6,7,6,0,1,9.0
+37,7,2,20,3,mht,pre+post,too many,8,7,6,2,1,3.7
+37,7,2,20,3,gnn,pre+post,too few,6,7,6,0,1,9.0
+38,4,2,14,2,mht,base,too many,5,4,4,1,0,2.8
+38,4,2,14,2,gnn,base,misplaced,4,4,3,1,1,7.6
+38,4,2,14,2,mht,pre,too many,5,4,4,1,0,2.8
+38,4,2,14,2,gnn,pre,misplaced,4,4,3,1,1,7.6
+38,4,2,14,2,mht,post,too many,5,4,4,1,0,2.8
+38,4,2,14,2,gnn,post,misplaced,4,4,3,1,1,7.6
+38,4,2,14,2,mht,pre+post,too many,5,4,4,1,0,2.8
+38,4,2,14,2,gnn,pre+post,misplaced,4,4,3,1,1,7.6
+39,6,4,30,7,mht,base,too many,8,6,6,2,0,3.9
+39,6,4,30,7,gnn,base,too many,7,6,6,1,0,7.2
+39,6,4,30,7,mht,pre,misplaced,6,6,4,2,2,3.4
+39,6,4,30,7,gnn,pre,too many,7,6,5,2,1,7.3
+39,6,4,30,7,mht,post,too many,7,6,5,2,1,3.6
+39,6,4,30,7,gnn,post,misplaced,6,6,5,1,1,6.5
+39,6,4,30,7,mht,pre+post,misplaced,6,6,4,2,2,3.4
+39,6,4,30,7,gnn,pre+post,too many,7,6,5,2,1,7.3
+40,5,2,15,1,mht,base,correct,5,5,5,0,0,4.7
+40,5,2,15,1,gnn,base,correct,5,5,5,0,0,7.1
+40,5,2,15,1,mht,pre,correct,5,5,5,0,0,4.7
+40,5,2,15,1,gnn,pre,correct,5,5,5,0,0,7.1
+40,5,2,15,1,mht,post,correct,5,5,5,0,0,4.7
+40,5,2,15,1,gnn,post,correct,5,5,5,0,0,7.1
+40,5,2,15,1,mht,pre+post,correct,5,5,5,0,0,4.7
+40,5,2,15,1,gnn,pre+post,correct,5,5,5,0,0,7.1
+41,5,4,36,4,mht,base,correct,5,5,5,0,0,1.9
+41,5,4,36,4,gnn,base,too many,6,5,5,1,0,7.0
+41,5,4,36,4,mht,pre,correct,5,5,5,0,0,1.9
+41,5,4,36,4,gnn,pre,too many,6,5,5,1,0,7.0
+41,5,4,36,4,mht,post,correct,5,5,5,0,0,1.9
+41,5,4,36,4,gnn,post,too many,6,5,5,1,0,7.0
+41,5,4,36,4,mht,pre+post,correct,5,5,5,0,0,1.9
+41,5,4,36,4,gnn,pre+post,too many,6,5,5,1,0,7.0
+42,4,4,24,4,mht,base,correct,4,4,4,0,0,2.8
+42,4,4,24,4,gnn,base,correct,4,4,4,0,0,6.7
+42,4,4,24,4,mht,pre,correct,4,4,4,0,0,2.8
+42,4,4,24,4,gnn,pre,correct,4,4,4,0,0,6.7
+42,4,4,24,4,mht,post,correct,4,4,4,0,0,2.8
+42,4,4,24,4,gnn,post,correct,4,4,4,0,0,6.7
+42,4,4,24,4,mht,pre+post,correct,4,4,4,0,0,2.8
+42,4,4,24,4,gnn,pre+post,correct,4,4,4,0,0,6.7
+43,3,3,16,1,mht,base,correct,3,3,3,0,0,3.7
+43,3,3,16,1,gnn,base,correct,3,3,3,0,0,6.7
+43,3,3,16,1,mht,pre,correct,3,3,3,0,0,3.7
+43,3,3,16,1,gnn,pre,correct,3,3,3,0,0,6.7
+43,3,3,16,1,mht,post,correct,3,3,3,0,0,3.7
+43,3,3,16,1,gnn,post,correct,3,3,3,0,0,6.7
+43,3,3,16,1,mht,pre+post,correct,3,3,3,0,0,3.7
+43,3,3,16,1,gnn,pre+post,correct,3,3,3,0,0,6.7
+44,6,4,44,9,mht,base,too many,9,6,6,3,0,3.2
+44,6,4,44,9,gnn,base,too many,7,6,6,1,0,7.8
+44,6,4,44,9,mht,pre,too many,9,6,6,3,0,3.2
+44,6,4,44,9,gnn,pre,too many,7,6,6,1,0,7.8
+44,6,4,44,9,mht,post,too many,9,6,6,3,0,3.2
+44,6,4,44,9,gnn,post,too many,7,6,6,1,0,7.8
+44,6,4,44,9,mht,pre+post,too many,9,6,6,3,0,3.2
+44,6,4,44,9,gnn,pre+post,too many,7,6,6,1,0,7.8
+45,7,4,34,10,mht,base,too many,11,7,5,6,2,6.4
+45,7,4,34,10,gnn,base,too many,10,7,6,4,1,9.2
+45,7,4,34,10,mht,pre,too many,10,7,6,4,1,4.8
+45,7,4,34,10,gnn,pre,too many,9,7,6,3,1,8.2
+45,7,4,34,10,mht,post,too many,10,7,5,5,2,6.4
+45,7,4,34,10,gnn,post,too many,10,7,6,4,1,9.2
+45,7,4,34,10,mht,pre+post,too many,10,7,6,4,1,4.8
+45,7,4,34,10,gnn,pre+post,too many,9,7,6,3,1,8.2
+46,3,2,10,1,mht,base,correct,3,3,3,0,0,5.4
+46,3,2,10,1,gnn,base,too few,2,3,2,0,1,8.2
+46,3,2,10,1,mht,pre,correct,3,3,3,0,0,5.4
+46,3,2,10,1,gnn,pre,too few,2,3,2,0,1,8.2
+46,3,2,10,1,mht,post,correct,3,3,3,0,0,5.4
+46,3,2,10,1,gnn,post,too few,2,3,2,0,1,8.2
+46,3,2,10,1,mht,pre+post,correct,3,3,3,0,0,5.4
+46,3,2,10,1,gnn,pre+post,too few,2,3,2,0,1,8.2
+47,5,4,30,3,mht,base,misplaced,5,5,4,1,1,3.0
+47,5,4,30,3,gnn,base,too many,7,5,5,2,0,7.3
+47,5,4,30,3,mht,pre,misplaced,5,5,4,1,1,3.0
+47,5,4,30,3,gnn,pre,too many,7,5,5,2,0,7.3
+47,5,4,30,3,mht,post,misplaced,5,5,4,1,1,3.0
+47,5,4,30,3,gnn,post,too many,7,5,5,2,0,7.3
+47,5,4,30,3,mht,pre+post,misplaced,5,5,4,1,1,3.0
+47,5,4,30,3,gnn,pre+post,too many,7,5,5,2,0,7.3
+48,3,2,9,3,mht,base,too many,6,3,3,3,0,4.6
+48,3,2,9,3,gnn,base,too many,4,3,3,1,0,5.8
+48,3,2,9,3,mht,pre,too many,6,3,3,3,0,4.6
+48,3,2,9,3,gnn,pre,too many,4,3,3,1,0,5.8
+48,3,2,9,3,mht,post,too many,6,3,3,3,0,4.6
+48,3,2,9,3,gnn,post,too many,4,3,3,1,0,5.8
+48,3,2,9,3,mht,pre+post,too many,6,3,3,3,0,4.6
+48,3,2,9,3,gnn,pre+post,too many,4,3,3,1,0,5.8
+49,3,2,10,0,mht,base,correct,3,3,3,0,0,3.4
+49,3,2,10,0,gnn,base,correct,3,3,3,0,0,9.9
+49,3,2,10,0,mht,pre,correct,3,3,3,0,0,3.4
+49,3,2,10,0,gnn,pre,correct,3,3,3,0,0,9.9
+49,3,2,10,0,mht,post,correct,3,3,3,0,0,3.4
+49,3,2,10,0,gnn,post,correct,3,3,3,0,0,9.9
+49,3,2,10,0,mht,pre+post,correct,3,3,3,0,0,3.4
+49,3,2,10,0,gnn,pre+post,correct,3,3,3,0,0,9.9
+50,6,2,22,3,mht,base,too many,8,6,6,2,0,5.0
+50,6,2,22,3,gnn,base,too few,5,6,5,0,1,8.6
+50,6,2,22,3,mht,pre,too many,8,6,6,2,0,5.0
+50,6,2,22,3,gnn,pre,too few,5,6,5,0,1,8.6
+50,6,2,22,3,mht,post,too many,8,6,6,2,0,5.0
+50,6,2,22,3,gnn,post,too few,5,6,5,0,1,8.6
+50,6,2,22,3,mht,pre+post,too many,8,6,6,2,0,5.0
+50,6,2,22,3,gnn,pre+post,too few,5,6,5,0,1,8.6
+51,7,4,45,12,mht,base,too many,10,7,7,3,0,2.9
+51,7,4,45,12,gnn,base,too many,11,7,7,4,0,6.5
+51,7,4,45,12,mht,pre,too many,9,7,6,3,1,2.2
+51,7,4,45,12,gnn,pre,too many,10,7,7,3,0,6.4
+51,7,4,45,12,mht,post,too many,9,7,7,2,0,2.9
+51,7,4,45,12,gnn,post,too many,10,7,7,3,0,6.5
+51,7,4,45,12,mht,pre+post,too many,9,7,6,3,1,2.2
+51,7,4,45,12,gnn,pre+post,too many,10,7,7,3,0,6.4
+52,5,4,32,6,mht,base,too many,8,5,5,3,0,5.0
+52,5,4,32,6,gnn,base,too many,6,5,5,1,0,6.0
+52,5,4,32,6,mht,pre,too many,8,5,5,3,0,5.0
+52,5,4,32,6,gnn,pre,too many,6,5,5,1,0,6.0
+52,5,4,32,6,mht,post,too many,8,5,5,3,0,5.0
+52,5,4,32,6,gnn,post,too many,6,5,5,1,0,6.0
+52,5,4,32,6,mht,pre+post,too many,8,5,5,3,0,5.0
+52,5,4,32,6,gnn,pre+post,too many,6,5,5,1,0,6.0
+53,6,3,27,1,mht,base,correct,6,6,6,0,0,3.2
+53,6,3,27,1,gnn,base,correct,6,6,6,0,0,8.2
+53,6,3,27,1,mht,pre,correct,6,6,6,0,0,3.2
+53,6,3,27,1,gnn,pre,correct,6,6,6,0,0,8.2
+53,6,3,27,1,mht,post,correct,6,6,6,0,0,3.2
+53,6,3,27,1,gnn,post,correct,6,6,6,0,0,8.2
+53,6,3,27,1,mht,pre+post,correct,6,6,6,0,0,3.2
+53,6,3,27,1,gnn,pre+post,correct,6,6,6,0,0,8.2
+54,3,4,18,2,mht,base,too many,4,3,3,1,0,1.5
+54,3,4,18,2,gnn,base,correct,3,3,3,0,0,6.8
+54,3,4,18,2,mht,pre,too many,4,3,3,1,0,1.5
+54,3,4,18,2,gnn,pre,correct,3,3,3,0,0,6.8
+54,3,4,18,2,mht,post,too many,4,3,3,1,0,1.5
+54,3,4,18,2,gnn,post,correct,3,3,3,0,0,6.8
+54,3,4,18,2,mht,pre+post,too many,4,3,3,1,0,1.5
+54,3,4,18,2,gnn,pre+post,correct,3,3,3,0,0,6.8
+55,6,4,42,9,mht,base,too many,9,6,6,3,0,3.2
+55,6,4,42,9,gnn,base,correct,6,6,6,0,0,8.3
+55,6,4,42,9,mht,pre,too many,9,6,6,3,0,3.2
+55,6,4,42,9,gnn,pre,correct,6,6,6,0,0,8.3
+55,6,4,42,9,mht,post,too many,9,6,6,3,0,3.2
+55,6,4,42,9,gnn,post,correct,6,6,6,0,0,8.3
+55,6,4,42,9,mht,pre+post,too many,9,6,6,3,0,3.2
+55,6,4,42,9,gnn,pre+post,correct,6,6,6,0,0,8.3
+56,6,2,22,3,mht,base,too many,8,6,6,2,0,3.7
+56,6,2,22,3,gnn,base,too many,7,6,5,2,1,9.1
+56,6,2,22,3,mht,pre,too many,8,6,5,3,1,3.5
+56,6,2,22,3,gnn,pre,too many,7,6,5,2,1,8.8
+56,6,2,22,3,mht,post,too many,8,6,6,2,0,3.7
+56,6,2,22,3,gnn,post,too many,7,6,5,2,1,9.1
+56,6,2,22,3,mht,pre+post,too many,8,6,5,3,1,3.5
+56,6,2,22,3,gnn,pre+post,too many,7,6,5,2,1,8.8
+57,7,2,26,2,mht,base,too many,9,7,7,2,0,3.4
+57,7,2,26,2,gnn,base,too many,8,7,7,1,0,8.2
+57,7,2,26,2,mht,pre,too many,9,7,7,2,0,3.4
+57,7,2,26,2,gnn,pre,too many,8,7,7,1,0,8.2
+57,7,2,26,2,mht,post,too many,9,7,7,2,0,3.4
+57,7,2,26,2,gnn,post,misplaced,7,7,6,1,1,7.6
+57,7,2,26,2,mht,pre+post,too many,9,7,7,2,0,3.4
+57,7,2,26,2,gnn,pre+post,misplaced,7,7,6,1,1,7.6
+58,6,3,26,7,mht,base,too many,9,6,5,4,1,3.2
+58,6,3,26,7,gnn,base,misplaced,6,6,5,1,1,8.2
+58,6,3,26,7,mht,pre,too many,8,6,5,3,1,3.2
+58,6,3,26,7,gnn,pre,misplaced,6,6,4,2,2,7.7
+58,6,3,26,7,mht,post,too many,9,6,5,4,1,3.2
+58,6,3,26,7,gnn,post,misplaced,6,6,5,1,1,8.2
+58,6,3,26,7,mht,pre+post,too many,8,6,5,3,1,3.2
+58,6,3,26,7,gnn,pre+post,misplaced,6,6,4,2,2,7.7
+59,7,4,42,10,mht,base,too many,10,7,7,3,0,3.0
+59,7,4,42,10,gnn,base,too many,11,7,7,4,0,6.0
+59,7,4,42,10,mht,pre,too many,10,7,7,3,0,3.0
+59,7,4,42,10,gnn,pre,too many,8,7,7,1,0,6.0
+59,7,4,42,10,mht,post,too many,10,7,7,3,0,3.0
+59,7,4,42,10,gnn,post,too many,9,7,7,2,0,6.0
+59,7,4,42,10,mht,pre+post,too many,10,7,7,3,0,3.0
+59,7,4,42,10,gnn,pre+post,too many,8,7,7,1,0,6.0
+60,6,2,20,3,mht,base,too many,8,6,6,2,0,3.0
+60,6,2,20,3,gnn,base,too few,4,6,4,0,2,7.6
+60,6,2,20,3,mht,pre,too many,8,6,6,2,0,3.0
+60,6,2,20,3,gnn,pre,too few,4,6,4,0,2,7.6
+60,6,2,20,3,mht,post,too many,8,6,6,2,0,3.0
+60,6,2,20,3,gnn,post,too few,4,6,4,0,2,7.6
+60,6,2,20,3,mht,pre+post,too many,8,6,6,2,0,3.0
+60,6,2,20,3,gnn,pre+post,too few,4,6,4,0,2,7.6
+61,6,2,18,4,mht,base,too many,9,6,6,3,0,2.8
+61,6,2,18,4,gnn,base,misplaced,6,6,5,1,1,6.7
+61,6,2,18,4,mht,pre,too many,8,6,6,2,0,2.8
+61,6,2,18,4,gnn,pre,too few,5,6,5,0,1,6.7
+61,6,2,18,4,mht,post,too many,8,6,6,2,0,2.8
+61,6,2,18,4,gnn,post,too few,5,6,5,0,1,6.7
+61,6,2,18,4,mht,pre+post,too many,8,6,6,2,0,2.8
+61,6,2,18,4,gnn,pre+post,too few,5,6,5,0,1,6.7
+62,7,4,43,5,mht,base,too many,8,7,7,1,0,4.2
+62,7,4,43,5,gnn,base,too few,6,7,6,0,1,6.3
+62,7,4,43,5,mht,pre,too many,8,7,7,1,0,4.2
+62,7,4,43,5,gnn,pre,too few,6,7,6,0,1,6.1
+62,7,4,43,5,mht,post,too many,8,7,7,1,0,4.2
+62,7,4,43,5,gnn,post,too few,6,7,6,0,1,6.3
+62,7,4,43,5,mht,pre+post,too many,8,7,7,1,0,4.2
+62,7,4,43,5,gnn,pre+post,too few,6,7,6,0,1,6.1
+63,7,3,29,6,mht,base,too many,10,7,7,3,0,4.9
+63,7,3,29,6,gnn,base,too many,8,7,7,1,0,7.6
+63,7,3,29,6,mht,pre,too many,9,7,7,2,0,4.9
+63,7,3,29,6,gnn,pre,too many,8,7,7,1,0,7.6
+63,7,3,29,6,mht,post,too many,9,7,7,2,0,4.9
+63,7,3,29,6,gnn,post,too many,8,7,7,1,0,7.6
+63,7,3,29,6,mht,pre+post,too many,9,7,7,2,0,4.9
+63,7,3,29,6,gnn,pre+post,too many,8,7,7,1,0,7.6
+64,4,3,20,4,mht,base,too many,7,4,4,3,0,4.1
+64,4,3,20,4,gnn,base,too many,5,4,4,1,0,9.5
+64,4,3,20,4,mht,pre,too many,7,4,4,3,0,4.1
+64,4,3,20,4,gnn,pre,too many,5,4,4,1,0,9.5
+64,4,3,20,4,mht,post,too many,7,4,4,3,0,4.1
+64,4,3,20,4,gnn,post,too many,5,4,4,1,0,9.5
+64,4,3,20,4,mht,pre+post,too many,7,4,4,3,0,4.1
+64,4,3,20,4,gnn,pre+post,too many,5,4,4,1,0,9.5
+65,7,3,32,4,mht,base,too many,11,7,7,4,0,4.5
+65,7,3,32,4,gnn,base,too many,9,7,6,3,1,7.9
+65,7,3,32,4,mht,pre,too many,10,7,7,3,0,4.2
+65,7,3,32,4,gnn,pre,too many,8,7,6,2,1,7.7
+65,7,3,32,4,mht,post,too many,10,7,7,3,0,4.5
+65,7,3,32,4,gnn,post,misplaced,7,7,5,2,2,7.7
+65,7,3,32,4,mht,pre+post,too many,10,7,7,3,0,4.2
+65,7,3,32,4,gnn,pre+post,too many,8,7,6,2,1,7.7
+66,7,3,31,7,mht,base,too many,10,7,7,3,0,5.1
+66,7,3,31,7,gnn,base,too many,9,7,6,3,1,7.8
+66,7,3,31,7,mht,pre,too many,9,7,7,2,0,5.7
+66,7,3,31,7,gnn,pre,too many,8,7,6,2,1,7.8
+66,7,3,31,7,mht,post,too many,10,7,7,3,0,5.1
+66,7,3,31,7,gnn,post,too many,9,7,6,3,1,7.8
+66,7,3,31,7,mht,pre+post,too many,9,7,7,2,0,5.7
+66,7,3,31,7,gnn,pre+post,too many,8,7,6,2,1,7.8
+67,3,4,22,4,mht,base,correct,3,3,3,0,0,2.8
+67,3,4,22,4,gnn,base,correct,3,3,3,0,0,3.9
+67,3,4,22,4,mht,pre,correct,3,3,3,0,0,2.8
+67,3,4,22,4,gnn,pre,too many,5,3,3,2,0,7.1
+67,3,4,22,4,mht,post,correct,3,3,3,0,0,2.8
+67,3,4,22,4,gnn,post,correct,3,3,3,0,0,3.9
+67,3,4,22,4,mht,pre+post,correct,3,3,3,0,0,2.8
+67,3,4,22,4,gnn,pre+post,too many,5,3,3,2,0,7.1
+68,6,4,40,6,mht,base,too many,9,6,6,3,0,2.8
+68,6,4,40,6,gnn,base,too many,8,6,6,2,0,7.0
+68,6,4,40,6,mht,pre,too many,8,6,6,2,0,2.8
+68,6,4,40,6,gnn,pre,too many,7,6,6,1,0,7.0
+68,6,4,40,6,mht,post,too many,8,6,6,2,0,2.8
+68,6,4,40,6,gnn,post,too many,8,6,6,2,0,7.0
+68,6,4,40,6,mht,pre+post,too many,8,6,6,2,0,2.8
+68,6,4,40,6,gnn,pre+post,too many,7,6,6,1,0,7.0
+69,5,2,20,3,mht,base,too many,6,5,5,1,0,3.5
+69,5,2,20,3,gnn,base,correct,5,5,5,0,0,8.8
+69,5,2,20,3,mht,pre,too many,6,5,5,1,0,3.5
+69,5,2,20,3,gnn,pre,correct,5,5,5,0,0,8.8
+69,5,2,20,3,mht,post,too many,6,5,5,1,0,3.5
+69,5,2,20,3,gnn,post,correct,5,5,5,0,0,8.8
+69,5,2,20,3,mht,pre+post,too many,6,5,5,1,0,3.5
+69,5,2,20,3,gnn,pre+post,correct,5,5,5,0,0,8.8
+70,3,3,16,5,mht,base,too many,6,3,3,3,0,4.5
+70,3,3,16,5,gnn,base,too many,5,3,3,2,0,8.9
+70,3,3,16,5,mht,pre,too many,6,3,3,3,0,4.5
+70,3,3,16,5,gnn,pre,too many,5,3,3,2,0,8.9
+70,3,3,16,5,mht,post,too many,6,3,3,3,0,4.5
+70,3,3,16,5,gnn,post,too many,5,3,3,2,0,8.9
+70,3,3,16,5,mht,pre+post,too many,6,3,3,3,0,4.5
+70,3,3,16,5,gnn,pre+post,too many,5,3,3,2,0,8.9
+71,7,4,34,6,mht,base,too many,8,7,7,1,0,4.1
+71,7,4,34,6,gnn,base,too many,8,7,6,2,1,9.3
+71,7,4,34,6,mht,pre,too many,8,7,7,1,0,4.1
+71,7,4,34,6,gnn,pre,too many,8,7,6,2,1,9.3
+71,7,4,34,6,mht,post,too many,8,7,7,1,0,4.1
+71,7,4,34,6,gnn,post,too many,8,7,6,2,1,9.3
+71,7,4,34,6,mht,pre+post,too many,8,7,7,1,0,4.1
+71,7,4,34,6,gnn,pre+post,too many,8,7,6,2,1,9.3
+72,6,3,28,9,mht,base,too many,11,6,6,5,0,3.2
+72,6,3,28,9,gnn,base,too many,8,6,6,2,0,8.4
+72,6,3,28,9,mht,pre,too many,11,6,6,5,0,3.2
+72,6,3,28,9,gnn,pre,too many,8,6,6,2,0,8.4
+72,6,3,28,9,mht,post,too many,11,6,6,5,0,3.2
+72,6,3,28,9,gnn,post,too many,7,6,5,2,1,7.6
+72,6,3,28,9,mht,pre+post,too many,11,6,6,5,0,3.2
+72,6,3,28,9,gnn,pre+post,too many,7,6,5,2,1,7.6
+73,3,2,10,6,mht,base,too many,5,3,2,3,1,5.5
+73,3,2,10,6,gnn,base,too few,2,3,1,1,2,9.5
+73,3,2,10,6,mht,pre,too many,5,3,2,3,1,5.5
+73,3,2,10,6,gnn,pre,too few,2,3,1,1,2,9.5
+73,3,2,10,6,mht,post,too many,5,3,2,3,1,5.5
+73,3,2,10,6,gnn,post,too few,2,3,1,1,2,9.5
+73,3,2,10,6,mht,pre+post,too many,5,3,2,3,1,5.5
+73,3,2,10,6,gnn,pre+post,too few,2,3,1,1,2,9.5
+74,4,3,16,3,mht,base,correct,4,4,4,0,0,3.1
+74,4,3,16,3,gnn,base,too many,5,4,4,1,0,6.8
+74,4,3,16,3,mht,pre,correct,4,4,4,0,0,3.1
+74,4,3,16,3,gnn,pre,too many,5,4,4,1,0,6.8
+74,4,3,16,3,mht,post,correct,4,4,4,0,0,3.1
+74,4,3,16,3,gnn,post,too many,5,4,4,1,0,6.8
+74,4,3,16,3,mht,pre+post,correct,4,4,4,0,0,3.1
+74,4,3,16,3,gnn,pre+post,too many,5,4,4,1,0,6.8
+75,7,3,36,9,mht,base,too many,12,7,7,5,0,3.5
+75,7,3,36,9,gnn,base,too many,9,7,7,2,0,7.2
+75,7,3,36,9,mht,pre,too many,9,7,5,4,2,2.9
+75,7,3,36,9,gnn,pre,too few,6,7,5,1,2,7.1
+75,7,3,36,9,mht,post,too many,10,7,6,4,1,3.4
+75,7,3,36,9,gnn,post,misplaced,7,7,6,1,1,7.3
+75,7,3,36,9,mht,pre+post,too many,9,7,5,4,2,2.9
+75,7,3,36,9,gnn,pre+post,too few,6,7,5,1,2,7.1
+76,4,4,28,8,mht,base,too many,7,4,4,3,0,4.1
+76,4,4,28,8,gnn,base,correct,4,4,4,0,0,8.0
+76,4,4,28,8,mht,pre,too many,7,4,4,3,0,4.1
+76,4,4,28,8,gnn,pre,too few,3,4,3,0,1,7.1
+76,4,4,28,8,mht,post,too many,6,4,3,3,1,3.3
+76,4,4,28,8,gnn,post,too few,3,4,3,0,1,7.1
+76,4,4,28,8,mht,pre+post,too many,7,4,4,3,0,4.1
+76,4,4,28,8,gnn,pre+post,too few,3,4,3,0,1,7.1
+77,5,3,26,3,mht,base,too many,7,5,5,2,0,2.5
+77,5,3,26,3,gnn,base,too many,6,5,5,1,0,7.7
+77,5,3,26,3,mht,pre,too many,7,5,5,2,0,2.5
+77,5,3,26,3,gnn,pre,too many,6,5,5,1,0,7.7
+77,5,3,26,3,mht,post,too many,7,5,5,2,0,2.5
+77,5,3,26,3,gnn,post,too many,6,5,5,1,0,7.7
+77,5,3,26,3,mht,pre+post,too many,7,5,5,2,0,2.5
+77,5,3,26,3,gnn,pre+post,too many,6,5,5,1,0,7.7
+78,6,4,34,6,mht,base,too many,9,6,6,3,0,4.7
+78,6,4,34,6,gnn,base,too many,7,6,6,1,0,8.9
+78,6,4,34,6,mht,pre,too many,7,6,6,1,0,4.7
+78,6,4,34,6,gnn,pre,too many,7,6,6,1,0,8.9
+78,6,4,34,6,mht,post,too many,7,6,6,1,0,4.7
+78,6,4,34,6,gnn,post,too many,7,6,6,1,0,8.9
+78,6,4,34,6,mht,pre+post,too many,7,6,6,1,0,4.7
+78,6,4,34,6,gnn,pre+post,too many,7,6,6,1,0,8.9
+79,6,4,31,3,mht,base,too many,8,6,6,2,0,4.0
+79,6,4,31,3,gnn,base,misplaced,6,6,5,1,1,9.5
+79,6,4,31,3,mht,pre,too many,7,6,5,2,1,3.7
+79,6,4,31,3,gnn,pre,misplaced,6,6,5,1,1,9.5
+79,6,4,31,3,mht,post,too many,7,6,5,2,1,3.7
+79,6,4,31,3,gnn,post,misplaced,6,6,5,1,1,9.5
+79,6,4,31,3,mht,pre+post,too many,7,6,5,2,1,3.7
+79,6,4,31,3,gnn,pre+post,misplaced,6,6,5,1,1,9.5
+80,7,4,42,8,mht,base,too many,11,7,7,4,0,4.2
+80,7,4,42,8,gnn,base,too many,8,7,6,2,1,9.0
+80,7,4,42,8,mht,pre,too many,10,7,6,4,1,3.3
+80,7,4,42,8,gnn,pre,too many,8,7,6,2,1,9.0
+80,7,4,42,8,mht,post,too many,10,7,6,4,1,3.3
+80,7,4,42,8,gnn,post,too many,8,7,6,2,1,9.0
+80,7,4,42,8,mht,pre+post,too many,10,7,6,4,1,3.3
+80,7,4,42,8,gnn,pre+post,too many,8,7,6,2,1,9.0
+81,5,2,18,2,mht,base,too many,6,5,5,1,0,5.2
+81,5,2,18,2,gnn,base,too few,4,5,4,0,1,5.8
+81,5,2,18,2,mht,pre,too many,6,5,5,1,0,5.2
+81,5,2,18,2,gnn,pre,too few,4,5,4,0,1,5.8
+81,5,2,18,2,mht,post,too many,6,5,5,1,0,5.2
+81,5,2,18,2,gnn,post,too few,4,5,4,0,1,5.8
+81,5,2,18,2,mht,pre+post,too many,6,5,5,1,0,5.2
+81,5,2,18,2,gnn,pre+post,too few,4,5,4,0,1,5.8
+82,7,2,26,7,mht,base,too many,10,7,7,3,0,8.1
+82,7,2,26,7,gnn,base,too many,9,7,6,3,1,7.8
+82,7,2,26,7,mht,pre,too many,9,7,6,3,1,7.9
+82,7,2,26,7,gnn,pre,misplaced,7,7,5,2,2,7.8
+82,7,2,26,7,mht,post,too many,8,7,6,2,1,7.9
+82,7,2,26,7,gnn,post,too many,8,7,6,2,1,7.8
+82,7,2,26,7,mht,pre+post,too many,9,7,6,3,1,7.9
+82,7,2,26,7,gnn,pre+post,misplaced,7,7,5,2,2,7.8
+83,4,4,23,5,mht,base,too many,5,4,4,1,0,3.2
+83,4,4,23,5,gnn,base,too many,5,4,4,1,0,6.1
+83,4,4,23,5,mht,pre,too many,5,4,4,1,0,3.2
+83,4,4,23,5,gnn,pre,too many,5,4,4,1,0,6.1
+83,4,4,23,5,mht,post,too many,5,4,4,1,0,3.2
+83,4,4,23,5,gnn,post,too many,5,4,4,1,0,6.1
+83,4,4,23,5,mht,pre+post,too many,5,4,4,1,0,3.2
+83,4,4,23,5,gnn,pre+post,too many,5,4,4,1,0,6.1
+84,4,3,22,9,mht,base,too many,9,4,4,5,0,3.3
+84,4,3,22,9,gnn,base,too many,5,4,4,1,0,7.2
+84,4,3,22,9,mht,pre,too many,8,4,4,4,0,3.3
+84,4,3,22,9,gnn,pre,too many,5,4,4,1,0,7.2
+84,4,3,22,9,mht,post,too many,8,4,4,4,0,3.3
+84,4,3,22,9,gnn,post,too many,5,4,4,1,0,7.2
+84,4,3,22,9,mht,pre+post,too many,8,4,4,4,0,3.3
+84,4,3,22,9,gnn,pre+post,too many,5,4,4,1,0,7.2
+85,3,3,16,3,mht,base,too many,5,3,3,2,0,3.7
+85,3,3,16,3,gnn,base,correct,3,3,3,0,0,6.5
+85,3,3,16,3,mht,pre,too many,5,3,3,2,0,3.7
+85,3,3,16,3,gnn,pre,correct,3,3,3,0,0,6.5
+85,3,3,16,3,mht,post,too many,5,3,3,2,0,3.7
+85,3,3,16,3,gnn,post,correct,3,3,3,0,0,6.5
+85,3,3,16,3,mht,pre+post,too many,5,3,3,2,0,3.7
+85,3,3,16,3,gnn,pre+post,correct,3,3,3,0,0,6.5
+86,4,2,10,2,mht,base,too few,3,4,3,0,1,1.7
+86,4,2,10,2,gnn,base,too few,2,4,2,0,2,6.1
+86,4,2,10,2,mht,pre,too few,3,4,3,0,1,1.7
+86,4,2,10,2,gnn,pre,too few,2,4,2,0,2,6.1
+86,4,2,10,2,mht,post,too few,3,4,3,0,1,1.7
+86,4,2,10,2,gnn,post,too few,2,4,2,0,2,6.1
+86,4,2,10,2,mht,pre+post,too few,3,4,3,0,1,1.7
+86,4,2,10,2,gnn,pre+post,too few,2,4,2,0,2,6.1
+87,4,3,22,4,mht,base,too many,6,4,4,2,0,3.2
+87,4,3,22,4,gnn,base,too many,6,4,4,2,0,8.1
+87,4,3,22,4,mht,pre,too many,7,4,4,3,0,4.3
+87,4,3,22,4,gnn,pre,too many,6,4,4,2,0,8.4
+87,4,3,22,4,mht,post,too many,5,4,3,2,1,3.1
+87,4,3,22,4,gnn,post,too many,6,4,4,2,0,8.1
+87,4,3,22,4,mht,pre+post,too many,7,4,4,3,0,4.3
+87,4,3,22,4,gnn,pre+post,too many,6,4,4,2,0,8.4
+88,4,3,20,6,mht,base,too many,7,4,4,3,0,3.2
+88,4,3,20,6,gnn,base,correct,4,4,4,0,0,8.2
+88,4,3,20,6,mht,pre,too many,7,4,4,3,0,3.2
+88,4,3,20,6,gnn,pre,correct,4,4,4,0,0,8.2
+88,4,3,20,6,mht,post,too many,7,4,4,3,0,3.2
+88,4,3,20,6,gnn,post,correct,4,4,4,0,0,8.2
+88,4,3,20,6,mht,pre+post,too many,7,4,4,3,0,3.2
+88,4,3,20,6,gnn,pre+post,correct,4,4,4,0,0,8.2
+89,6,4,34,6,mht,base,too many,10,6,6,4,0,5.6
+89,6,4,34,6,gnn,base,too many,8,6,5,3,1,8.8
+89,6,4,34,6,mht,pre,too many,9,6,6,3,0,5.6
+89,6,4,34,6,gnn,pre,too many,7,6,5,2,1,8.8
+89,6,4,34,6,mht,post,too many,9,6,6,3,0,5.6
+89,6,4,34,6,gnn,post,misplaced,6,6,5,1,1,8.8
+89,6,4,34,6,mht,pre+post,too many,9,6,6,3,0,5.6
+89,6,4,34,6,gnn,pre+post,misplaced,6,6,5,1,1,8.8
+90,3,2,8,1,mht,base,too many,4,3,3,1,0,3.8
+90,3,2,8,1,gnn,base,too few,1,3,1,0,2,8.6
+90,3,2,8,1,mht,pre,too many,4,3,3,1,0,3.8
+90,3,2,8,1,gnn,pre,too few,1,3,1,0,2,8.6
+90,3,2,8,1,mht,post,too many,4,3,3,1,0,3.8
+90,3,2,8,1,gnn,post,too few,1,3,1,0,2,8.6
+90,3,2,8,1,mht,pre+post,too many,4,3,3,1,0,3.8
+90,3,2,8,1,gnn,pre+post,too few,1,3,1,0,2,8.6
+91,5,4,32,9,mht,base,correct,5,5,5,0,0,3.4
+91,5,4,32,9,gnn,base,too many,6,5,5,1,0,7.3
+91,5,4,32,9,mht,pre,correct,5,5,5,0,0,3.4
+91,5,4,32,9,gnn,pre,too many,6,5,5,1,0,7.3
+91,5,4,32,9,mht,post,correct,5,5,5,0,0,3.4
+91,5,4,32,9,gnn,post,too many,6,5,5,1,0,7.3
+91,5,4,32,9,mht,pre+post,correct,5,5,5,0,0,3.4
+91,5,4,32,9,gnn,pre+post,too many,6,5,5,1,0,7.3
+92,5,2,16,2,mht,base,correct,5,5,5,0,0,4.8
+92,5,2,16,2,gnn,base,too few,4,5,4,0,1,9.0
+92,5,2,16,2,mht,pre,correct,5,5,5,0,0,4.8
+92,5,2,16,2,gnn,pre,too few,4,5,4,0,1,9.0
+92,5,2,16,2,mht,post,correct,5,5,5,0,0,4.8
+92,5,2,16,2,gnn,post,too few,4,5,4,0,1,9.0
+92,5,2,16,2,mht,pre+post,correct,5,5,5,0,0,4.8
+92,5,2,16,2,gnn,pre+post,too few,4,5,4,0,1,9.0
+93,6,3,29,0,mht,base,correct,6,6,6,0,0,3.6
+93,6,3,29,0,gnn,base,correct,6,6,6,0,0,6.6
+93,6,3,29,0,mht,pre,correct,6,6,6,0,0,3.6
+93,6,3,29,0,gnn,pre,correct,6,6,6,0,0,6.6
+93,6,3,29,0,mht,post,correct,6,6,6,0,0,3.6
+93,6,3,29,0,gnn,post,correct,6,6,6,0,0,6.6
+93,6,3,29,0,mht,pre+post,correct,6,6,6,0,0,3.6
+93,6,3,29,0,gnn,pre+post,correct,6,6,6,0,0,6.6
+94,7,4,49,6,mht,base,too many,8,7,7,1,0,3.5
+94,7,4,49,6,gnn,base,too many,8,7,7,1,0,7.2
+94,7,4,49,6,mht,pre,too many,8,7,7,1,0,3.5
+94,7,4,49,6,gnn,pre,too many,8,7,7,1,0,7.2
+94,7,4,49,6,mht,post,too many,8,7,7,1,0,3.5
+94,7,4,49,6,gnn,post,too many,8,7,7,1,0,7.2
+94,7,4,49,6,mht,pre+post,too many,8,7,7,1,0,3.5
+94,7,4,49,6,gnn,pre+post,too many,8,7,7,1,0,7.2
+95,7,2,22,3,mht,base,misplaced,7,7,6,1,1,1.9
+95,7,2,22,3,gnn,base,too few,6,7,5,1,2,7.7
+95,7,2,22,3,mht,pre,misplaced,7,7,6,1,1,1.9
+95,7,2,22,3,gnn,pre,too few,6,7,5,1,2,7.7
+95,7,2,22,3,mht,post,misplaced,7,7,6,1,1,1.9
+95,7,2,22,3,gnn,post,too few,6,7,5,1,2,7.7
+95,7,2,22,3,mht,pre+post,misplaced,7,7,6,1,1,1.9
+95,7,2,22,3,gnn,pre+post,too few,6,7,5,1,2,7.7
+96,6,3,26,5,mht,base,too many,10,6,6,4,0,3.2
+96,6,3,26,5,gnn,base,too many,8,6,5,3,1,8.9
+96,6,3,26,5,mht,pre,too many,10,6,6,4,0,3.2
+96,6,3,26,5,gnn,pre,too many,8,6,5,3,1,8.9
+96,6,3,26,5,mht,post,too many,10,6,6,4,0,3.2
+96,6,3,26,5,gnn,post,too many,8,6,5,3,1,8.9
+96,6,3,26,5,mht,pre+post,too many,10,6,6,4,0,3.2
+96,6,3,26,5,gnn,pre+post,too many,8,6,5,3,1,8.9
+97,5,4,36,4,mht,base,too many,6,5,5,1,0,3.7
+97,5,4,36,4,gnn,base,correct,5,5,5,0,0,6.0
+97,5,4,36,4,mht,pre,too many,6,5,5,1,0,3.7
+97,5,4,36,4,gnn,pre,correct,5,5,5,0,0,6.0
+97,5,4,36,4,mht,post,too many,6,5,5,1,0,3.7
+97,5,4,36,4,gnn,post,correct,5,5,5,0,0,6.0
+97,5,4,36,4,mht,pre+post,too many,6,5,5,1,0,3.7
+97,5,4,36,4,gnn,pre+post,correct,5,5,5,0,0,6.0
+98,7,2,24,4,mht,base,too many,8,7,6,2,1,4.0
+98,7,2,24,4,gnn,base,too few,6,7,6,0,1,9.2
+98,7,2,24,4,mht,pre,too many,8,7,6,2,1,4.0
+98,7,2,24,4,gnn,pre,too few,6,7,6,0,1,9.2
+98,7,2,24,4,mht,post,too many,8,7,6,2,1,4.0
+98,7,2,24,4,gnn,post,too few,6,7,6,0,1,9.2
+98,7,2,24,4,mht,pre+post,too many,8,7,6,2,1,4.0
+98,7,2,24,4,gnn,pre+post,too few,6,7,6,0,1,9.2
+99,5,4,30,2,mht,base,too many,6,5,5,1,0,3.7
+99,5,4,30,2,gnn,base,too many,6,5,5,1,0,8.4
+99,5,4,30,2,mht,pre,correct,5,5,5,0,0,3.7
+99,5,4,30,2,gnn,pre,correct,5,5,5,0,0,8.4
+99,5,4,30,2,mht,post,correct,5,5,5,0,0,3.7
+99,5,4,30,2,gnn,post,correct,5,5,5,0,0,8.4
+99,5,4,30,2,mht,pre+post,correct,5,5,5,0,0,3.7
+99,5,4,30,2,gnn,pre+post,correct,5,5,5,0,0,8.4

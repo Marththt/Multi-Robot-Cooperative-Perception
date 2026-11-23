@@ -9,12 +9,14 @@ so boxes can be added or taken away during the run; --box restricts them to a li
     terminal 1 (capture environment: SDK, natnet)
         python -m acquisition.ir_live_robots --robot G11:8 --robot G12:7 --robot G14:10 --out data/live_ir/
     terminal 2 (demo environment)
-        python -m demo.live --live-dir data/live_ir/ --sensor-calib config/sensor_calib_ir.json --window-s 12 \\
-            --stale-s 4 --no-images
+        python -m demo.live --live-dir data/live_ir/ --sensor-calib config/sensor_calib_ir.json \\
+            --sensor-model config/sensor_model_ir.json --window-s 36 --stale-s 36 --no-images
 
 --window-s must cover one sweep of a robot (about 1.5 s per box); config/sensor_calib_ir.json leaves the IR ranges
-as they are (the ArUco range correction of config/sensor_calib.json must not be applied to them). Model C needs the
-frames and is left out (--no-images).
+as they are (the ArUco range correction of config/sensor_calib.json must not be applied to them), and
+config/sensor_model_ir.json is the sensor model of the MHT for the IR (the ArUco one, config/sensor_model.json, puts
+an 88 deg field of view around the first beam of every robot: boxes ranged at other gimbal angles cannot be
+associated and come out twice). Model C needs the frames and is left out (--no-images).
 
 --robot is ID:RIGID_BODY. Every robot uses its own gimbal aiming offset and IR range correction
 (acquisition/ir_live.py YAW_OFFSET_DEG, IR_FIT); a robot not in those tables gets the values measured on G11 (same
@@ -186,7 +188,8 @@ def main():
     if not a.no_turns:
         threading.Thread(target=coordinator, args=(a, robots, stop), daemon=True).start()
     print(f"all robots started: now run\n  python -m demo.live --live-dir {a.out} --sensor-calib "
-          f"config/sensor_calib_ir.json --window-s {window} --stale-s {window} --no-images\n"
+          f"config/sensor_calib_ir.json --sensor-model config/sensor_model_ir.json --window-s {window} "
+          f"--stale-s {window} --no-images\n"
           f"  python -m tools.ir_view --live-dir {a.out}\n(Ctrl+C here to stop)", flush=True)
     while not stop.is_set() and any(p.poll() is None for p in procs):
         time.sleep(0.3)
