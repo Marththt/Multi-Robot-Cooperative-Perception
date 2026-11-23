@@ -1,8 +1,0 @@
-cd "C:\GNN for vision fault\Multi-Robot-Cooperative-Perception"
-git stash
-git pull --no-rebase --no-edit
-.venv\Scripts\python -c "import imgmlp.train, imgmlp.report, imgmlp.grid, sim.scaling, yolo_gnn.segment_sim, yolo_gnn.evaluate_sim, tools.fig_grid_f1; from imgmlp.measure import NoiseRanges; print('code OK')"
-.venv\Scripts\python -c "import os; assert all(os.path.exists(f'data/imgmlp/{f}/frames.npy') for f in ('plan_v2_train', 'plan_v2_val', 'real')); print('imgmlp frame caches OK')"
-.venv\Scripts\python -c "import os; assert os.path.exists('data/scale/tune/geometry.jsonl') and os.path.exists('results/yolo_seg/box_seg/weights/best.pt'); print('grid: tune set and YOLO OK')"
-Copy-Item logs\run_imgmlp2.bat, logs\run_imgmlp_grid.bat, logs\run_grid.bat, logs\run_all_week.bat -Destination . -Force
-Start-Process cmd -ArgumentList "/c run_all_week.bat"

@@ -3,5 +3,4 @@ git pull --no-rebase --no-edit
 .venv\Scripts\python -c "import sim.scaling, yolo_gnn.segment_sim, yolo_gnn.evaluate_sim, tools.fig_grid_f1; print('grid code OK')"
 .venv\Scripts\python -c "import os; assert os.path.exists('data/scale/tune/geometry.jsonl') and os.path.exists('results/yolo_seg/box_seg/weights/best.pt'); print('tune set and YOLO OK')"
 Copy-Item logs\run_grid.bat run_grid.bat -Force
-while (Get-CimInstance Win32_Process -Filter "Name='cmd.exe'" | ? { $_.CommandLine -like '*run_imgmlp.bat*' }) { "imgmlp still running " + (Get-Date); Start-Sleep 300 }
 Start-Process cmd -ArgumentList "/c run_grid.bat"

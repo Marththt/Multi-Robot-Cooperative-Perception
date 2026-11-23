@@ -1,3 +1,0 @@
-test,scenes,correct_pct,correct_sd,exact_pct,too_few_pct,too_many_pct
-val,2000,55.8,0.68,62.03,25.13,12.83
-real,444,36.26,2.02,41.97,56.68,1.35

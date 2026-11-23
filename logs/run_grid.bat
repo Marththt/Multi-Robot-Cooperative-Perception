@@ -1,7 +1,7 @@
 @echo off
 rem Robots x boxes grid (2, 4, 8, 16, 32, 50 each, 36 cells, 100 scenes per cell): scenes (sim/scaling.py),
 rem frames rendered and segmented (yolo_gnn/segment_sim.py), MHT + marker network + YOLO (yolo_gnn/evaluate_sim.py),
-rem F1 heat maps (tools/fig_grid_f1.py). Start it after run_imgmlp.bat has finished (same GPU and CPUs).
+rem F1 heat maps (tools/fig_grid_f1.py).
 rem Rerunnable: the frames already in the cache and the MHT rows already in results/scale_grid/mht are reused.
 cd /d "%~dp0"
 call .venv\Scripts\activate.bat

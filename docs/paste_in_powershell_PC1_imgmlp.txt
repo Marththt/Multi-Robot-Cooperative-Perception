@@ -1,8 +1,0 @@
-cd "C:\GNN for vision fault\Multi-Robot-Cooperative-Perception"
-git stash
-git pull --no-rebase --no-edit
-.venv\Scripts\python -c "import imgmlp.train, imgmlp.frames, imgmlp.probe; print('imgmlp code OK')"
-.venv\Scripts\python -c "import os; assert os.path.exists('data/plan_v2/train/geometry.jsonl') and os.path.exists('data/plan_v2/val/geometry.jsonl'); print('plan_v2 OK')"
-.venv\Scripts\python -c "import glob; n = len(glob.glob('data/survey_all/*/frames/*/*.jpg')); print(n, 'real frames'); assert n > 1000"
-Copy-Item logs\run_imgmlp.bat run_imgmlp.bat -Force
-Start-Process cmd -ArgumentList "/c run_imgmlp.bat"
