@@ -82,6 +82,31 @@ def truth_loop(a, robots, stop, hz=30.0):
         hub.close()
 
 
+def coordinator(a, robots, stop, timeout_s=8.0):
+    """Turn taking: one robot at a time ranges one box (acquisition/ir_scan.py --turns), round robin, so that the
+    beams of two robots never meet on a box (the IR cannot be switched off: the others point theirs upwards)."""
+    from demo.methods import read_json, write_json
+    seq, n = int(time.time() * 1000), 0
+    while not stop.is_set():
+        for r in robots:
+            if stop.is_set():
+                return
+            seq += 1
+            write_json(os.path.join(a.out, "turn.json"), dict(robot=r["robot_id"], seq=seq, t=time.time()))
+            t0 = time.time()
+            while not stop.is_set():
+                d = read_json(os.path.join(a.out, f"{r['robot_id']}.done.json"))
+                if d and d.get("seq") == seq:
+                    break
+                if time.time() - t0 > timeout_s:
+                    print(f"{r['robot_id']}: no answer to its turn in {timeout_s:.0f} s, next robot", flush=True)
+                    break
+                time.sleep(0.02)
+        n += 1
+        if n == 1:
+            print("first round of turns done", flush=True)
+
+
 def sim_truth(a, stop):
     from demo.methods import write_json
     with open(a.ground_truth) as f:
@@ -102,6 +127,8 @@ def main():
     ap.add_argument("--regions", default="config/optitrack_regions.json")
     ap.add_argument("--optitrack-server", default="127.0.0.1")
     ap.add_argument("--optitrack-local", default="127.0.0.1")
+    ap.add_argument("--no-turns", action="store_true",
+                    help="every robot ranges when it likes (beams can meet on a box); default: one robot at a time")
     ap.add_argument("--sim", action="store_true")
     ap.add_argument("--sim-layout", default="L4")
     ap.add_argument("--ground-truth", default="config/ground_truth_positions.json")
@@ -131,6 +158,8 @@ def main():
             break
         cmd = [sys.executable, "-u", "-m", "acquisition.ir_scan", "--robot-id", r["robot_id"],
                "--state-out", os.path.join(a.out, f"{r['robot_id']}.json"), "--stop-file", stop_file]
+        if not a.no_turns:
+            cmd += ["--turns"]
         if a.sim:
             x, y, yaw = (r["sim_pose"] or "-1.6,-0.4,0").split(",")
             cmd += ["--sim", "--sim-layout", a.sim_layout, "--ground-truth", a.ground_truth,
@@ -153,8 +182,12 @@ def main():
         if not connected.is_set() and not stop.is_set():
             print(f"{r['robot_id']}: not running after {CONNECT_TIMEOUT_S:.0f} s, starting the next robot", flush=True)
         time.sleep(1.0)
-    print(f"all robots started: now run  python -m demo.live --live-dir {a.out} --sensor-calib "
-          f"config/sensor_calib_ir.json --window-s 12 --stale-s 4 --no-images   (Ctrl+C here to stop)", flush=True)
+    window = 20 if a.no_turns else max(20, int(2 * 1.5 * len(robots) * 4))
+    if not a.no_turns:
+        threading.Thread(target=coordinator, args=(a, robots, stop), daemon=True).start()
+    print(f"all robots started: now run\n  python -m demo.live --live-dir {a.out} --sensor-calib "
+          f"config/sensor_calib_ir.json --window-s {window} --stale-s {window} --no-images\n"
+          f"  python -m tools.ir_view --live-dir {a.out}\n(Ctrl+C here to stop)", flush=True)
     while not stop.is_set() and any(p.poll() is None for p in procs):
         time.sleep(0.3)
     stop.set()
