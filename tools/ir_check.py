@@ -28,13 +28,14 @@ def main():
     with Robot(a.robot_id, sn=a.sn, ip=a.ip) as robot, IRSensors.from_robot(robot, freq=a.freq, history=max(200, int(a.freq * (a.stats + 5)))) as ir:
         time.sleep(0.5)
         print(f"first message from the SDK, as it arrived: {ir.first_raw}")
-        print("index:      0        1        2        3   [m]  (Ctrl+C to stop)")
+        print("index:        0          1          2          3     [mm as the SDK gives them; * = outside 0.1-10 m]"
+              "  (Ctrl+C to stop)")
         t0 = time.time()
         try:
             while time.time() - t0 < a.seconds:
                 s = ir.latest()
                 if s is not None:
-                    print("       " + "  ".join(f"{v:7.3f}" if ir.valid(v) else "    ---" for v in s[1]), flush=True)
+                    print("       " + "  ".join(f"{v * 1000:8.0f}{' ' if ir.valid(v) else '*'}" for v in s[1]), flush=True)
                 time.sleep(0.2)
         except KeyboardInterrupt:
             pass
