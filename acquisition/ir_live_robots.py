@@ -26,6 +26,10 @@ every robot. Ctrl+C stops every robot (the gimbals are re-centred). --fan: once 
 for a fan of its gimbal (+-40 deg around its heading, about 11 s), logged as free space (tools/ir_view.py
 --freespace shows the MHT and the graph network with and without it).
 
+--scanner yolo: the boxes to range are found by YOLO on the camera of each robot instead of OptiTrack
+(acquisition/ir_yolo_scan.py; ultralytics and torch needed in the capture environment); one turn = one look and
+all the boxes in it, so the turns last longer (--turn-timeout-s, default 60 s).
+
 Without hardware: --sim --sim-layout L4 --robot S1:0:-1.6,-0.4,-20 --robot S2:0:0.6,-1.8,110 (ID:_:X,Y,YAW_DEG):
 fake gimbals and IR on the boxes of the layout, boxes.json written from it.
 """
@@ -133,6 +137,12 @@ def main():
     ap.add_argument("--optitrack-local", default="127.0.0.1")
     ap.add_argument("--no-turns", action="store_true",
                     help="every robot ranges when it likes (beams can meet on a box); default: one robot at a time")
+    ap.add_argument("--scanner", choices=["ir", "yolo"], default="ir",
+                    help="ir: the boxes to range come from OptiTrack (acquisition/ir_scan.py); yolo: from YOLO on the "
+                         "camera of each robot, one look and all its boxes per turn (acquisition/ir_yolo_scan.py)")
+    ap.add_argument("--turn-timeout-s", type=float, default=None,
+                    help="a robot that does not finish its turn in this time is skipped (default: 8 s with --scanner "
+                         "ir, 60 s with --scanner yolo, plus the fan)")
     ap.add_argument("--fan", action="store_true",
                     help="once per sweep every robot uses a turn for a fan of the gimbal (free space, "
                          "acquisition/ir_scan.py --fan); see tools/ir_view.py --freespace")
@@ -166,7 +176,8 @@ def main():
     for r in robots:
         if stop.is_set():
             break
-        cmd = [sys.executable, "-u", "-m", "acquisition.ir_scan", "--robot-id", r["robot_id"],
+        module = "acquisition.ir_yolo_scan" if a.scanner == "yolo" else "acquisition.ir_scan"
+        cmd = [sys.executable, "-u", "-m", module, "--robot-id", r["robot_id"],
                "--state-out", os.path.join(a.out, f"{r['robot_id']}.json"), "--stop-file", stop_file]
         if not a.no_turns:
             cmd += ["--turns"]
@@ -196,9 +207,12 @@ def main():
             print(f"{r['robot_id']}: not running after {CONNECT_TIMEOUT_S:.0f} s, starting the next robot", flush=True)
         time.sleep(1.0)
     fan_s = 2 * a.fan_deg / a.fan_speed_dps + 3.0 if a.fan else 0.0       # one fan: the sweep + going to its start
-    window = 20 if a.no_turns else max(20, int(2 * (1.5 * len(robots) * 4 + fan_s * len(robots))))
+    turn_s = 1.5 if a.scanner == "ir" else 10.0                          # one box / one YOLO look with its boxes
+    per_round = 4 if a.scanner == "ir" else 1                             # turns per robot to cover the boxes
+    window = 20 if a.no_turns else max(20, int(2 * (turn_s * len(robots) * per_round + fan_s * len(robots))))
+    timeout = a.turn_timeout_s or ((8.0 if a.scanner == "ir" else 60.0) + fan_s)
     if not a.no_turns:
-        threading.Thread(target=coordinator, args=(a, robots, stop, 8.0 + fan_s), daemon=True).start()
+        threading.Thread(target=coordinator, args=(a, robots, stop, timeout), daemon=True).start()
     print(f"all robots started: now run\n  python -m demo.live --live-dir {a.out} --sensor-calib "
           f"config/sensor_calib_ir.json --sensor-model config/sensor_model_ir.json --window-s {window} "
           f"--stale-s {window} --no-images\n"
