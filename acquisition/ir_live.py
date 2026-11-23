@@ -100,8 +100,8 @@ class Rig:
             self.fixed = [dict(id=11 + k, x=float(b["x"]), y=float(b["y"])) for k, b in enumerate(gt)]
             x, y, yaw = a.sim_pose
             true = (x, y, math.radians(yaw))                          # where the fakes really point from
-            seen = (x, y, wrap_pi(math.radians(yaw - a.sim_yaw_error_deg + (a.yaw_offset_deg or 0.0))))
-            self.body_pose = lambda: seen                             # what the script believes
+            self.yaw_off = math.radians(a.yaw_offset_deg or 0.0)
+            self.body_pose = lambda: (x, y, wrap_pi(math.radians(yaw - a.sim_yaw_error_deg) + self.yaw_off))
             self.gimbal = FakeGimbal()
             xy = [[b["x"], b["y"]] for b in self.fixed]
             self.ir = CorrectedIR(FakeIR(xy, lambda: true, self.gimbal, self.mount, rng), *a.ir_fit)
@@ -118,11 +118,11 @@ class Rig:
         time.sleep(0.3)
         print(f"boxes tracked by OptiTrack inside the arena: {[b['id'] for b in self.boxes()]}", flush=True)
         self.cleanup.append(self.hub.close)
-        off = math.radians(a.yaw_offset_deg)
+        self.yaw_off = math.radians(a.yaw_offset_deg)
 
         def body_pose():
             q = self.hub.get_pose(a.rb)
-            return None if q is None else (float(q[0]), float(q[1]), wrap_pi(float(q[2]) + off))
+            return None if q is None else (float(q[0]), float(q[1]), wrap_pi(float(q[2]) + self.yaw_off))
 
         self.body_pose = body_pose
         self.robot = Robot(a.robot_id, sn=a.sn, ip=a.ip).connect()
@@ -133,6 +133,7 @@ class Rig:
         raw_ir = IRSensors.from_robot(self.robot, freq=a.ir_freq).start()
         self.cleanup.insert(0, raw_ir.stop)
         self.ir = CorrectedIR(raw_ir, *a.ir_fit)
+        self.mount.ir_index = detect_ir_slot(raw_ir, self.mount.ir_index)
         time.sleep(0.5)
         print(f"first IR message from the SDK: {self.ir.first_raw}", flush=True)
         print(f"first gimbal message from the SDK: {self.gimbal.first_raw}", flush=True)
@@ -299,12 +300,79 @@ def plateaus(angles, readings, flat_m=0.03, min_steps=3):
     return out
 
 
-def target_plateau(rows, true_m, rel=0.25):
+def target_plateau(rows, true_m, rel=0.25, min_steps=3):
     """The plateau of the target box: the flat run whose reading is closest to the true face distance (within rel)."""
     rows = sorted(rows, key=lambda r: r["gimbal_yaw_deg"])
-    runs = plateaus([r["gimbal_yaw_deg"] for r in rows], [r["ir_m"] for r in rows])
+    runs = plateaus([r["gimbal_yaw_deg"] for r in rows], [r["ir_m"] for r in rows], min_steps=min_steps)
     runs = [p for p in runs if abs(p[2] - true_m) <= rel * true_m]
     return min(runs, key=lambda p: abs(p[2] - true_m)) if runs else None
+
+
+def detect_ir_slot(ir, index, wait_s=1.5):
+    """The SDK gives 4 slots, one per sensor id set in the RoboMaster app; the slots without a sensor stay 0.
+    Returns `index` if it gives valid readings, else the slot that does (with a message), else `index` with a
+    warning (no sensor answers: cable, sensor id in the app)."""
+    time.sleep(wait_s)
+    fresh = [v for t, v in list(ir.samples) if t > time.time() - wait_s]
+    share = [sum(1 for v in fresh if k < len(v) and ir.valid(v[k])) / max(1, len(fresh)) for k in range(4)]
+    raw = [round(float(np.median([v[k] for v in fresh])) * 1000) if fresh else None for k in range(4)]
+    print(f"IR slots (median mm): {raw}, valid share {[round(x, 2) for x in share]}", flush=True)
+    if share[index] >= 0.5:
+        return index
+    best = int(np.argmax(share))
+    if share[best] >= 0.5:
+        print(f"IR: slot {index} gives nothing, slot {best} does: using slot {best}", flush=True)
+        return best
+    print(f"WARNING: no IR slot gives valid readings ({len(fresh)} messages): check the sensor cable and its id "
+          f"in the RoboMaster app", flush=True)
+    return index
+
+
+def calibration_box(rig, body, boxes):
+    """The box to calibrate the aim on: 0.6-2.5 m away, no other box within 20 cm of its distance (so its plateau
+    is its own), the nearest such; else the nearest box."""
+    d = {b["id"]: math.hypot(b["x"] - body[0], b["y"] - body[1]) for b in boxes}
+    ok = [b for b in boxes if 0.6 <= d[b["id"]] <= 2.5
+          and all(abs(d[b["id"]] - d[o["id"]]) > 0.2 for o in boxes if o["id"] != b["id"])]
+    pool = ok or boxes
+    return min(pool, key=lambda b: d[b["id"]]) if pool else None
+
+
+def estimate_offset(rig, coarse=(90.0, 4.0), fine=(8.0, 1.0), samples=4, log=print):
+    """Measures the gimbal aiming offset with the IR: a coarse yaw sweep around a box (+-coarse[0] deg) finds where
+    the IR reads the box, a fine one (+-fine[0] deg) around that finds the centre of its plateau. Sets it on the rig
+    (rig.yaw_off) and returns it [deg], or None (no box, no plateau: the offset is left as it was)."""
+    body, boxes = rig.body_pose(), rig.boxes()
+    b = calibration_box(rig, body, boxes) if body is not None else None
+    if b is None:
+        log("aim calibration: no robot pose or no box")
+        return None
+    old = math.degrees(rig.yaw_off)
+    centre = None
+    for span, step, min_steps in ((coarse[0], coarse[1], 2), (fine[0], fine[1], 3)):
+        body = rig.body_pose() or body
+        yaw0, pitch0 = aim_angles(body, (b["x"], b["y"]), rig.mount)
+        mid = yaw0 if centre is None else math.radians(centre)
+        rows = []
+        for s in np.arange(-span, span + 1e-6, step):
+            if STOP.is_set():
+                return None
+            rig.gimbal.point(wrap_pi(mid + math.radians(s)), pitch0)
+            r = rig.sample(samples)
+            r.update(rig.target_truth(r, b))
+            rows.append(r)
+        true = float(np.median([r["target_slant_m"] for r in rows if r.get("target_slant_m") is not None] or [0]))
+        p = target_plateau([r for r in rows if r.get("gimbal_yaw_deg") is not None], true, min_steps=min_steps)
+        if p is None:
+            log(f"aim calibration on box {b['id']} ({true:.2f} m): the IR never reads it within +-{span:.0f} deg; "
+                f"offset left at {old:+.1f} deg")
+            return None
+        centre = 0.5 * (p[0] + p[1])
+    shift = centre - math.degrees(yaw0)          # where the box really is, minus where the geometry puts it
+    rig.yaw_off = math.radians(old - shift)
+    log(f"aim calibration on box {b['id']} ({true:.2f} m): the IR reads it at gimbal {centre:+.1f} deg, the geometry "
+        f"put it at {math.degrees(yaw0):+.1f} deg -> aiming offset {old - shift:+.1f} deg (was {old:+.1f})")
+    return old - shift
 
 
 def nearest_box(rig, prefer=None):

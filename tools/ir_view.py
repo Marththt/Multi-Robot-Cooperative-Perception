@@ -105,8 +105,11 @@ def draw(ax, rows, now, window_s, truth, demo, arena):
             ax.plot([o[0], o[0] + 0.5 * math.cos(o[2])], [o[1], o[1] + 0.5 * math.sin(o[2])], color=colour[q], lw=0.8)
             ax.annotate(q, (x, y - 0.22), ha="center", fontsize=9, color=colour[q], weight="bold")
         med = f"{np.median(errs) * 100:+.1f} cm" if errs else "-"
+        info = ""
+        if last is not None and last.get("yaw_offset_deg") is not None:
+            info = f" (IR slot {last.get('ir_slot')}, aim offset {last['yaw_offset_deg']:+.1f} deg)"
         lines.append(f"{q}: {len(mine)} readings, {sum(1 for r in mine if not r.get('detections'))} invalid, "
-                     f"median range error {med}")
+                     f"median range error {med}{info}")
     # fusion
     title = f"last {window_s:.0f} s"
     if demo:

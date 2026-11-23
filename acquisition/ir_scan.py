@@ -13,6 +13,10 @@ demo/live.py pools the detections of the last --window-s seconds of every robot,
 state, so it must be started with a window longer than one sweep (a few seconds per box) and with a sensor
 calibration that does not correct the IR ranges (config/sensor_calib_ir.json): see acquisition/ir_live_robots.py.
 
+At start the robot finds the slot of its IR among the 4 of the SDK and measures its own gimbal aiming offset: a yaw
+sweep around one box tells where the IR really reads it (acquisition/ir_live.estimate_offset). The offset is not
+a constant of the robot: it changes with how the robot was turned after being switched on.
+
 With --turns (as acquisition/ir_live_robots.py starts it) the robots take turns, one box each: the IR cannot be
 switched off from the SDK, so while another robot ranges, the gimbal points the beam upwards (--park-up-deg) and
 no two beams meet on a box. Every state is also appended to <live dir>/log/<robot>.jsonl (tools/ir_view.py).
@@ -30,7 +34,7 @@ import os
 import signal
 import time
 
-from acquisition.ir_live import STOP, Rig, make_parser, resolve
+from acquisition.ir_live import STOP, Rig, estimate_offset, make_parser, resolve
 from acquisition.ir_ranging import aim_angles
 from demo.methods import read_json, write_json
 from vf.control.goto import wrap_pi
@@ -112,6 +116,8 @@ def range_box(rig, a, b, body):
     st = state(a, pose, dets, dict(
         aimed_box=b["id"], ir_raw_m=r.get("ir_raw_m"), ir_slant_m=r["ir_m"], ir_hit_height_m=r.get("ir_hit_height_m"),
         ir_valid_n=r["ir_n"], expected_box=r.get("exp_box"), true_horiz_m=truth.get("target_horiz_m"),
+        ir_slots_mm=[r.get(f"raw{k}_mm") for k in range(4)], ir_slot=rig.mount.ir_index,
+        yaw_offset_deg=math.degrees(rig.yaw_off),
         gimbal=[r.get("gimbal_yaw_deg"), r.get("gimbal_pitch_deg")]))
     if a.verbose:
         err = None if not dets or truth.get("target_horiz_m") is None else dets[0]["distance"] - truth["target_horiz_m"]
@@ -153,6 +159,8 @@ def main():
     ap.add_argument("--max-range", type=float, default=3.5, help="only boxes closer than this [m]")
     ap.add_argument("--stop-file", default="", help="the scan stops when this file exists")
     ap.add_argument("--verbose", action="store_true", help="one line per box")
+    ap.add_argument("--no-calibrate", action="store_true",
+                    help="skip the aim calibration at start (a yaw sweep of the gimbal around one box, about 40 s)")
     ap.add_argument("--turns", action="store_true",
                     help="range only when <live dir>/turn.json gives this robot the turn (acquisition/ir_live_robots.py)")
     ap.add_argument("--park-up-deg", type=float, default=20.0,
@@ -163,6 +171,8 @@ def main():
     os.makedirs(os.path.dirname(a.state_out) or ".", exist_ok=True)
     signal.signal(signal.SIGINT, lambda *_: STOP.set())
     rig = Rig(a)
+    if not a.no_calibrate:
+        estimate_offset(rig)
     print(CONNECTED_MSG, flush=True)
     try:
         scan(rig, a)

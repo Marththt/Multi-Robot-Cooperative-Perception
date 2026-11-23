@@ -35,7 +35,7 @@ import sys
 import threading
 import time
 
-CONNECT_TIMEOUT_S = 60.0
+CONNECT_TIMEOUT_S = 180.0         # connection + IR slot + aim calibration (a yaw sweep, about 40 s)
 
 
 def pump(proc, tag, connected):
