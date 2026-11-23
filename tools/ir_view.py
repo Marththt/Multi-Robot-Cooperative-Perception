@@ -10,10 +10,16 @@ if the demo page runs, from its results (http://localhost:8000/state):
   dots             those points: what each robot reports to the fusion
   red +            boxes found by MHT;  purple x: boxes found by the graph network (model A)
   table            per robot: readings in the window, median error of the range against the box it aimed at
+  --freespace      also the free space of the beams (vf/fusion/freespace.py), computed here on the log of the window:
+                   blue/red background = log-odds occupancy (blue: beams went through), thin grey lines = the
+                   beams of the gimbal fans (acquisition/ir_scan.py --fan), orange x = detections the free space
+                   drops, red circle / purple square = MHT / graph network on what is left (pre+post of
+                   tools/ir_freespace.py), next to the results of the demo page (as it runs now)
 
     python -m tools.ir_view --live-dir data/live_ir/                    # window that refreshes every second
     python -m tools.ir_view --live-dir data/live_ir/ --png view.png    # one picture and exit
     python -m tools.ir_view --live-dir data/live_ir/ --png view.png --at -30   # as it was 30 s before the end of the log
+    python -m tools.ir_view --live-dir data/live_ir/ --window-s 60 --freespace
 """
 
 import argparse
@@ -60,7 +66,23 @@ def demo_results(url):
         return None
 
 
-def draw(ax, rows, now, window_s, truth, demo, arena):
+def free_space(fusion, recent, boxes):
+    """MHT / graph network with the free space of the beams (tools/ir_freespace.variants) on the window."""
+    from tools.ir_freespace import variants
+    if not recent or not boxes:
+        return None
+    states = {}
+    for r in recent:
+        states.setdefault(r["robot_id"], []).append(r)
+    try:
+        res, info = variants(fusion, states, [[b["x"], b["y"]] for b in boxes])
+    except Exception as e:
+        print(f"free space: {e}")
+        return None
+    return dict(res=res, rays=info["rays"], dropped=info["dropped"])
+
+
+def draw(ax, rows, now, window_s, truth, demo, arena, fusion=None):
     from matplotlib.patches import Circle, Polygon
     ax.clear()
     ax.set_aspect("equal")
@@ -68,11 +90,26 @@ def draw(ax, rows, now, window_s, truth, demo, arena):
     if arena:
         x0, x1, y0, y1 = arena
         ax.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], color="0.6", lw=1)
-    recent = [r for r in rows if now - window_s <= r["t"] <= now]
+    recent_all = [r for r in rows if now - window_s <= r["t"] <= now]
+    fans = [r for r in recent_all if r.get("kind") == "fan"]
+    recent = [r for r in recent_all if r.get("kind") != "fan"]
     robots = sorted({r["robot_id"] for r in rows})
     colour = {q: COLOURS[k % len(COLOURS)] for k, q in enumerate(robots)}
     # true boxes: from boxes.json (live) or from the last log row (replay)
     boxes = truth if truth is not None else next((r.get("boxes") for r in reversed(recent) if r.get("boxes")), []) or []
+    fsr = free_space(fusion, recent_all, boxes) if fusion is not None else None
+    if fsr is not None:
+        from vf.fusion import freespace as fs
+        if arena:
+            g, ext = fs.occupancy_grid(fsr["rays"], arena)
+            lim = max(1.0, float(np.abs(g).max()))
+            ax.imshow(g, origin="lower", extent=ext, cmap="RdBu_r", vmin=-lim, vmax=lim, alpha=0.6, zorder=0)
+        for r in fans:
+            ray = fs.ray_from_state(r)
+            if ray is not None:
+                ax.plot([ray.o[0], ray.end[0]], [ray.o[1], ray.end[1]], color="0.5", lw=0.4, alpha=0.5)
+        for d in fsr["dropped"]:
+            ax.plot(*d["position"], "x", color="orange", ms=10, mew=2.5)
     for b in boxes:
         ax.add_patch(Circle((b["x"], b["y"]), BOX_R, fill=False, color="0.4", lw=1.5))
         ax.annotate(str(b.get("id", b.get("rb_id", ""))), (b["x"], b["y"]), ha="center", va="center", fontsize=8,
@@ -112,6 +149,17 @@ def draw(ax, rows, now, window_s, truth, demo, arena):
                      f"median range error {med}{info}")
     # fusion
     title = f"last {window_s:.0f} s"
+    if fsr is not None:
+        from demo.methods import judge
+        tb = [[b["x"], b["y"]] for b in boxes]
+        for key, mk, col, lab in (("mht", "o", "red", "MHT+free space"), ("gnn", "s", "purple", "GNN+free space")):
+            e = np.array(fsr["res"]["pre+post"].get(key, [])).reshape(-1, 2)
+            if key not in fsr["res"]["pre+post"]:
+                continue
+            v = judge(e.tolist(), tb)["verdict"]
+            ax.plot(e[:, 0], e[:, 1], mk, mfc="none", color=col, ms=16, mew=1.8, label=f"{lab}: {v}")
+            title += f" | {lab} {len(e)}"
+        title += f" | {len(fans)} fan beams, {len(fsr['dropped'])} detections dropped"
     if demo:
         res = demo.get("results", {})
         for key, mk, col, lab in (("mht_sensor", "+", "red", "MHT"), ("gnn", "x", "purple", "GNN")):
@@ -123,9 +171,10 @@ def draw(ax, rows, now, window_s, truth, demo, arena):
                 else:
                     ax.plot([], [], mk, color=col, label=f"{lab}: no box")
                 title += f" | {lab} {len(bx)} box(es), {r.get('verdict')}"
-        ax.legend(loc="upper right", fontsize=8)
     else:
-        title += " | demo page not reachable: no fusion shown"
+        title += " | demo page not reachable"
+    if demo or fsr is not None:
+        ax.legend(loc="upper right", fontsize=8)
     ax.set_title(title, fontsize=10)
     ax.text(0.01, 0.01, "\n".join(lines), transform=ax.transAxes, fontsize=8, va="bottom",
             bbox=dict(facecolor="white", alpha=0.8, edgecolor="0.8"))
@@ -145,6 +194,11 @@ def main():
     ap.add_argument("--window-s", type=float, default=20.0, help="readings of the last seconds")
     ap.add_argument("--regions", default="config/optitrack_regions.json")
     ap.add_argument("--png", default=None, help="write one picture here and exit")
+    ap.add_argument("--freespace", action="store_true",
+                    help="also the free space of the beams and the fusion with it (computed here, on the log)")
+    ap.add_argument("--sensor-calib", default="config/sensor_calib_ir.json")
+    ap.add_argument("--sensor-model", default="config/sensor_model_ir.json")
+    ap.add_argument("--gnn", default="results/plan_v2/M4/gnn/detection_full_full_h2", help="'' = no graph network")
     ap.add_argument("--at", type=float, default=None,
                     help="with --png: time of the picture, seconds from the start of the log (negative: from its end)")
     a = ap.parse_args()
@@ -159,6 +213,12 @@ def main():
     except Exception:
         pass
     fig, ax = plt.subplots(figsize=(8, 8))
+    fusion = None
+    if a.freespace:
+        import types
+        from tools.ir_freespace import Fusion
+        fusion = Fusion(types.SimpleNamespace(sensor_calib=a.sensor_calib, sensor_model=a.sensor_model,
+                                              regions=a.regions, gnn=a.gnn, no_gnn=not a.gnn))
 
     def frame(_=None):
         rows = read_log(a.live_dir)
@@ -170,7 +230,7 @@ def main():
             b = read_json(os.path.join(a.live_dir, "boxes.json"))
             truth = None if not b else [dict(id=x.get("rb_id"), x=x["x"], y=x["y"]) for x in b.get("boxes", [])]
             demo = demo_results(a.demo)
-        draw(ax, rows, now, a.window_s, truth, demo, arena)
+        draw(ax, rows, now, a.window_s, truth, demo, arena, fusion)
 
     if a.png:
         frame()

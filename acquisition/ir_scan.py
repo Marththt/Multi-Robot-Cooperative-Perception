@@ -25,6 +25,13 @@ Only the boxes the camera would see are aimed at: a box whose centre is hidden b
 (line of sight from the robot, OptiTrack positions) is skipped, as a real camera would not report it; --aim-hidden
 aims at them too (the beam then reads the box in front, or slips past its edge).
 
+With --fan, once per sweep the robot also uses one turn for a fan of the gimbal: the beam goes
+slowly (--fan-speed-dps) from -fan-deg to +fan-deg around the chassis heading (what the camera sees), pitched down
+--fan-pitch-deg, and every IR sample on the way (20 per second) is logged as a beam with no detection
+(kind "fan"): free space for vf/fusion/freespace.py (tools/ir_view.py --freespace, tools/ir_freespace.py replay).
+The fan is not sent to demo/live.py. The angle of a sample is the gimbal angle read when the sample arrives (at
+10 deg/s, 50 ms of delay are 0.5 deg).
+
 The aiming uses the OptiTrack positions of the boxes (the camera plays no part yet): the robot ranges every box,
 including one hidden behind another (then the IR reads the nearer one). A reading that is not valid writes a state
 with no detection.
@@ -39,7 +46,7 @@ import signal
 import time
 
 from acquisition.ir_live import STOP, Rig, estimate_offset, make_parser, resolve
-from acquisition.ir_ranging import aim_angles
+from acquisition.ir_ranging import aim_angles, ir_pose
 from demo.methods import read_json, write_json
 from vf.control.goto import wrap_pi
 
@@ -165,16 +172,68 @@ def range_box(rig, a, b, body):
     return st
 
 
+def log_only(a, row):
+    os.makedirs(a.log_dir, exist_ok=True)
+    with open(os.path.join(a.log_dir, f"{a.robot_id}.jsonl"), "a") as f:
+        f.write(json.dumps(row) + "\n")
+
+
+def fan(rig, a):
+    """One fan of the gimbal: every IR sample on the way logged as a free-space beam. Returns the samples logged."""
+    k, q = getattr(rig.ir, "k", 1.0), getattr(rig.ir, "q", 0.0)
+    pitch = math.radians(a.fan_pitch_deg)
+    y0, y1 = math.radians(-a.fan_deg), math.radians(a.fan_deg)
+    if a.fan_dir < 0:
+        y0, y1 = y1, y0
+    a.fan_dir = -a.fan_dir                                    # the next fan goes the other way
+    rig.point(y0, pitch)
+    rig.gimbal.start_move(y1, pitch, a.fan_speed_dps)
+    t_end = time.time() + abs(y1 - y0) / math.radians(a.fan_speed_dps) + 2.0
+    last_t, n, boxes = None, 0, rig.boxes()
+    while time.time() < t_end and not STOP.is_set():
+        time.sleep(0.5 / max(a.ir_freq, 1))
+        got = rig.ir.latest()
+        if not got or got[0] == last_t:
+            continue
+        last_t, vals = got
+        body, ang = rig.body_pose(), rig.gimbal.angles()
+        if body is None or ang is None:
+            continue
+        o, head, p = ir_pose(body, ang[0], ang[1], rig.mount)
+        raw = vals[rig.mount.ir_index] if rig.mount.ir_index < len(vals) else None
+        ok = raw is not None and rig.ir.valid(raw)
+        slant = (raw - q) / k if ok else None
+        log_only(a, dict(robot_id=a.robot_id, t=last_t, kind="fan", pose=[float(o[0]), float(o[1]), float(head)],
+                         detections=[], source="ir", ir_raw_m=raw if ok else None, ir_slant_m=slant,
+                         ir_hit_height_m=None if slant is None else rig.mount.ir_height_m - slant * math.sin(p),
+                         gimbal=[math.degrees(ang[0]), math.degrees(p)], body=[float(v) for v in body],
+                         boxes=boxes))
+        n += 1
+        if abs(ang[0] - y1) < math.radians(0.5):
+            break
+    return n
+
+
 def scan(rig, a):
     turns = Turns(a)
     n_sweep, queue, body = 0, [], None
+    fan_due = False
     park(rig, a)
     while not STOP.is_set() and not os.path.exists(a.stop_file):
         if not turns.wait():
             break
+        if fan_due:
+            n = fan(rig, a)
+            if a.verbose:
+                print(f"fan: {n} IR samples", flush=True)
+            fan_due = False
+            park(rig, a)
+            turns.done()
+            continue
         if not queue:
             body, queue = sweep_order(rig, a, n_sweep)
             n_sweep += 1
+            fan_due = a.fan and n_sweep > 1
         if body is None or not queue:
             if body is not None:
                 ang = rig.gimbal.angles() or (0.0, 0.0)
@@ -208,11 +267,19 @@ def main():
                     help="skip the aim calibration at start (a yaw sweep of the gimbal around one box, about 40 s)")
     ap.add_argument("--turns", action="store_true",
                     help="range only when <live dir>/turn.json gives this robot the turn (acquisition/ir_live_robots.py)")
+    ap.add_argument("--fan", action="store_true", help="once per sweep, a fan of the gimbal for the free space")
+    ap.add_argument("--fan-deg", type=float, default=40.0, help="the fan covers +- this around the chassis heading")
+    ap.add_argument("--fan-pitch-deg", type=float, default=4.0,
+                    help="beam pitched down this much in the fan (the IR is at the height of the box tops; the beam "
+                         "meets the floor at 0.30 / tan(pitch): 4.3 m at 4 deg)")
+    ap.add_argument("--fan-speed-dps", type=float, default=10.0,
+                    help="yaw speed of the fan [deg/s]: 10 deg/s and 20 IR samples/s = one beam every 0.5 deg")
     ap.add_argument("--park-up-deg", type=float, default=20.0,
                     help="with --turns: between its turns the gimbal points the beam this much upwards")
     a = resolve(ap.parse_args(), ap)
     a.stop_file = a.stop_file or os.path.join(os.path.dirname(a.state_out) or ".", "STOP")
     a.log_dir = os.path.join(os.path.dirname(a.state_out) or ".", "log")
+    a.fan_dir = 1
     os.makedirs(os.path.dirname(a.state_out) or ".", exist_ok=True)
     signal.signal(signal.SIGINT, lambda *_: STOP.set())
     rig = Rig(a)

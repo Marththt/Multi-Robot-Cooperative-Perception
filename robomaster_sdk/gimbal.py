@@ -104,6 +104,13 @@ class Gimbal:
                         yaw_speed=speed_deg_s / 3).wait_for_completed(timeout_s)
         return res
 
+    def start_move(self, yaw, pitch, speed_deg_s=10.0):
+        """Starts a move to (yaw, pitch) [rad, this module's convention] at speed_deg_s and returns at once (the
+        angles are read back with angles() while it moves: a sweep that samples on the way)."""
+        sy = max(YAW_LIMITS_DEG[0], min(YAW_LIMITS_DEG[1], self.yaw_sign * math.degrees(yaw)))
+        sp = max(PITCH_LIMITS_DEG[0], min(PITCH_LIMITS_DEG[1], self.pitch_sign * math.degrees(pitch)))
+        return self.g.moveto(pitch=sp, yaw=sy, pitch_speed=speed_deg_s, yaw_speed=speed_deg_s)
+
     def recenter(self, timeout_s=4.0):
         self.g.recenter().wait_for_completed(timeout_s)
 

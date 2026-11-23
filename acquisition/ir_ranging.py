@@ -259,9 +259,22 @@ class FakeGimbal:
         return self
 
     def angles(self):
+        mv = getattr(self, "moving", None)
+        if mv is not None:                                   # start_move: constant speed towards the target
+            t0, y0, y1, w = mv
+            step = w * (time.time() - t0)
+            if step >= abs(y1 - y0):
+                self.yaw, self.moving = y1, None
+            else:
+                self.yaw = y0 + math.copysign(step, y1 - y0)
         return self.yaw, self.pitch
 
+    def start_move(self, yaw, pitch, speed_deg_s=10.0):
+        self.pitch = pitch
+        self.moving = (time.time(), self.yaw, yaw, math.radians(speed_deg_s))
+
     def point(self, yaw, pitch, **kw):
+        self.moving = None
         self.yaw = yaw
         self.pitch = max(math.radians(-30.0), min(math.radians(25.0), pitch))
         return 0.0, 0.0

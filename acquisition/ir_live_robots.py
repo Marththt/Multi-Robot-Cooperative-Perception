@@ -22,7 +22,9 @@ associated and come out twice). Model C needs the frames and is left out (--no-i
 (acquisition/ir_live.py YAW_OFFSET_DEG, IR_FIT); a robot not in those tables gets the values measured on G11 (same
 camera and IR model). Its gimbal aiming offset also depends on how its rigid body was defined in Motive: if its
 aim is off, measure it with ir_live sweep and add it to YAW_OFFSET_DEG. Other options (--ir-index, --ir-samples, --max-range, ...) are passed to
-every robot. Ctrl+C stops every robot (the gimbals are re-centred).
+every robot. Ctrl+C stops every robot (the gimbals are re-centred). --fan: once per sweep every robot uses a turn
+for a fan of its gimbal (+-40 deg around its heading, about 11 s), logged as free space (tools/ir_view.py
+--freespace shows the MHT and the graph network with and without it).
 
 Without hardware: --sim --sim-layout L4 --robot S1:0:-1.6,-0.4,-20 --robot S2:0:0.6,-1.8,110 (ID:_:X,Y,YAW_DEG):
 fake gimbals and IR on the boxes of the layout, boxes.json written from it.
@@ -131,6 +133,12 @@ def main():
     ap.add_argument("--optitrack-local", default="127.0.0.1")
     ap.add_argument("--no-turns", action="store_true",
                     help="every robot ranges when it likes (beams can meet on a box); default: one robot at a time")
+    ap.add_argument("--fan", action="store_true",
+                    help="once per sweep every robot uses a turn for a fan of the gimbal (free space, "
+                         "acquisition/ir_scan.py --fan); see tools/ir_view.py --freespace")
+    ap.add_argument("--fan-deg", type=float, default=40.0)
+    ap.add_argument("--fan-pitch-deg", type=float, default=4.0)
+    ap.add_argument("--fan-speed-dps", type=float, default=10.0)
     ap.add_argument("--sim", action="store_true")
     ap.add_argument("--sim-layout", default="L4")
     ap.add_argument("--ground-truth", default="config/ground_truth_positions.json")
@@ -162,6 +170,9 @@ def main():
                "--state-out", os.path.join(a.out, f"{r['robot_id']}.json"), "--stop-file", stop_file]
         if not a.no_turns:
             cmd += ["--turns"]
+        if a.fan:
+            cmd += ["--fan", "--fan-deg", str(a.fan_deg), "--fan-pitch-deg", str(a.fan_pitch_deg),
+                    "--fan-speed-dps", str(a.fan_speed_dps)]
         if a.sim:
             x, y, yaw = (r["sim_pose"] or "-1.6,-0.4,0").split(",")
             cmd += ["--sim", "--sim-layout", a.sim_layout, "--ground-truth", a.ground_truth,
@@ -184,13 +195,15 @@ def main():
         if not connected.is_set() and not stop.is_set():
             print(f"{r['robot_id']}: not running after {CONNECT_TIMEOUT_S:.0f} s, starting the next robot", flush=True)
         time.sleep(1.0)
-    window = 20 if a.no_turns else max(20, int(2 * 1.5 * len(robots) * 4))
+    fan_s = 2 * a.fan_deg / a.fan_speed_dps + 3.0 if a.fan else 0.0       # one fan: the sweep + going to its start
+    window = 20 if a.no_turns else max(20, int(2 * (1.5 * len(robots) * 4 + fan_s * len(robots))))
     if not a.no_turns:
-        threading.Thread(target=coordinator, args=(a, robots, stop), daemon=True).start()
+        threading.Thread(target=coordinator, args=(a, robots, stop, 8.0 + fan_s), daemon=True).start()
     print(f"all robots started: now run\n  python -m demo.live --live-dir {a.out} --sensor-calib "
           f"config/sensor_calib_ir.json --sensor-model config/sensor_model_ir.json --window-s {window} "
           f"--stale-s {window} --no-images\n"
-          f"  python -m tools.ir_view --live-dir {a.out}\n(Ctrl+C here to stop)", flush=True)
+          f"  python -m tools.ir_view --live-dir {a.out} --window-s {window}" + (" --freespace" if a.fan else "")
+          + "\n(Ctrl+C here to stop)", flush=True)
     while not stop.is_set() and any(p.poll() is None for p in procs):
         time.sleep(0.3)
     stop.set()
