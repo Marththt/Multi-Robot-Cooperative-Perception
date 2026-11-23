@@ -1,0 +1,78 @@
+{
+  "mht": {
+    "prior_density": 0.2,
+    "H": 100
+  },
+  "yolo": {
+    "plan": {
+      "marker": {},
+      "inject": {
+        "min_frac": 0.8,
+        "tol_sym": 0.12
+      },
+      "cannot_link": {
+        "min_frac": 0.8,
+        "cl_robots": 2
+      },
+      "full": {
+        "min_frac": 0.8,
+        "tol_sym": 0.12,
+        "cl_robots": 2,
+        "same_robot": false
+      }
+    },
+    "scale": {
+      "marker": {},
+      "inject": {
+        "min_frac": 0.8,
+        "tol_sym": 0.12
+      },
+      "cannot_link": {
+        "min_frac": 0.8,
+        "cl_robots": 2
+      },
+      "full": {
+        "min_frac": 0.8,
+        "tol_sym": 0.12,
+        "cl_robots": 2,
+        "same_robot": true
+      }
+    }
+  },
+  "fixed": {
+    "min_pixels": 140,
+    "border_margin": 8,
+    "clean_gap_m": 0.16,
+    "hidden_gap_m": 0.2,
+    "group_rad": 0.05,
+    "min_frac": 0.8,
+    "marker_rad": 0.12,
+    "marker_rad_clean": 0.11,
+    "marker_range_m": 0.25,
+    "est_perp_m": 0.1,
+    "est_range_m": 0.3,
+    "min_sin": 0.2,
+    "t_min_m": 0.35,
+    "t_max_m": 3.0,
+    "clear_m": 0.22,
+    "tol_sym": 0.18,
+    "tol_asym_min": 0.14,
+    "tol_asym_max": 0.38,
+    "support_perp_m": 0.08,
+    "support_range_m": 0.48,
+    "node_view": 0.1,
+    "cl_ray_perp_m": 0.08,
+    "cl_ray_diff": 0.12,
+    "cl_robots": 2,
+    "cl_min_sep_m": 0.18,
+    "cl_p": 0.3,
+    "same_robot_rad": 0.15,
+    "same_robot_m": 0.2,
+    "inject": true,
+    "cannot_link": true,
+    "same_robot": false
+  },
+  "tune_set": "data/scale/tune",
+  "readings": 3,
+  "no_markers": false
+}

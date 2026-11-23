@@ -1,0 +1,347 @@
+GRID started 2026-11-23 10:30:20.08
+36 set(s), 3600 scenes: 36 parts on 36 process(es)
+  data/scale/G_n2_b2\part00
+  data/scale/G_n2_b4\part00
+  data/scale/G_n4_b2\part00
+  data/scale/G_n2_b8\part00
+  data/scale/G_n4_b4\part00
+  data/scale/G_n2_b16\part00
+  data/scale/G_n4_b8\part00
+  data/scale/G_n4_b16\part00
+  data/scale/G_n2_b32\part00
+  data/scale/G_n8_b2\part00
+  data/scale/G_n2_b50\part00
+  data/scale/G_n8_b8\part00
+  data/scale/G_n16_b2\part00
+  data/scale/G_n4_b32\part00
+  data/scale/G_n8_b16\part00
+  data/scale/G_n16_b4\part00
+  data/scale/G_n32_b2\part00
+  data/scale/G_n4_b50\part00
+  data/scale/G_n8_b4\part00
+  data/scale/G_n8_b32\part00
+  data/scale/G_n32_b4\part00
+  data/scale/G_n16_b16\part00
+  data/scale/G_n50_b2\part00
+  data/scale/G_n8_b50\part00
+  data/scale/G_n50_b4\part00
+  data/scale/G_n16_b8\part00
+  data/scale/G_n32_b8\part00
+  data/scale/G_n16_b32\part00
+  data/scale/G_n50_b8\part00
+  data/scale/G_n16_b50\part00
+  data/scale/G_n32_b16\part00
+  data/scale/G_n50_b16\part00
+  data/scale/G_n32_b32\part00
+  data/scale/G_n32_b50\part00
+  data/scale/G_n50_b32\part00
+  data/scale/G_n50_b50\part00
+  G_n2_b2: 100 scenes
+  G_n2_b4: 100 scenes
+  G_n2_b8: 100 scenes
+  G_n2_b16: 100 scenes
+  G_n2_b32: 100 scenes
+  G_n2_b50: 100 scenes
+  G_n4_b2: 100 scenes
+  G_n4_b4: 100 scenes
+  G_n4_b8: 100 scenes
+  G_n4_b16: 100 scenes
+  G_n4_b32: 100 scenes
+  G_n4_b50: 100 scenes
+  G_n8_b2: 100 scenes
+  G_n8_b4: 100 scenes
+  G_n8_b8: 100 scenes
+  G_n8_b16: 100 scenes
+  G_n8_b32: 100 scenes
+  G_n8_b50: 100 scenes
+  G_n16_b2: 100 scenes
+  G_n16_b4: 100 scenes
+  G_n16_b8: 100 scenes
+  G_n16_b16: 100 scenes
+  G_n16_b32: 100 scenes
+  G_n16_b50: 100 scenes
+  G_n32_b2: 100 scenes
+  G_n32_b4: 100 scenes
+  G_n32_b8: 100 scenes
+  G_n32_b16: 100 scenes
+  G_n32_b32: 100 scenes
+  G_n32_b50: 100 scenes
+  G_n50_b2: 100 scenes
+  G_n50_b4: 100 scenes
+  G_n50_b8: 100 scenes
+  G_n50_b16: 100 scenes
+  G_n50_b32: 100 scenes
+  G_n50_b50: 100 scenes
+seeds: results/scale/seeds.csv
+scenes done 2026-11-23 10:31:05.46
+G_n16_b16: 100 scenes, 0 already segmented
+  G_n16_b16: 20/100 scenes
+  G_n16_b16: 40/100 scenes
+  G_n16_b16: 60/100 scenes
+  G_n16_b16: 80/100 scenes
+  G_n16_b16: 100/100 scenes
+G_n16_b2: 100 scenes, 0 already segmented
+  G_n16_b2: 20/100 scenes
+  G_n16_b2: 40/100 scenes
+  G_n16_b2: 60/100 scenes
+  G_n16_b2: 80/100 scenes
+  G_n16_b2: 100/100 scenes
+G_n16_b32: 100 scenes, 0 already segmented
+  G_n16_b32: 20/100 scenes
+  G_n16_b32: 40/100 scenes
+  G_n16_b32: 60/100 scenes
+  G_n16_b32: 80/100 scenes
+  G_n16_b32: 100/100 scenes
+G_n16_b4: 100 scenes, 0 already segmented
+  G_n16_b4: 20/100 scenes
+  G_n16_b4: 40/100 scenes
+  G_n16_b4: 60/100 scenes
+  G_n16_b4: 80/100 scenes
+  G_n16_b4: 100/100 scenes
+G_n16_b50: 100 scenes, 0 already segmented
+  G_n16_b50: 20/100 scenes
+  G_n16_b50: 40/100 scenes
+  G_n16_b50: 60/100 scenes
+  G_n16_b50: 80/100 scenes
+  G_n16_b50: 100/100 scenes
+G_n16_b8: 100 scenes, 0 already segmented
+  G_n16_b8: 20/100 scenes
+  G_n16_b8: 40/100 scenes
+  G_n16_b8: 60/100 scenes
+  G_n16_b8: 80/100 scenes
+  G_n16_b8: 100/100 scenes
+G_n2_b16: 100 scenes, 0 already segmented
+  G_n2_b16: 20/100 scenes
+  G_n2_b16: 40/100 scenes
+  G_n2_b16: 60/100 scenes
+  G_n2_b16: 80/100 scenes
+  G_n2_b16: 100/100 scenes
+G_n2_b2: 100 scenes, 0 already segmented
+  G_n2_b2: 20/100 scenes
+  G_n2_b2: 40/100 scenes
+  G_n2_b2: 60/100 scenes
+  G_n2_b2: 80/100 scenes
+  G_n2_b2: 100/100 scenes
+G_n2_b32: 100 scenes, 0 already segmented
+  G_n2_b32: 20/100 scenes
+  G_n2_b32: 40/100 scenes
+  G_n2_b32: 60/100 scenes
+  G_n2_b32: 80/100 scenes
+  G_n2_b32: 100/100 scenes
+G_n2_b4: 100 scenes, 0 already segmented
+  G_n2_b4: 20/100 scenes
+  G_n2_b4: 40/100 scenes
+  G_n2_b4: 60/100 scenes
+  G_n2_b4: 80/100 scenes
+  G_n2_b4: 100/100 scenes
+G_n2_b50: 100 scenes, 0 already segmented
+  G_n2_b50: 20/100 scenes
+  G_n2_b50: 40/100 scenes
+  G_n2_b50: 60/100 scenes
+  G_n2_b50: 80/100 scenes
+  G_n2_b50: 100/100 scenes
+G_n2_b8: 100 scenes, 0 already segmented
+  G_n2_b8: 20/100 scenes
+  G_n2_b8: 40/100 scenes
+  G_n2_b8: 60/100 scenes
+  G_n2_b8: 80/100 scenes
+  G_n2_b8: 100/100 scenes
+G_n32_b16: 100 scenes, 0 already segmented
+  G_n32_b16: 20/100 scenes
+  G_n32_b16: 40/100 scenes
+  G_n32_b16: 60/100 scenes
+  G_n32_b16: 80/100 scenes
+  G_n32_b16: 100/100 scenes
+G_n32_b2: 100 scenes, 0 already segmented
+  G_n32_b2: 20/100 scenes
+  G_n32_b2: 40/100 scenes
+  G_n32_b2: 60/100 scenes
+  G_n32_b2: 80/100 scenes
+  G_n32_b2: 100/100 scenes
+G_n32_b32: 100 scenes, 0 already segmented
+  G_n32_b32: 20/100 scenes
+  G_n32_b32: 40/100 scenes
+  G_n32_b32: 60/100 scenes
+  G_n32_b32: 80/100 scenes
+  G_n32_b32: 100/100 scenes
+G_n32_b4: 100 scenes, 0 already segmented
+  G_n32_b4: 20/100 scenes
+  G_n32_b4: 40/100 scenes
+  G_n32_b4: 60/100 scenes
+  G_n32_b4: 80/100 scenes
+  G_n32_b4: 100/100 scenes
+G_n32_b50: 100 scenes, 0 already segmented
+  G_n32_b50: 20/100 scenes
+  G_n32_b50: 40/100 scenes
+  G_n32_b50: 60/100 scenes
+  G_n32_b50: 80/100 scenes
+  G_n32_b50: 100/100 scenes
+G_n32_b8: 100 scenes, 0 already segmented
+  G_n32_b8: 20/100 scenes
+  G_n32_b8: 40/100 scenes
+  G_n32_b8: 60/100 scenes
+  G_n32_b8: 80/100 scenes
+  G_n32_b8: 100/100 scenes
+G_n4_b16: 100 scenes, 0 already segmented
+  G_n4_b16: 20/100 scenes
+  G_n4_b16: 40/100 scenes
+  G_n4_b16: 60/100 scenes
+  G_n4_b16: 80/100 scenes
+  G_n4_b16: 100/100 scenes
+G_n4_b2: 100 scenes, 0 already segmented
+  G_n4_b2: 20/100 scenes
+  G_n4_b2: 40/100 scenes
+  G_n4_b2: 60/100 scenes
+  G_n4_b2: 80/100 scenes
+  G_n4_b2: 100/100 scenes
+G_n4_b32: 100 scenes, 0 already segmented
+  G_n4_b32: 20/100 scenes
+  G_n4_b32: 40/100 scenes
+  G_n4_b32: 60/100 scenes
+  G_n4_b32: 80/100 scenes
+  G_n4_b32: 100/100 scenes
+G_n4_b4: 100 scenes, 0 already segmented
+  G_n4_b4: 20/100 scenes
+  G_n4_b4: 40/100 scenes
+  G_n4_b4: 60/100 scenes
+  G_n4_b4: 80/100 scenes
+  G_n4_b4: 100/100 scenes
+G_n4_b50: 100 scenes, 0 already segmented
+  G_n4_b50: 20/100 scenes
+  G_n4_b50: 40/100 scenes
+  G_n4_b50: 60/100 scenes
+  G_n4_b50: 80/100 scenes
+  G_n4_b50: 100/100 scenes
+G_n4_b8: 100 scenes, 0 already segmented
+  G_n4_b8: 20/100 scenes
+  G_n4_b8: 40/100 scenes
+  G_n4_b8: 60/100 scenes
+  G_n4_b8: 80/100 scenes
+  G_n4_b8: 100/100 scenes
+G_n50_b16: 100 scenes, 0 already segmented
+  G_n50_b16: 20/100 scenes
+  G_n50_b16: 40/100 scenes
+  G_n50_b16: 60/100 scenes
+  G_n50_b16: 80/100 scenes
+  G_n50_b16: 100/100 scenes
+G_n50_b2: 100 scenes, 0 already segmented
+  G_n50_b2: 20/100 scenes
+  G_n50_b2: 40/100 scenes
+  G_n50_b2: 60/100 scenes
+  G_n50_b2: 80/100 scenes
+  G_n50_b2: 100/100 scenes
+G_n50_b32: 100 scenes, 0 already segmented
+  G_n50_b32: 20/100 scenes
+  G_n50_b32: 40/100 scenes
+  G_n50_b32: 60/100 scenes
+  G_n50_b32: 80/100 scenes
+  G_n50_b32: 100/100 scenes
+G_n50_b4: 100 scenes, 0 already segmented
+  G_n50_b4: 20/100 scenes
+  G_n50_b4: 40/100 scenes
+  G_n50_b4: 60/100 scenes
+  G_n50_b4: 80/100 scenes
+  G_n50_b4: 100/100 scenes
+G_n50_b50: 100 scenes, 0 already segmented
+  G_n50_b50: 20/100 scenes
+  G_n50_b50: 40/100 scenes
+  G_n50_b50: 60/100 scenes
+  G_n50_b50: 80/100 scenes
+  G_n50_b50: 100/100 scenes
+G_n50_b8: 100 scenes, 0 already segmented
+  G_n50_b8: 20/100 scenes
+  G_n50_b8: 40/100 scenes
+  G_n50_b8: 60/100 scenes
+  G_n50_b8: 80/100 scenes
+  G_n50_b8: 100/100 scenes
+G_n8_b16: 100 scenes, 0 already segmented
+  G_n8_b16: 20/100 scenes
+  G_n8_b16: 40/100 scenes
+  G_n8_b16: 60/100 scenes
+  G_n8_b16: 80/100 scenes
+  G_n8_b16: 100/100 scenes
+G_n8_b2: 100 scenes, 0 already segmented
+  G_n8_b2: 20/100 scenes
+  G_n8_b2: 40/100 scenes
+  G_n8_b2: 60/100 scenes
+  G_n8_b2: 80/100 scenes
+  G_n8_b2: 100/100 scenes
+G_n8_b32: 100 scenes, 0 already segmented
+  G_n8_b32: 20/100 scenes
+  G_n8_b32: 40/100 scenes
+  G_n8_b32: 60/100 scenes
+  G_n8_b32: 80/100 scenes
+  G_n8_b32: 100/100 scenes
+G_n8_b4: 100 scenes, 0 already segmented
+  G_n8_b4: 20/100 scenes
+  G_n8_b4: 40/100 scenes
+  G_n8_b4: 60/100 scenes
+  G_n8_b4: 80/100 scenes
+  G_n8_b4: 100/100 scenes
+G_n8_b50: 100 scenes, 0 already segmented
+  G_n8_b50: 20/100 scenes
+  G_n8_b50: 40/100 scenes
+  G_n8_b50: 60/100 scenes
+  G_n8_b50: 80/100 scenes
+  G_n8_b50: 100/100 scenes
+G_n8_b8: 100 scenes, 0 already segmented
+  G_n8_b8: 20/100 scenes
+  G_n8_b8: 40/100 scenes
+  G_n8_b8: 60/100 scenes
+  G_n8_b8: 80/100 scenes
+  G_n8_b8: 100/100 scenes
+overlays: data\yolo_sim_eval\fig_yolo_sim.jpg
+frames done 2026-11-23 13:08:31.60
+tune set data/scale/tune: 300 scenes
+  plan marker       F1 0.833 with {}
+  plan inject       F1 0.825 with {'min_frac': 0.8, 'tol_sym': 0.12}
+  plan cannot_link  F1 0.832 with {'min_frac': 0.8, 'cl_robots': 2}
+  plan full         F1 0.825 with {'min_frac': 0.8, 'tol_sym': 0.12, 'cl_robots': 2, 'same_robot': False}
+  scale marker       F1 0.861 with {}
+  scale inject       F1 0.854 with {'min_frac': 0.8, 'tol_sym': 0.12}
+  scale cannot_link  F1 0.861 with {'min_frac': 0.8, 'cl_robots': 2}
+  scale full         F1 0.853 with {'min_frac': 0.8, 'tol_sym': 0.12, 'cl_robots': 2, 'same_robot': True}
+parameters chosen on the tune set (3211 s)
+G_n2_b2 N  2.0 B  2.0 | MHT  70.0% F1 0.885 | plan marker  47.3% F1 0.732 | plan inject  47.3% F1 0.732 | plan full  47.3% F1 0.732 | scale marker  55.7% F1 0.806 | scale inject  55.7% F1 0.806 | scale full  55.7% F1 0.806
+G_n2_b4 N  2.0 B  4.0 | MHT  39.0% F1 0.860 | plan marker  23.7% F1 0.742 | plan inject  24.3% F1 0.745 | plan full  24.3% F1 0.745 | scale marker  31.7% F1 0.788 | scale inject  32.7% F1 0.790 | scale full  32.7% F1 0.790
+G_n2_b8 N  2.0 B  8.0 | MHT  12.0% F1 0.796 | plan marker   6.7% F1 0.756 | plan inject   6.7% F1 0.762 | plan full   6.7% F1 0.762 | scale marker   8.7% F1 0.778 | scale inject   8.7% F1 0.783 | scale full   8.7% F1 0.783
+G_n4_b2 N  4.0 B  2.0 | MHT  73.0% F1 0.913 | plan marker  64.7% F1 0.868 | plan inject  64.7% F1 0.867 | plan full  64.7% F1 0.867 | scale marker  71.0% F1 0.893 | scale inject  71.0% F1 0.892 | scale full  71.0% F1 0.892
+G_n4_b4 N  4.0 B  4.0 | MHT  53.0% F1 0.914 | plan marker  32.3% F1 0.842 | plan inject  32.3% F1 0.842 | plan full  32.3% F1 0.842 | scale marker  43.0% F1 0.878 | scale inject  43.0% F1 0.878 | scale full  43.0% F1 0.878
+G_n4_b8 N  4.0 B  8.0 | MHT   8.0% F1 0.839 | plan marker   6.7% F1 0.777 | plan inject   6.7% F1 0.782 | plan full   6.7% F1 0.781 | scale marker   6.7% F1 0.797 | scale inject   6.7% F1 0.801 | scale full   6.7% F1 0.801
+G_n8_b2 N  8.0 B  2.0 | MHT  80.0% F1 0.948 | plan marker  92.0% F1 0.975 | plan inject  92.0% F1 0.975 | plan full  92.0% F1 0.975 | scale marker  95.0% F1 0.983 | scale inject  95.0% F1 0.983 | scale full  95.0% F1 0.983
+G_n8_b4 N  8.0 B  4.0 | MHT  44.0% F1 0.893 | plan marker  32.0% F1 0.862 | plan inject  32.3% F1 0.862 | plan full  32.3% F1 0.862 | scale marker  33.7% F1 0.874 | scale inject  34.7% F1 0.875 | scale full  34.7% F1 0.875
+G_n8_b8 N  8.0 B  8.0 | MHT  13.0% F1 0.870 | plan marker   6.3% F1 0.810 | plan inject   6.3% F1 0.810 | plan full   6.3% F1 0.809 | scale marker   7.7% F1 0.822 | scale inject   7.7% F1 0.822 | scale full   7.7% F1 0.821
+G_n16_b2 N 16.0 B  2.0 | MHT  77.0% F1 0.947 | plan marker  93.7% F1 0.982 | plan inject  91.7% F1 0.978 | plan full  91.7% F1 0.978 | scale marker  95.7% F1 0.988 | scale inject  93.7% F1 0.984 | scale full  93.7% F1 0.984
+G_n16_b4 N 16.0 B  4.0 | MHT  57.0% F1 0.929 | plan marker  59.7% F1 0.929 | plan inject  60.7% F1 0.926 | plan full  60.7% F1 0.926 | scale marker  64.0% F1 0.942 | scale inject  65.0% F1 0.937 | scale full  65.0% F1 0.937
+G_n16_b8 N 16.0 B  8.0 | MHT  27.0% F1 0.910 | plan marker  15.3% F1 0.869 | plan inject  15.7% F1 0.869 | plan full  15.7% F1 0.869 | scale marker  18.7% F1 0.888 | scale inject  19.0% F1 0.888 | scale full  19.0% F1 0.888
+G_n2_b16 N  2.0 B 16.0 | MHT   0.0% F1 0.666 | plan marker   0.0% F1 0.611 | plan inject   0.0% F1 0.611 | plan full   0.0% F1 0.611 | scale marker   0.0% F1 0.633 | scale inject   0.0% F1 0.634 | scale full   0.0% F1 0.634
+G_n2_b32 N  2.0 B 32.0 | MHT   0.0% F1 0.623 | plan marker   0.0% F1 0.550 | plan inject   0.0% F1 0.552 | plan full   0.0% F1 0.552 | scale marker   0.0% F1 0.580 | scale inject   0.0% F1 0.582 | scale full   0.0% F1 0.582
+G_n2_b50 N  2.0 B 50.0 | MHT   0.0% F1 0.597 | plan marker   0.0% F1 0.504 | plan inject   0.0% F1 0.505 | plan full   0.0% F1 0.505 | scale marker   0.0% F1 0.547 | scale inject   0.0% F1 0.549 | scale full   0.0% F1 0.549
+G_n32_b2 N 32.0 B  2.0 | MHT  69.0% F1 0.928 | plan marker  93.0% F1 0.984 | plan inject  91.0% F1 0.978 | plan full  91.0% F1 0.978 | scale marker  86.3% F1 0.970 | scale inject  84.3% F1 0.965 | scale full  84.3% F1 0.965
+G_n32_b4 N 32.0 B  4.0 | MHT  61.0% F1 0.940 | plan marker  79.0% F1 0.967 | plan inject  74.0% F1 0.961 | plan full  74.3% F1 0.962 | scale marker  79.3% F1 0.968 | scale inject  75.3% F1 0.963 | scale full  75.3% F1 0.963
+G_n32_b8 N 32.0 B  8.0 | MHT  41.0% F1 0.947 | plan marker  39.7% F1 0.941 | plan inject  34.7% F1 0.928 | plan full  33.7% F1 0.927 | scale marker  54.0% F1 0.959 | scale inject  43.0% F1 0.945 | scale full  42.0% F1 0.944
+G_n4_b16 N  4.0 B 16.0 | MHT   0.0% F1 0.732 | plan marker   0.0% F1 0.676 | plan inject   0.0% F1 0.683 | plan full   0.0% F1 0.683 | scale marker   0.0% F1 0.707 | scale inject   0.0% F1 0.713 | scale full   0.0% F1 0.713
+G_n4_b32 N  4.0 B 32.0 | MHT   0.0% F1 0.712 | plan marker   0.0% F1 0.653 | plan inject   0.0% F1 0.660 | plan full   0.0% F1 0.661 | scale marker   0.0% F1 0.683 | scale inject   0.0% F1 0.688 | scale full   0.0% F1 0.689
+G_n4_b50 N  4.0 B 50.0 | MHT   0.0% F1 0.662 | plan marker   0.0% F1 0.583 | plan inject   0.0% F1 0.588 | plan full   0.0% F1 0.589 | scale marker   0.0% F1 0.623 | scale inject   0.0% F1 0.627 | scale full   0.0% F1 0.628
+G_n50_b2 N 50.0 B  2.0 | MHT  54.0% F1 0.885 | plan marker  91.3% F1 0.980 | plan inject  87.3% F1 0.972 | plan full  86.3% F1 0.970 | scale marker  78.0% F1 0.954 | scale inject  74.0% F1 0.946 | scale full  73.0% F1 0.944
+G_n50_b4 N 50.0 B  4.0 | MHT  55.0% F1 0.941 | plan marker  80.7% F1 0.971 | plan inject  72.3% F1 0.957 | plan full  72.3% F1 0.957 | scale marker  73.3% F1 0.967 | scale inject  64.7% F1 0.953 | scale full  64.7% F1 0.953
+G_n50_b8 N 50.0 B  8.0 | MHT  57.0% F1 0.963 | plan marker  55.7% F1 0.962 | plan inject  44.0% F1 0.945 | plan full  44.0% F1 0.945 | scale marker  64.3% F1 0.972 | scale inject  51.7% F1 0.957 | scale full  51.7% F1 0.957
+G_n8_b16 N  8.0 B 16.0 | MHT   0.0% F1 0.800 | plan marker   0.0% F1 0.744 | plan inject   0.0% F1 0.749 | plan full   0.0% F1 0.748 | scale marker   0.0% F1 0.774 | scale inject   0.0% F1 0.777 | scale full   0.0% F1 0.775
+G_n8_b32 N  8.0 B 32.0 | MHT   0.0% F1 0.785 | plan marker   0.0% F1 0.725 | plan inject   0.0% F1 0.732 | plan full   0.0% F1 0.733 | scale marker   0.0% F1 0.759 | scale inject   0.0% F1 0.765 | scale full   0.0% F1 0.765
+G_n8_b50 N  8.0 B 50.0 | MHT   0.0% F1 0.754 | plan marker   0.0% F1 0.702 | plan inject   0.0% F1 0.706 | plan full   0.0% F1 0.705 | scale marker   0.0% F1 0.733 | scale inject   0.0% F1 0.735 | scale full   0.0% F1 0.735
+G_n16_b16 N 16.0 B 16.0 | MHT   2.0% F1 0.869 | plan marker   0.0% F1 0.834 | plan inject   1.0% F1 0.827 | plan full   1.0% F1 0.826 | scale marker   1.0% F1 0.857 | scale inject   1.0% F1 0.849 | scale full   1.0% F1 0.847
+G_n16_b32 N 16.0 B 32.0 | MHT   0.0% F1 0.855 | plan marker   0.0% F1 0.805 | plan inject   0.0% F1 0.800 | plan full   0.0% F1 0.799 | scale marker   0.0% F1 0.836 | scale inject   0.0% F1 0.830 | scale full   0.0% F1 0.829
+G_n16_b50 N 16.0 B 50.0 | MHT   0.0% F1 0.835 | plan marker   0.0% F1 0.791 | plan inject   0.0% F1 0.790 | plan full   0.0% F1 0.789 | scale marker   0.0% F1 0.819 | scale inject   0.0% F1 0.819 | scale full   0.0% F1 0.818
+G_n32_b16 N 32.0 B 16.0 | MHT  13.0% F1 0.926 | plan marker   5.0% F1 0.900 | plan inject   4.3% F1 0.881 | plan full   4.0% F1 0.878 | scale marker  11.0% F1 0.920 | scale inject   8.7% F1 0.902 | scale full   8.7% F1 0.900
+G_n32_b32 N 32.0 B 32.0 | MHT   0.0% F1 0.905 | plan marker   0.0% F1 0.871 | plan inject   0.0% F1 0.856 | plan full   0.0% F1 0.856 | scale marker   0.0% F1 0.895 | scale inject   0.0% F1 0.880 | scale full   0.0% F1 0.879
+G_n32_b50 N 32.0 B 50.0 | MHT   0.0% F1 0.886 | plan marker   0.0% F1 0.844 | plan inject   0.0% F1 0.836 | plan full   0.0% F1 0.835 | scale marker   0.0% F1 0.869 | scale inject   0.0% F1 0.860 | scale full   0.0% F1 0.859
+G_n50_b16 N 50.0 B 16.0 | MHT  12.0% F1 0.941 | plan marker   9.3% F1 0.924 | plan inject   8.0% F1 0.905 | plan full   7.0% F1 0.904 | scale marker  20.0% F1 0.947 | scale inject  13.7% F1 0.928 | scale full  11.7% F1 0.927
+G_n50_b32 N 50.0 B 32.0 | MHT   1.0% F1 0.922 | plan marker   0.0% F1 0.890 | plan inject   0.0% F1 0.871 | plan full   0.0% F1 0.870 | scale marker   0.0% F1 0.918 | scale inject   0.0% F1 0.898 | scale full   0.0% F1 0.897
+G_n50_b50 N 50.0 B 50.0 | MHT   0.0% F1 0.909 | plan marker   0.0% F1 0.869 | plan inject   0.0% F1 0.852 | plan full   0.0% F1 0.850 | scale marker   0.0% F1 0.899 | scale inject   0.0% F1 0.882 | scale full   0.0% F1 0.880
+written in results/scale_grid/: summary.csv, paired.csv, test_scenes.csv, tune.csv, chosen.json, rays.csv, fig_scaling.png
+evaluation done 2026-11-23 15:36:44.81
+results/scale_grid/fig_grid_f1_mean.png
+results/scale_grid/fig_grid_f1_mean_vs_mht.png
+results/scale_grid/fig_grid_correct_pct.png
+results/scale_grid/fig_grid_correct_pct_vs_mht.png
+GRID finished 2026-11-23 15:36:49.99
