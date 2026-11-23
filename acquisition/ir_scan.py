@@ -21,6 +21,10 @@ With --turns (as acquisition/ir_live_robots.py starts it) the robots take turns,
 switched off from the SDK, so while another robot ranges, the gimbal points the beam upwards (--park-up-deg) and
 no two beams meet on a box. Every state is also appended to <live dir>/log/<robot>.jsonl (tools/ir_view.py).
 
+Only the boxes the camera would see are aimed at: a box whose centre is hidden behind a nearer box or another robot
+(line of sight from the robot, OptiTrack positions) is skipped, as a real camera would not report it; --aim-hidden
+aims at them too (the beam then reads the box in front, or slips past its edge).
+
 The aiming uses the OptiTrack positions of the boxes (the camera plays no part yet): the robot ranges every box,
 including one hidden behind another (then the IR reads the nearer one). A reading that is not valid writes a state
 with no detection.
@@ -83,11 +87,46 @@ class Turns:
             write_json(os.path.join(self.dir, f"{self.a.robot_id}.done.json"), dict(seq=self.seq, t=time.time()))
 
 
+def other_robots(rig, a):
+    """(x, y) of the other robots (OptiTrack), which hide the boxes behind them too."""
+    if a.sim or not getattr(rig, "hub", None):
+        return []
+    out = []
+    for rb in a.robot_rbs:
+        q = rig.hub.get_pose(rb)
+        if q is not None:
+            out.append((float(q[0]), float(q[1])))
+    return out
+
+
+def hidden(body, b, boxes, robots, box_r, robot_r):
+    """True when the line from the robot to the centre of box b passes within box_r of the centre of a nearer box,
+    or within robot_r of another robot: the camera would not see b, so in a real run nothing would aim at it."""
+    o = (body[0], body[1])
+    vx, vy = b["x"] - o[0], b["y"] - o[1]
+    L = math.hypot(vx, vy)
+    if L < 1e-6:
+        return False
+    ux, uy = vx / L, vy / L
+    for (px, py), r in [((k["x"], k["y"]), box_r) for k in boxes if k["id"] != b["id"]] + [(q, robot_r) for q in robots]:
+        t = (px - o[0]) * ux + (py - o[1]) * uy
+        if 0 < t < L and abs(-(px - o[0]) * uy + (py - o[1]) * ux) < r:
+            return True
+    return False
+
+
 def sweep_order(rig, a, n_sweep):
     body, boxes = rig.body_pose(), rig.boxes()
     if body is None:
         return body, []
     boxes = [b for b in boxes if math.hypot(b["x"] - body[0], b["y"] - body[1]) <= a.max_range]
+    if not a.aim_hidden:
+        robots = other_robots(rig, a)
+        hid = [b["id"] for b in boxes if hidden(body, b, boxes, robots, a.occlusion_box_m, a.occlusion_robot_m)]
+        if hid != getattr(rig, "last_hidden", None):
+            print(f"boxes hidden from this robot (not aimed at): {hid}", flush=True)
+            rig.last_hidden = hid
+        boxes = [b for b in boxes if b["id"] not in hid]
     boxes.sort(key=lambda b: wrap_pi(math.atan2(b["y"] - body[1], b["x"] - body[0]) - body[2]))
     if n_sweep % 2:
         boxes.reverse()                                       # back and forth: the gimbal never makes a long jump
@@ -159,6 +198,12 @@ def main():
     ap.add_argument("--max-range", type=float, default=3.5, help="only boxes closer than this [m]")
     ap.add_argument("--stop-file", default="", help="the scan stops when this file exists")
     ap.add_argument("--verbose", action="store_true", help="one line per box")
+    ap.add_argument("--aim-hidden", action="store_true",
+                    help="also aim at the boxes hidden behind another box or robot (default: only the ones the camera "
+                         "would see, as in a real run)")
+    ap.add_argument("--occlusion-box-m", type=float, default=0.10,
+                    help="a box hides another when the line to the centre of the far one passes this close to its centre")
+    ap.add_argument("--occlusion-robot-m", type=float, default=0.20, help="the same for the other robots")
     ap.add_argument("--no-calibrate", action="store_true",
                     help="skip the aim calibration at start (a yaw sweep of the gimbal around one box, about 40 s)")
     ap.add_argument("--turns", action="store_true",
