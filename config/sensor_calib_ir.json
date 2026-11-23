@@ -1,0 +1,15 @@
+{
+  "_readme": "Sensor settings for the IR (ToF) ranges of acquisition/ir_scan.py in demo/live.py: no range or bearing correction (the IR ranges are already corrected by acquisition/ir_live.IR_FIT; the ArUco fits of config/sensor_calib.json must not be applied to them). sigma_pos and p_d are first guesses for the IR aimed with OptiTrack (about 1-2 cm after correction, every box ranged), to be measured.",
+  "range_fit": [
+    1.0,
+    0.0
+  ],
+  "bearing_fit": [
+    1.0,
+    0.0
+  ],
+  "sigma_pos": 0.03,
+  "p_d": 0.95,
+  "camera_offset": 0.0,
+  "source": "acquisition/ir_live.py aim, G1, 2026-11-23"
+}

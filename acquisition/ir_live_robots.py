@@ -1,0 +1,139 @@
+"""Several robots ranging the boxes with the IR on their gimbal, live, for the demo page (MHT and the graph network).
+
+Robot side, as demo/live_robots.py but with the IR instead of the markers: one acquisition/ir_scan.py process per
+robot (started one after the other: the SDK finds a robot through a port only one process at a time can use), and
+<out>/boxes.json with the boxes OptiTrack tracks (demo/live_robots.truth_loop, reused as it is). Then the page:
+
+    terminal 1 (capture environment: SDK, natnet)
+        python -m acquisition.ir_live_robots --robot G1:8 --robot G2:7 --robot G3:10 --out data/live_ir/
+    terminal 2 (demo environment)
+        python -m demo.live --live-dir data/live_ir/ --sensor-calib config/sensor_calib_ir.json --window-s 12 \\
+            --stale-s 4 --no-images
+
+--window-s must cover one sweep of a robot (about 1.5 s per box); config/sensor_calib_ir.json leaves the IR ranges
+as they are (the ArUco range correction of config/sensor_calib.json must not be applied to them). Model C needs the
+frames and is left out (--no-images).
+
+--robot is ID:RIGID_BODY. Every robot uses its own gimbal aiming offset and IR range correction
+(acquisition/ir_live.py YAW_OFFSET_DEG, IR_FIT): a robot that is not in those tables gets 0 and no correction, so
+measure it first with ir_live sweep / aim. Other options (--ir-index, --ir-samples, --max-range, ...) are passed to
+every robot. Ctrl+C stops every robot (the gimbals are re-centred).
+
+Without hardware: --sim --sim-layout L4 --robot S1:0:-1.6,-0.4,-20 --robot S2:0:0.6,-1.8,110 (ID:_:X,Y,YAW_DEG):
+fake gimbals and IR on the boxes of the layout, boxes.json written from it.
+"""
+
+import argparse
+import json
+import os
+import signal
+import subprocess
+import sys
+import threading
+import time
+from types import SimpleNamespace
+
+CONNECT_TIMEOUT_S = 60.0
+
+
+def pump(proc, tag, connected):
+    from acquisition.ir_scan import CONNECTED_MSG
+    for raw in iter(proc.stdout.readline, b""):
+        line = raw.decode("utf-8", errors="replace").rstrip()
+        try:
+            if line.strip():
+                print(f"{tag:>4} | {line}", flush=True)
+        except Exception:
+            pass
+        if CONNECTED_MSG in line:
+            connected.set()
+    connected.set()
+
+
+def sim_truth(a, stop):
+    from demo.methods import write_json
+    with open(a.ground_truth) as f:
+        gt = json.load(f)[a.sim_layout]
+    boxes = [dict(class_name="box", rb_id=11 + k, x=float(b["x"]), y=float(b["y"]), yaw=0.0) for k, b in enumerate(gt)]
+    while not stop.is_set():
+        write_json(os.path.join(a.out, "boxes.json"), dict(t=time.time(), boxes=boxes, robots={}))
+        stop.wait(0.2)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--robot", action="append", required=True, metavar="ID:RIGID_BODY")
+    ap.add_argument("--box", type=int, nargs="+", default=[11, 12, 13, 14, 15, 16, 17],
+                    help="OptiTrack rigid bodies of the boxes")
+    ap.add_argument("--out", default="data/live_ir/", help="folder of the live states (demo.live --live-dir)")
+    ap.add_argument("--regions", default="config/optitrack_regions.json")
+    ap.add_argument("--optitrack-server", default="127.0.0.1")
+    ap.add_argument("--optitrack-local", default="127.0.0.1")
+    ap.add_argument("--sim", action="store_true")
+    ap.add_argument("--sim-layout", default="L4")
+    ap.add_argument("--ground-truth", default="config/ground_truth_positions.json")
+    a, rest = ap.parse_known_args()
+    os.makedirs(a.out, exist_ok=True)
+    stop_file = os.path.join(a.out, "STOP")
+    if os.path.exists(stop_file):
+        os.remove(stop_file)
+    for name in os.listdir(a.out):                     # states of an earlier session would look alive for a moment
+        if name.endswith(".json") and name != "boxes.json":
+            os.remove(os.path.join(a.out, name))
+    robots = []
+    for spec in a.robot:
+        parts = spec.split(":")
+        robots.append(dict(robot_id=parts[0], rb=int(parts[1]) if len(parts) > 1 and parts[1] else 0,
+                           sim_pose=parts[2] if len(parts) > 2 else None))
+    stop = threading.Event()
+    signal.signal(signal.SIGINT, lambda *_: stop.set())
+    if a.sim:
+        truth = threading.Thread(target=sim_truth, args=(a, stop), daemon=True)
+    else:
+        from demo.live_robots import truth_loop
+        ta = SimpleNamespace(box=a.box, regions=a.regions, optitrack_server=a.optitrack_server,
+                             optitrack_local=a.optitrack_local, out=a.out, camera_offset_forward_m=0.0)
+        truth = threading.Thread(target=truth_loop, args=(ta, robots, stop), daemon=True)
+    truth.start()
+    procs = []
+    for r in robots:
+        if stop.is_set():
+            break
+        cmd = [sys.executable, "-u", "-m", "acquisition.ir_scan", "--robot-id", r["robot_id"],
+               "--state-out", os.path.join(a.out, f"{r['robot_id']}.json"), "--stop-file", stop_file]
+        if a.sim:
+            x, y, yaw = (r["sim_pose"] or "-1.6,-0.4,0").split(",")
+            cmd += ["--sim", "--sim-layout", a.sim_layout, "--ground-truth", a.ground_truth,
+                    "--sim-pose", x, y, yaw, "--settle-s", "0"]
+        else:
+            cmd += ["--rb", str(r["rb"]), "--regions", a.regions, "--optitrack-server", a.optitrack_server,
+                    "--optitrack-local", a.optitrack_local, "--box-rb"] + [str(b) for b in a.box]
+        cmd += rest
+        print(f"{r['robot_id']}: " + ("simulated" if a.sim else f"rigid body {r['rb']}"), flush=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        connected = threading.Event()
+        threading.Thread(target=pump, args=(proc, r["robot_id"], connected), daemon=True).start()
+        procs.append(proc)
+        t0 = time.time()
+        while not connected.is_set() and not stop.is_set() and time.time() - t0 < CONNECT_TIMEOUT_S:
+            time.sleep(0.1)
+        if not connected.is_set() and not stop.is_set():
+            print(f"{r['robot_id']}: not running after {CONNECT_TIMEOUT_S:.0f} s, starting the next robot", flush=True)
+        time.sleep(1.0)
+    print(f"all robots started: now run  python -m demo.live --live-dir {a.out} --sensor-calib "
+          f"config/sensor_calib_ir.json --window-s 12 --stale-s 4 --no-images   (Ctrl+C here to stop)", flush=True)
+    while not stop.is_set() and any(p.poll() is None for p in procs):
+        time.sleep(0.3)
+    stop.set()
+    open(stop_file, "w").close()                       # every robot finishes its reading and re-centres its gimbal
+    t0 = time.time()
+    while any(p.poll() is None for p in procs) and time.time() - t0 < 15:
+        time.sleep(0.3)
+    for p in procs:
+        if p.poll() is None:
+            p.terminate()
+    print("stopped")
+
+
+if __name__ == "__main__":
+    main()

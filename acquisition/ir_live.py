@@ -55,6 +55,29 @@ STOP = threading.Event()
 # 12 gave +14.0, +13.9, +12.1.
 YAW_OFFSET_DEG = {"G1": 13.3}
 
+# range correction of the IR per robot: IR = K x true + Q [m], fitted with `aim` against OptiTrack; the readings
+# are corrected as true = (IR - Q) / K. G1, 2026-11-23: boxes at 0.94-1.96 m from one position (to refine).
+IR_FIT = {"G1": (1.0728, -0.010)}
+
+
+class CorrectedIR:
+    """The IR with its range correction: measure() gives the corrected median in "m" and the raw one in "m_raw"
+    (the samples stay raw). latest() / valid() / stop() pass through."""
+
+    def __init__(self, ir, k=1.0, q=0.0):
+        self.ir, self.k, self.q = ir, k, q
+
+    def measure(self, index, n=10, timeout_s=3.0):
+        r = dict(self.ir.measure(index, n=n, timeout_s=timeout_s))
+        r["m_raw"] = r["m"]
+        if r["m"] is not None:
+            r["m"] = (r["m"] - self.q) / self.k
+            r["sd_m"] = None if r["sd_m"] is None else r["sd_m"] / self.k
+        return r
+
+    def __getattr__(self, name):
+        return getattr(self.ir, name)
+
 
 class Rig:
     """Robot (only its gimbal and IR are used), OptiTrack (robot and boxes); or fakes with fixed boxes (--sim)."""
@@ -74,7 +97,7 @@ class Rig:
             self.body_pose = lambda: seen                             # what the script believes
             self.gimbal = FakeGimbal()
             xy = [[b["x"], b["y"]] for b in self.fixed]
-            self.ir = FakeIR(xy, lambda: true, self.gimbal, self.mount, rng)
+            self.ir = CorrectedIR(FakeIR(xy, lambda: true, self.gimbal, self.mount, rng), *a.ir_fit)
             self.sim_rays = SimRays(xy, lambda: true, self.gimbal, self.mount, rng)
             return
         from robomaster_sdk import Robot
@@ -98,8 +121,9 @@ class Rig:
         self.gimbal = Gimbal.from_robot(self.robot, yaw_sign=a.gimbal_yaw_sign or YAW_SIGN,
                                         pitch_sign=a.gimbal_pitch_sign or PITCH_SIGN).start()
         self.cleanup.insert(0, self.gimbal.close)
-        self.ir = IRSensors.from_robot(self.robot, freq=a.ir_freq).start()
-        self.cleanup.insert(0, self.ir.stop)
+        raw_ir = IRSensors.from_robot(self.robot, freq=a.ir_freq).start()
+        self.cleanup.insert(0, raw_ir.stop)
+        self.ir = CorrectedIR(raw_ir, *a.ir_fit)
         time.sleep(0.5)
         print(f"first IR message from the SDK: {self.ir.first_raw}", flush=True)
         print(f"first gimbal message from the SDK: {self.gimbal.first_raw}", flush=True)
@@ -164,7 +188,8 @@ class Rig:
         body, ang = self.body_pose(), self.gimbal.angles()
         r = self.ir.measure(self.mount.ir_index, n=n)
         raw = r.get("raw_mm") or [None] * 4
-        row = dict(t=time.time(), ir_m=r["m"], ir_sd_m=r["sd_m"], ir_n=r["n"], ir_n_total=r["n_total"],
+        row = dict(t=time.time(), ir_m=r["m"], ir_raw_m=r.get("m_raw"), ir_sd_m=r["sd_m"], ir_n=r["n"],
+                   ir_n_total=r["n_total"],
                    **{f"raw{k}_mm": raw[k] for k in range(4)})
         if body is None or ang is None:
             return row
@@ -337,15 +362,15 @@ def aim(rig, a, log):
                   f"{cm(r.get('target_err_horiz_m'))} flat, hit at {fmt(r.get('target_hit_height_m'), ' m', 2)}"
                   + ("" if r.get("exp_box") in (None, b["id"]) else f"  <- box {r['exp_box']} nearer in the beam") + raw_txt(r))
     stats([r.get("target_err_slant_m") for r in log.rows], sum(r["ir_m"] is None for r in log.rows), "aim")
-    pts = [(r["target_slant_m"], r["ir_m"]) for r in log.rows
+    pts = [(r["target_slant_m"], r.get("ir_raw_m") if r.get("ir_raw_m") is not None else r["ir_m"]) for r in log.rows
            if r.get("ir_m") is not None and r.get("target_slant_m") is not None]
     if len({round(t, 1) for t, _ in pts}) >= 2:
         t, m = np.array(pts).T
         k, q = np.polyfit(t, m, 1)
         scale = float(np.sum(t * m) / np.sum(t * t))
-        print(f"IR against the true face distance ({len(pts)} readings, {t.min():.2f}-{t.max():.2f} m): "
+        print(f"RAW IR against the true face distance ({len(pts)} readings, {t.min():.2f}-{t.max():.2f} m): "
               f"IR = {k:.3f} x true {q * 100:+.1f} cm, or IR = {scale:.3f} x true (residual "
-              f"{np.std(m - scale * t) * 100:.1f} cm)")
+              f"{np.std(m - scale * t) * 100:.1f} cm); use it with --ir-fit {k:.4f} {q:.4f} or in IR_FIT")
     if start is not None:
         rig.point(*start)
 
@@ -442,9 +467,10 @@ def camera(rig, a, log):
               f"{np.median(m) * 100:.1f} cm with the camera alone")
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=["watch", "aim", "sweep", "camera"])
+def make_parser(with_mode=True, description=__doc__):
+    ap = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
+    if with_mode:
+        ap.add_argument("mode", choices=["watch", "aim", "sweep", "camera"])
     ap.add_argument("--robot-id", required=True)
     ap.add_argument("--sn", default=None)
     ap.add_argument("--ip", default=None)
@@ -480,15 +506,32 @@ def main():
     ap.add_argument("--sim-yaw-error-deg", type=float, default=0.0,
                     help="with --sim: the gimbal really points this much more to the left than the script believes")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--ir-fit", type=float, nargs=2, default=None, metavar=("K", "Q"),
+                    help="IR range correction IR = K x true + Q [m] (default: IR_FIT of the robot; 1 0 = none)")
     add_ir_arguments(ap)
-    a = ap.parse_args()
+    return ap
+
+
+def resolve(a, ap):
+    """Per-robot defaults: gimbal aiming offset and IR range correction."""
     if a.yaw_offset_deg is None:
         a.yaw_offset_deg = YAW_OFFSET_DEG.get(a.robot_id, 0.0) if not a.sim else 0.0
         if a.yaw_offset_deg:
             print(f"gimbal aiming offset of {a.robot_id}: {a.yaw_offset_deg:+.1f} deg (YAW_OFFSET_DEG)")
+    if a.ir_fit is None:
+        a.ir_fit = IR_FIT.get(a.robot_id, (1.0, 0.0)) if not a.sim else (1.0, 0.0)
+        if tuple(a.ir_fit) != (1.0, 0.0):
+            print(f"IR range correction of {a.robot_id}: IR = {a.ir_fit[0]:.4f} x true {a.ir_fit[1] * 100:+.1f} cm "
+                  f"(IR_FIT)")
     if not a.sim and a.rb is None:
         ap.error("--rb (OptiTrack rigid body of the robot) is required, or --sim")
-    signal.signal(signal.SIGINT, lambda *_: STOP.set())
+    return a
+
+
+def main():
+    ap = make_parser()
+    a = resolve(ap.parse_args(), ap)
+    signal(signal.SIGINT, lambda *_: STOP.set())
     rig = Rig(a)
     log = Log(a, a.mode + (f"_{a.axis}" if a.mode == "sweep" else ""))
     try:
