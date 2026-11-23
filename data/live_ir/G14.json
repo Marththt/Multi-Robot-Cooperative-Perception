@@ -1,0 +1,1 @@
+{"robot_id": "G14", "t": 1795407996.3069673, "pose": [1.0678133838864323, -1.1693301491683354, 2.272440463617162], "detections": [], "p_d": 1.0, "source": "ir", "aimed_box": 16, "ir_raw_m": null, "ir_slant_m": null, "ir_hit_height_m": null, "ir_valid_n": 0, "expected_box": 16, "true_horiz_m": 0.9427723311688212, "gimbal": [-14.4, 9.0]}
