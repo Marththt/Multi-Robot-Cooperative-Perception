@@ -17,7 +17,7 @@ The aiming uses the OptiTrack positions of the boxes (the camera plays no part y
 including one hidden behind another (then the IR reads the nearer one). A reading that is not valid writes a state
 with no detection.
 
-    python -m acquisition.ir_scan --robot-id G1 --rb 8 --state-out data/live_ir/G1.json
+    python -m acquisition.ir_scan --robot-id G11 --rb 8 --state-out data/live_ir/G11.json
 """
 
 import math

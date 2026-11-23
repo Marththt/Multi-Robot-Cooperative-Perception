@@ -7,7 +7,7 @@ themselves: every rigid body tracked inside the arena that is not one of the rob
 so boxes can be added or taken away during the run; --box restricts them to a list. Then the page:
 
     terminal 1 (capture environment: SDK, natnet)
-        python -m acquisition.ir_live_robots --robot G1:8 --robot G2:7 --robot G3:10 --out data/live_ir/
+        python -m acquisition.ir_live_robots --robot G11:8 --robot G12:7 --robot G14:10 --out data/live_ir/
     terminal 2 (demo environment)
         python -m demo.live --live-dir data/live_ir/ --sensor-calib config/sensor_calib_ir.json --window-s 12 \\
             --stale-s 4 --no-images
@@ -17,8 +17,9 @@ as they are (the ArUco range correction of config/sensor_calib.json must not be 
 frames and is left out (--no-images).
 
 --robot is ID:RIGID_BODY. Every robot uses its own gimbal aiming offset and IR range correction
-(acquisition/ir_live.py YAW_OFFSET_DEG, IR_FIT): a robot that is not in those tables gets 0 and no correction, so
-measure it first with ir_live sweep / aim. Other options (--ir-index, --ir-samples, --max-range, ...) are passed to
+(acquisition/ir_live.py YAW_OFFSET_DEG, IR_FIT); a robot not in those tables gets the values measured on G11 (same
+camera and IR model). Its gimbal aiming offset also depends on how its rigid body was defined in Motive: if its
+aim is off, measure it with ir_live sweep and add it to YAW_OFFSET_DEG. Other options (--ir-index, --ir-samples, --max-range, ...) are passed to
 every robot. Ctrl+C stops every robot (the gimbals are re-centred).
 
 Without hardware: --sim --sim-layout L4 --robot S1:0:-1.6,-0.4,-20 --robot S2:0:0.6,-1.8,110 (ID:_:X,Y,YAW_DEG):

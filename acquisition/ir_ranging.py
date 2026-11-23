@@ -41,7 +41,7 @@ from yolo_gnn.camera import APOTHEM_M, BOX_HEIGHT_M
 
 @dataclass
 class GimbalMount:
-    ir_index: int = 2               # position of the IR in the SDK distance list (tools/ir_check.py; 2 on G1)
+    ir_index: int = 2               # position of the IR in the SDK distance list (tools/ir_check.py; 2 on G11)
     gimbal_forward_m: float = 0.0   # gimbal yaw axis ahead of the rigid body origin
     ir_arm_m: float = 0.10          # IR ahead of the gimbal axis, along the gimbal direction
     ir_height_m: float = 0.30       # IR above the floor

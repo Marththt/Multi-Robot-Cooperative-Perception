@@ -50,14 +50,21 @@ from yolo_gnn.camera import APOTHEM_M, BOX_HEIGHT_M
 
 STOP = threading.Event()
 
-# gimbal aiming offset per robot [deg], measured with `sweep --axis yaw` (centre of the plateau of a box against
-# where OptiTrack puts it): the gimbal zero is not the forward axis of the rigid body. G1, 2026-11-23: boxes 16, 13,
-# 12 gave +14.0, +13.9, +12.1.
-YAW_OFFSET_DEG = {"G1": 13.3}
+# Calibration, measured on G11 (2026-11-23; the robot called "G1" in the first data files of data/ir_live/). All the
+# robots carry the same camera and IR model, so G11's values are the default of every robot; a robot measured on
+# its own gets an entry of its own in the tables.
+#
+# Gimbal aiming offset [deg], from `sweep --axis yaw` (centre of the plateau of a box against where OptiTrack puts
+# it): the gimbal zero is not the forward axis of the rigid body. G11: boxes 16, 13, 12 gave +14.0, +13.9, +12.1.
+# It depends also on how the rigid body of each robot was defined in Motive, so it is the value to check first on
+# a new robot (one sweep).
+DEFAULT_YAW_OFFSET_DEG = 13.3
+YAW_OFFSET_DEG = {"G11": 13.3}
 
-# range correction of the IR per robot: IR = K x true + Q [m], fitted with `aim` against OptiTrack; the readings
-# are corrected as true = (IR - Q) / K. G1, 2026-11-23: boxes at 0.94-1.96 m from one position (to refine).
-IR_FIT = {"G1": (1.0728, -0.010)}
+# IR range correction: IR = K x true + Q [m], from `aim` against OptiTrack; readings are corrected as
+# true = (IR - Q) / K. G11: boxes at 0.94-1.96 m from one position (to refine).
+DEFAULT_IR_FIT = (1.0728, -0.010)
+IR_FIT = {"G11": (1.0728, -0.010)}
 
 
 class CorrectedIR:
@@ -482,7 +489,7 @@ def make_parser(with_mode=True, description=__doc__):
     ap.add_argument("--optitrack-local", default="127.0.0.1")
     ap.add_argument("--yaw-offset-deg", type=float, default=None,
                     help="correction of the OptiTrack yaw of the robot, i.e. the gimbal aiming offset (default: "
-                         "YAW_OFFSET_DEG of the robot, else 0)")
+                         "YAW_OFFSET_DEG of the robot, else DEFAULT_YAW_OFFSET_DEG, measured on G11)")
     ap.add_argument("--camera-calib", default=None)
     ap.add_argument("--camera-resolution", choices=["360", "540", "720"], default="720")
     ap.add_argument("--snap", action="store_true",
@@ -507,7 +514,8 @@ def make_parser(with_mode=True, description=__doc__):
                     help="with --sim: the gimbal really points this much more to the left than the script believes")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--ir-fit", type=float, nargs=2, default=None, metavar=("K", "Q"),
-                    help="IR range correction IR = K x true + Q [m] (default: IR_FIT of the robot; 1 0 = none)")
+                    help="IR range correction IR = K x true + Q [m] (default: IR_FIT of the robot, else "
+                         "DEFAULT_IR_FIT, measured on G11; 1 0 = none)")
     add_ir_arguments(ap)
     return ap
 
@@ -515,14 +523,17 @@ def make_parser(with_mode=True, description=__doc__):
 def resolve(a, ap):
     """Per-robot defaults: gimbal aiming offset and IR range correction."""
     if a.yaw_offset_deg is None:
-        a.yaw_offset_deg = YAW_OFFSET_DEG.get(a.robot_id, 0.0) if not a.sim else 0.0
-        if a.yaw_offset_deg:
-            print(f"gimbal aiming offset of {a.robot_id}: {a.yaw_offset_deg:+.1f} deg (YAW_OFFSET_DEG)")
+        own = a.robot_id in YAW_OFFSET_DEG
+        a.yaw_offset_deg = YAW_OFFSET_DEG.get(a.robot_id, DEFAULT_YAW_OFFSET_DEG) if not a.sim else 0.0
+        if not a.sim:
+            print(f"gimbal aiming offset of {a.robot_id}: {a.yaw_offset_deg:+.1f} deg "
+                  + ("(its own)" if own else "(of G11: check it with ir_live sweep if the aim is off)"))
     if a.ir_fit is None:
-        a.ir_fit = IR_FIT.get(a.robot_id, (1.0, 0.0)) if not a.sim else (1.0, 0.0)
-        if tuple(a.ir_fit) != (1.0, 0.0):
+        own = a.robot_id in IR_FIT
+        a.ir_fit = IR_FIT.get(a.robot_id, DEFAULT_IR_FIT) if not a.sim else (1.0, 0.0)
+        if not a.sim:
             print(f"IR range correction of {a.robot_id}: IR = {a.ir_fit[0]:.4f} x true {a.ir_fit[1] * 100:+.1f} cm "
-                  f"(IR_FIT)")
+                  + ("(its own)" if own else "(of G11)"))
     if not a.sim and a.rb is None:
         ap.error("--rb (OptiTrack rigid body of the robot) is required, or --sim")
     return a
