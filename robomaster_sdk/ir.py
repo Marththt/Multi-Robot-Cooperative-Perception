@@ -85,14 +85,17 @@ class IRSensors:
         """Median of n samples of sensor `index` (0-based) arrived after this call. Returns a dict: m (median of
         the valid samples, None if none), sd_m, n (valid samples), n_total, valid (at least half valid), samples."""
         t0 = time.time()
-        got = []
+        fresh = []
         with self.cond:
-            while len(got) < n and time.time() - t0 < timeout_s:
+            while len(fresh) < n and time.time() - t0 < timeout_s:
                 self.cond.wait(timeout=timeout_s)
-                got = [v[index] for t, v in self.samples if t > t0 and index < len(v)]
+                fresh = [v for t, v in self.samples if t > t0]
+        got = [v[index] for v in fresh if index < len(v)]
         ok = [m for m in got if self.valid(m)]
+        # median of every slot as the SDK gives it [mm]: which slot has a sensor, and what an invalid one holds
+        raw_mm = [float(np.median([v[k] for v in fresh])) * 1000 if fresh else None for k in range(4)]
         return dict(m=float(np.median(ok)) if ok else None, sd_m=float(np.std(ok)) if len(ok) > 1 else None,
-                    n=len(ok), n_total=len(got), valid=len(ok) >= max(1, len(got) // 2), samples=got)
+                    n=len(ok), n_total=len(got), valid=len(ok) >= max(1, len(got) // 2), samples=got, raw_mm=raw_mm)
 
     def __enter__(self):
         return self.start()

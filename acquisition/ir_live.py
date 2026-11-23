@@ -132,7 +132,9 @@ class Rig:
         """Reading of the IR with the pose of its beam and what it should read."""
         body, ang = self.body_pose(), self.gimbal.angles()
         r = self.ir.measure(self.mount.ir_index, n=n)
-        row = dict(t=time.time(), ir_m=r["m"], ir_sd_m=r["sd_m"], ir_n=r["n"], ir_n_total=r["n_total"])
+        raw = r.get("raw_mm") or [None] * 4
+        row = dict(t=time.time(), ir_m=r["m"], ir_sd_m=r["sd_m"], ir_n=r["n"], ir_n_total=r["n_total"],
+                   **{f"raw{k}_mm": raw[k] for k in range(4)})
         if body is None or ang is None:
             return row
         o, head, pitch = ir_pose(body, ang[0], ang[1], self.mount)
@@ -197,6 +199,14 @@ def fmt(v, unit="", nd=3):
     return "  -  " if v is None else f"{v:.{nd}f}{unit}"
 
 
+def raw_txt(r):
+    """The 4 slots of the SDK message [mm], shown when the ranging slot gives nothing valid."""
+    if r.get("ir_m") is not None:
+        return ""
+    return "  [SDK slots, mm: " + " ".join("-" if r.get(f"raw{k}_mm") is None else f"{r[f'raw{k}_mm']:.0f}"
+                                         for k in range(4)) + "]"
+
+
 def cm(v):
     return fmt(None if v is None else v * 100, " cm", 1)
 
@@ -241,7 +251,7 @@ def watch(rig, a, log):
               f"IR {fmt(r['ir_m'])} flat {fmt(r.get('ir_horiz_m'))} h {fmt(r.get('ir_hit_height_m'), '', 2)} | "
               f"box {r.get('exp_box') or '-'} {fmt(r.get('exp_slant_m'))}"
               + ("" if r.get("exp_box") else f" (floor at {fmt(r.get('exp_floor_m'))})")
-              + f" | {cm(r.get('err_slant_m'))}", flush=True)
+              + f" | {cm(r.get('err_slant_m'))}" + raw_txt(r), flush=True)
         STOP.wait(max(0.0, 0.2 - (time.time() - t0)))
     stats([r.get("err_slant_m") for r in log.rows], sum(r["ir_m"] is None for r in log.rows), "watch")
 
@@ -266,7 +276,7 @@ def aim(rig, a, log):
                   f" deg, IR {fmt(r['ir_m'])} ({r['ir_n']}/{r['ir_n_total']}, sd {cm(r['ir_sd_m'])}), true "
                   f"{fmt(r.get('target_slant_m'))}: error {cm(r.get('target_err_slant_m'))} slant, "
                   f"{cm(r.get('target_err_horiz_m'))} flat, hit at {fmt(r.get('target_hit_height_m'), ' m', 2)}"
-                  + ("" if r.get("exp_box") in (None, b["id"]) else f"  <- box {r['exp_box']} nearer in the beam"))
+                  + ("" if r.get("exp_box") in (None, b["id"]) else f"  <- box {r['exp_box']} nearer in the beam") + raw_txt(r))
     stats([r.get("target_err_slant_m") for r in log.rows], sum(r["ir_m"] is None for r in log.rows), "aim")
     if start is not None:
         rig.point(*start)
@@ -297,7 +307,8 @@ def sweep(rig, a, log):
         print(f"  {a.axis} {s:+6.1f} deg (box {fmt(r.get('target_off_deg'), '', 1)} deg off the axis, beam at "
               f"{fmt(r.get('target_hit_height_m'), ' m', 2)} on its face): IR {fmt(r['ir_m'])}, box face "
               f"{fmt(r.get('target_slant_m'))}" + ("  ON THE BOX" if r["on_target"] else "")
-              + (f"  (box {r['exp_box']} nearer)" if r.get("exp_box") not in (None, b["id"]) else ""), flush=True)
+              + (f"  (box {r['exp_box']} nearer)" if r.get("exp_box") not in (None, b["id"]) else "") + raw_txt(r),
+              flush=True)
     on = [r["step_deg"] for r in log.rows if r.get("on_target")]
     if on:
         print(f"the IR reads box {b['id']} (within {a.on_target_m * 100:.0f} cm) for {a.axis} from {min(on):+.1f} to "
