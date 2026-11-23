@@ -1,0 +1,12 @@
+{
+  "half0": {
+    "min_frac": 0.6,
+    "tol_sym": 0.25,
+    "cl_robots": 2
+  },
+  "half1": {
+    "min_frac": 0.6,
+    "tol_sym": 0.18,
+    "cl_robots": 2
+  }
+}
