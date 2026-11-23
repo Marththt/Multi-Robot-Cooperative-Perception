@@ -1,33 +1,40 @@
-"""Live tests of the infrared (ToF) ranging of one robot, against the boxes OptiTrack tracks right now.
+"""Live tests of the infrared (ToF) sensor on the gimbal of one robot, against the boxes OptiTrack tracks now.
 
-One robot, its IR sensors (robomaster_sdk/ir.py) and OptiTrack (the robot and the box rigid bodies). For the
-ranging sensor (--ir-index, mounted as --ir-forward-m / --ir-right-m / --ir-yaw-deg) every reading is compared
-with what it should read: the nearest box inside the cone of the sensor, at its centre distance minus the apothem
-(the face). Four modes:
+The camera and the IR sit on the gimbal; the gimbal points them, the chassis never moves (the robot is set to the
+SDK "free" mode while the script runs, and back to "chassis_lead" at the end). Every IR reading is compared with
+what it should read (acquisition/ir_ranging.expected): the nearest box whose face the beam hits, from the robot
+pose (OptiTrack), the gimbal angles (read back from the gimbal) and the mount (--ir-arm-m, --ir-height-m, ...).
+The IR reads a slant distance; with the gimbal pitched down, the horizontal distance is d cos(pitch) and the
+beam meets the face at height h - d sin(pitch). Four modes:
 
-  watch   the robot stands still (move it, or the boxes, by hand): 5 lines per second with the 4 sensors, the
-          expected box and distance, the error. Ctrl+C ends and prints the statistics.
-  aim     the robot turns on the spot to aim the IR at every box in turn (OptiTrack positions, so the camera plays
-          no part), reads --ir-samples samples, and moves to the next; --repeats rounds. Range error per box.
-  sweep   around one box (--box RIGID_BODY, default the one nearest the heading) the robot turns from -span to
-          +span in steps and reads the IR at each: the reading against the angle off the box tells how wide the
-          beam really is and when it jumps to another box or the wall.
-  camera  the full loop of acquisition/ir_ranging.py: YOLO finds the boxes in the camera frame, the robot aims
-          the IR at each one, the box centre comes from the camera ray and the IR range; every result is compared
-          with OptiTrack. Needs the YOLO packages (ultralytics, torch) in this environment and --camera-calib.
+  watch   the gimbal stays where it is (or at --yaw-deg / --pitch-deg): 5 lines per second with the reading, the
+          expected box and distance, the error. Move the boxes by hand. Ctrl+C ends with the statistics.
+  aim     the gimbal points the IR at every box in turn (OptiTrack positions: the camera plays no part), mid-face
+          (--aim-height-m), reads --ir-samples samples; --repeats rounds. Error per box, slant and horizontal.
+  sweep   around one box (--box RIGID_BODY, default the one nearest the gimbal direction): --axis yaw turns the
+          gimbal from -span to +span (how wide the beam is, when it jumps to another box); --axis pitch tilts it
+          from --pitch-from-deg to --pitch-to-deg (where the beam leaves the top of the box, where it meets the
+          floor).
+  camera  the full loop of acquisition/ir_ranging.py: YOLO finds the boxes, the gimbal points the IR at each one,
+          the box centre comes from the camera ray and the IR range; compared with OptiTrack. Needs the YOLO
+          packages (ultralytics, torch) in this environment and --camera-calib.
 
-Every sample goes to <out>/<robot>_<mode>_<time>.csv.
+Every reading goes to <out>/<robot>_<mode>_<time>.csv.
 
-    python -m acquisition.ir_live watch  --robot-id P0 --rb 8 --ir-index 0 --ir-forward-m 0.10
-    python -m acquisition.ir_live aim    --robot-id P0 --rb 8 --ir-index 0 --ir-forward-m 0.10 --repeats 3
-    python -m acquisition.ir_live sweep  --robot-id P0 --rb 8 --ir-index 0 --ir-forward-m 0.10 --span-deg 25
-    python -m acquisition.ir_live camera --robot-id P0 --rb 8 --ir-index 0 --ir-forward-m 0.10 \\
-        --camera-calib config/checkerboard_calib_P0.json
+    python -m acquisition.ir_live watch --robot-id P0 --rb 8
+    python -m acquisition.ir_live aim   --robot-id P0 --rb 8 --repeats 3
+    python -m acquisition.ir_live sweep --robot-id P0 --rb 8 --axis yaw --span-deg 20
+    python -m acquisition.ir_live sweep --robot-id P0 --rb 8 --axis pitch
+    python -m acquisition.ir_live camera --robot-id P0 --rb 8 --camera-calib config/checkerboard_calib_P0.json
     # any mode without hardware: --sim --sim-layout L4 (boxes of config/ground_truth_positions.json)
+
+Mount defaults: IR 10 cm ahead of the gimbal axis, 30 cm high; gimbal axis above the rigid body origin
+(--gimbal-forward-m 0). Check the gimbal directions first: python -m tools.gimbal_check --robot-id P0.
 """
 
 import argparse
 import csv
+import json
 import math
 import os
 import signal
@@ -36,32 +43,16 @@ import time
 
 import numpy as np
 
-from acquisition.ir_ranging import (FakeIR, SimRays, YoloRays, add_ir_arguments, aim_from_args, aim_yaw,
-                                    camera_pitch, ir_origin, measure_targets, mount_from_args, turn_in_place, unit)
-from vf.control.goto import FakeRobot, stop, wrap_pi
-from yolo_gnn.camera import APOTHEM_M
+from acquisition.ir_ranging import (FakeGimbal, FakeIR, SimRays, YoloRays, add_ir_arguments, aim_angles, aim_from_args,
+                                    expected, ir_pose, measure_targets, mount_from_args, slant_to_floor, unit)
+from vf.control.goto import wrap_pi
+from yolo_gnn.camera import APOTHEM_M, BOX_HEIGHT_M
 
 STOP = threading.Event()
 
 
-def expected(origin, axis, boxes, beam_deg):
-    """What the sensor should read: the nearest box whose footprint enters the cone. Returns a dict (box id,
-    face and centre distance, angle of the box off the axis), the fields None when no box is in the cone."""
-    half = math.radians(beam_deg) / 2
-    best = None
-    for b in boxes:
-        v = np.array([b["x"], b["y"]]) - origin
-        d = float(np.hypot(*v))
-        off = wrap_pi(math.atan2(v[1], v[0]) - axis)
-        if abs(off) <= half + math.atan2(APOTHEM_M, max(d, 1e-3)) and (best is None or d < best[1]):
-            best = (b["id"], d, off)
-    if best is None:
-        return dict(exp_box=None, exp_face_m=None, exp_centre_m=None, off_deg=None)
-    return dict(exp_box=best[0], exp_face_m=best[1] - APOTHEM_M, exp_centre_m=best[1], off_deg=math.degrees(best[2]))
-
-
 class Rig:
-    """Robot, IR, OptiTrack (real), or FakeRobot, FakeIR, fixed boxes (--sim)."""
+    """Robot (only its gimbal and IR are used), OptiTrack (robot and boxes); or fakes with fixed boxes (--sim)."""
 
     def __init__(self, a):
         self.a, self.mount = a, mount_from_args(a)
@@ -69,20 +60,19 @@ class Rig:
         self.camera = None
         rng = np.random.default_rng(a.seed)
         if a.sim:
-            import json
             with open(a.ground_truth) as f:
                 gt = json.load(f)[a.sim_layout]
             self.fixed = [dict(id=11 + k, x=float(b["x"]), y=float(b["y"])) for k, b in enumerate(gt)]
             x, y, yaw = a.sim_pose
-            self.fake = FakeRobot(x, y, math.radians(yaw), speedup=a.sim_speedup)
-            self.chassis, self.body_pose = self.fake, self.fake.pose
-            self.camera_pose = self.fake.pose
+            body = (x, y, math.radians(yaw))
+            self.body_pose = lambda: body
+            self.gimbal = FakeGimbal()
             xy = [[b["x"], b["y"]] for b in self.fixed]
-            self.ir = FakeIR(xy, self.fake.pose, self.mount, rng)
-            self.sim_rays = SimRays(xy, self.fake.pose, rng)
-            self.ir.latest = lambda: (time.time(), [self.ir.measure(0, n=1)["m"] or 0.0] * 4)
+            self.ir = FakeIR(xy, self.body_pose, self.gimbal, self.mount, rng)
+            self.sim_rays = SimRays(xy, self.body_pose, self.gimbal, self.mount, rng)
             return
         from robomaster_sdk import Robot
+        from robomaster_sdk.gimbal import PITCH_SIGN, YAW_SIGN, Gimbal
         from robomaster_sdk.ir import IRSensors
         from vf.fusion.sensor_model import arena_from_regions
         from vf.localization.mocap_pose import MocapHub
@@ -96,22 +86,17 @@ class Rig:
             q = self.hub.get_pose(a.rb)
             return None if q is None else (float(q[0]), float(q[1]), wrap_pi(float(q[2]) + off))
 
-        def camera_pose():
-            q = body_pose()
-            if q is None:
-                return None
-            c, s = math.cos(q[2]), math.sin(q[2])
-            return (q[0] + a.camera_offset_forward_m * c, q[1] + a.camera_offset_forward_m * s, q[2])
-
-        self.body_pose, self.camera_pose = body_pose, camera_pose
+        self.body_pose = body_pose
         self.robot = Robot(a.robot_id, sn=a.sn, ip=a.ip).connect()
         self.cleanup.insert(0, self.robot.disconnect)
-        self.chassis = self.robot.chassis
-        self.cleanup.insert(0, lambda: stop(self.chassis))
+        self.gimbal = Gimbal.from_robot(self.robot, yaw_sign=a.gimbal_yaw_sign or YAW_SIGN,
+                                        pitch_sign=a.gimbal_pitch_sign or PITCH_SIGN).start()
+        self.cleanup.insert(0, self.gimbal.close)
         self.ir = IRSensors.from_robot(self.robot, freq=a.ir_freq).start()
-        self.cleanup.insert(1, self.ir.stop)
+        self.cleanup.insert(0, self.ir.stop)
         time.sleep(0.5)
         print(f"first IR message from the SDK: {self.ir.first_raw}", flush=True)
+        print(f"first gimbal message from the SDK: {self.gimbal.first_raw}", flush=True)
 
     def boxes(self):
         if self.a.sim:
@@ -133,23 +118,49 @@ class Rig:
         from vf.perception.aruco_detector import load_calibration
         from yolo_gnn.segment import YoloSegmenter
         self.camera = CameraSDK(self.robot.camera).start(resolution=self.a.camera_resolution)
-        self.cleanup.insert(1, self.camera.stop)
+        self.cleanup.insert(0, self.camera.stop)
         K, D = load_calibration(self.a.camera_calib)
         return YoloRays(self.camera, YoloSegmenter(self.a.yolo_weights, device=self.a.yolo_device), K, D,
-                        camera_pitch(self.a), self.camera_pose)
+                        self.body_pose, self.gimbal, self.mount)
+
+    def point(self, yaw, pitch):
+        if not STOP.is_set():
+            self.gimbal.point(yaw, pitch)
+            time.sleep(self.a.settle_s)
 
     def sample(self, n):
-        """(body pose, IR origin, axis, measurement of the ranging sensor, expected)."""
-        body = self.body_pose()
-        r = self.ir.measure(self.mount.index, n=n)
-        if body is None:
-            return None, None, None, r, expected(np.zeros(2), 0.0, [], self.mount.beam_deg)
-        o, axis = ir_origin(body, self.mount)
-        return body, o, axis, r, expected(o, axis, self.boxes(), self.mount.beam_deg)
+        """Reading of the IR with the pose of its beam and what it should read."""
+        body, ang = self.body_pose(), self.gimbal.angles()
+        r = self.ir.measure(self.mount.ir_index, n=n)
+        row = dict(t=time.time(), ir_m=r["m"], ir_sd_m=r["sd_m"], ir_n=r["n"], ir_n_total=r["n_total"])
+        if body is None or ang is None:
+            return row
+        o, head, pitch = ir_pose(body, ang[0], ang[1], self.mount)
+        e = expected(o, head, pitch, self.mount.ir_height_m, self.boxes(), self.mount.beam_deg)
+        horiz = hit = None
+        if r["m"] is not None:
+            horiz, hit = slant_to_floor(r["m"], pitch, self.mount.ir_height_m)
+        row.update(body_x=body[0], body_y=body[1], body_yaw_deg=math.degrees(body[2]),
+                   gimbal_yaw_deg=math.degrees(ang[0]), gimbal_pitch_deg=math.degrees(ang[1]),
+                   ir_x=float(o[0]), ir_y=float(o[1]), ir_heading_deg=math.degrees(head),
+                   ir_pitch_deg=math.degrees(pitch), ir_horiz_m=horiz, ir_hit_height_m=hit, **e,
+                   err_slant_m=None if (r["m"] is None or e["exp_slant_m"] is None) else r["m"] - e["exp_slant_m"])
+        return row
 
-    def turn_to(self, yaw):
-        return turn_in_place(self.body_pose, self.chassis, yaw, math.radians(self.a.aim_tol_deg),
-                             self.a.aim_timeout_s, STOP.is_set)
+    def target_truth(self, row, b):
+        """Horizontal / slant distance of box b's face from the beam of `row`, and the box off the axis."""
+        if row.get("ir_x") is None:
+            return dict(target=b["id"])
+        o = np.array([row["ir_x"], row["ir_y"]])
+        horiz = float(np.hypot(b["x"] - o[0], b["y"] - o[1])) - APOTHEM_M
+        pitch = math.radians(row["ir_pitch_deg"])
+        off = math.degrees(wrap_pi(math.atan2(b["y"] - o[1], b["x"] - o[0]) - math.radians(row["ir_heading_deg"])))
+        out = dict(target=b["id"], target_horiz_m=horiz, target_slant_m=horiz / math.cos(pitch),
+                   target_hit_height_m=self.mount.ir_height_m - horiz * math.tan(pitch), target_off_deg=off)
+        if row["ir_m"] is not None:
+            out.update(target_err_slant_m=row["ir_m"] - out["target_slant_m"],
+                       target_err_horiz_m=row["ir_horiz_m"] - horiz)
+        return out
 
     def close(self):
         for fn in self.cleanup:
@@ -165,9 +176,8 @@ class Log:
         self.path = os.path.join(a.out, f"{a.robot_id}_{mode}_{time.strftime('%Y%m%d-%H%M%S')}.csv")
         self.rows = []
 
-    def add(self, **row):
-        row = {k: (round(v, 5) if isinstance(v, float) else v) for k, v in row.items()}
-        self.rows.append(row)
+    def add(self, row):
+        self.rows.append({k: (round(v, 5) if isinstance(v, float) else v) for k, v in row.items()})
         return row
 
     def write(self):
@@ -183,28 +193,35 @@ class Log:
         print(f"written {self.path} ({len(self.rows)} rows)")
 
 
-def row_of(body, o, axis, r, e, **extra):
-    err = None if (r["m"] is None or e["exp_face_m"] is None) else r["m"] - e["exp_face_m"]
-    return dict(t=time.time(), body_x=None if body is None else body[0], body_y=None if body is None else body[1],
-                body_yaw_deg=None if body is None else math.degrees(body[2]),
-                ir_x=None if o is None else float(o[0]), ir_y=None if o is None else float(o[1]),
-                ir_axis_deg=None if axis is None else math.degrees(axis), ir_m=r["m"], ir_sd_m=r["sd_m"],
-                ir_n=r["n"], ir_n_total=r["n_total"], err_m=err, **e, **extra)
-
-
-def stats(rows, label):
-    e = np.array([r["err_m"] for r in rows if r.get("err_m") is not None], float)
-    none = sum(1 for r in rows if r.get("ir_m") is None)
-    if len(e):
-        print(f"{label}: {len(e)} reading(s) with a box in the cone: error median {np.median(e) * 100:+.1f} cm, "
-              f"median |error| {np.median(np.abs(e)) * 100:.1f} cm, sd {np.std(e) * 100:.1f} cm, "
-              f"max |error| {np.max(np.abs(e)) * 100:.1f} cm; {none} reading(s) without a valid range")
-    else:
-        print(f"{label}: no reading with a box in the cone; {none} reading(s) without a valid range")
-
-
 def fmt(v, unit="", nd=3):
     return "  -  " if v is None else f"{v:.{nd}f}{unit}"
+
+
+def cm(v):
+    return fmt(None if v is None else v * 100, " cm", 1)
+
+
+def stats(errs, none, label):
+    e = np.array([x for x in errs if x is not None], float)
+    if len(e):
+        print(f"{label}: {len(e)} reading(s): error median {np.median(e) * 100:+.1f} cm, median |error| "
+              f"{np.median(np.abs(e)) * 100:.1f} cm, sd {np.std(e) * 100:.1f} cm, max |error| "
+              f"{np.max(np.abs(e)) * 100:.1f} cm; {none} reading(s) without a valid range")
+    else:
+        print(f"{label}: no reading to compare; {none} reading(s) without a valid range")
+
+
+def nearest_box(rig, prefer=None):
+    body, ang, boxes = rig.body_pose(), rig.gimbal.angles(), rig.boxes()
+    if body is None or ang is None or not boxes:
+        return None
+    if prefer is not None:
+        b = next((x for x in boxes if x["id"] == prefer), None)
+        if b is None:
+            raise SystemExit(f"box {prefer} not tracked")
+        return b
+    head = body[2] + ang[0]
+    return min(boxes, key=lambda x: abs(wrap_pi(math.atan2(x["y"] - body[1], x["x"] - body[0]) - head)))
 
 
 # ====================================================================
@@ -212,87 +229,82 @@ def fmt(v, unit="", nd=3):
 # ====================================================================
 
 def watch(rig, a, log):
-    print("all 4 sensors [m] | ranging sensor: reading, expected box and face distance, error   (Ctrl+C ends)")
+    if a.yaw_deg is not None or a.pitch_deg is not None:
+        y, p = rig.gimbal.angles() or (0.0, 0.0)
+        rig.point(math.radians(a.yaw_deg) if a.yaw_deg is not None else y,
+                  math.radians(a.pitch_deg) if a.pitch_deg is not None else p)
+    print("gimbal yaw/pitch | IR slant, flat, hit height | expected box, slant | error   (Ctrl+C ends)")
     while not STOP.is_set():
         t0 = time.time()
-        latest = rig.ir.latest()
-        body, o, axis, r, e = rig.sample(n=1)
-        four = latest[1] if latest else [None] * 4
-        row = log.add(**row_of(body, o, axis, r, e, all_m=" ".join(fmt(v) for v in four)))
-        print(" ".join(f"{fmt(v):>6}" for v in four) + f" | IR {fmt(r['m'])}  expected box "
-              f"{e['exp_box'] or '-'} {fmt(e['exp_face_m'])} (off {fmt(e['off_deg'], ' deg', 1)})  "
-              f"error {fmt(None if row['err_m'] is None else row['err_m'] * 100, ' cm', 1)}", flush=True)
+        r = log.add(rig.sample(n=1))
+        print(f"{fmt(r.get('gimbal_yaw_deg'), '', 1):>6}/{fmt(r.get('gimbal_pitch_deg'), '', 1):<5} deg | "
+              f"IR {fmt(r['ir_m'])} flat {fmt(r.get('ir_horiz_m'))} h {fmt(r.get('ir_hit_height_m'), '', 2)} | "
+              f"box {r.get('exp_box') or '-'} {fmt(r.get('exp_slant_m'))}"
+              + ("" if r.get("exp_box") else f" (floor at {fmt(r.get('exp_floor_m'))})")
+              + f" | {cm(r.get('err_slant_m'))}", flush=True)
         STOP.wait(max(0.0, 0.2 - (time.time() - t0)))
-    stats(log.rows, "watch")
+    stats([r.get("err_slant_m") for r in log.rows], sum(r["ir_m"] is None for r in log.rows), "watch")
 
 
 def aim(rig, a, log):
-    start = rig.body_pose()
+    start = rig.gimbal.angles()
     for rep in range(a.repeats):
-        boxes = [b for b in rig.boxes() if a.boxes is None or b["id"] in a.boxes]
-        body = rig.body_pose()
+        body, boxes = rig.body_pose(), [b for b in rig.boxes() if a.boxes is None or b["id"] in a.boxes]
         if body is None or not boxes:
-            print("no pose or no box")
+            print("no robot pose or no box")
             return
         boxes.sort(key=lambda b: wrap_pi(math.atan2(b["y"] - body[1], b["x"] - body[0]) - body[2]))
         print(f"--- round {rep + 1}/{a.repeats}: boxes {[b['id'] for b in boxes]}")
         for b in boxes:
             if STOP.is_set():
-                return
-            ok = rig.turn_to(aim_yaw(rig.body_pose(), (b["x"], b["y"]), rig.mount))
-            time.sleep(a.settle_s)
-            body, o, axis, r, e = rig.sample(a.ir_samples)
-            off = None if o is None else math.degrees(wrap_pi(math.atan2(b["y"] - o[1], b["x"] - o[0]) - axis))
-            true_face = None if o is None else float(np.hypot(b["x"] - o[0], b["y"] - o[1])) - APOTHEM_M
-            err = None if (r["m"] is None or true_face is None) else r["m"] - true_face
-            log.add(**row_of(body, o, axis, r, e, round=rep, target=b["id"], target_face_m=true_face,
-                             target_off_deg=off, target_err_m=err, turn_ok=ok))
-            print(f"  box {b['id']}: IR {fmt(r['m'])} ({r['n']}/{r['n_total']} valid, sd "
-                  f"{fmt(None if r['sd_m'] is None else r['sd_m'] * 1000, ' mm', 1)}), true face {fmt(true_face)}, "
-                  f"error {fmt(None if err is None else err * 100, ' cm', 1)}, aim off {fmt(off, ' deg', 1)}"
-                  + ("" if e["exp_box"] in (None, b["id"]) else f"  <- nearer box {e['exp_box']} in the cone"))
-    tgt = [dict(err_m=r["target_err_m"], ir_m=r["ir_m"]) for r in log.rows]
-    stats(tgt, "aim")
+                break
+            rig.point(*aim_angles(body, (b["x"], b["y"]), rig.mount))
+            r = rig.sample(a.ir_samples)
+            r.update(rig.target_truth(r, b), round=rep)
+            log.add(r)
+            print(f"  box {b['id']}: gimbal {fmt(r.get('gimbal_yaw_deg'), '', 1)}/{fmt(r.get('gimbal_pitch_deg'), '', 1)}"
+                  f" deg, IR {fmt(r['ir_m'])} ({r['ir_n']}/{r['ir_n_total']}, sd {cm(r['ir_sd_m'])}), true "
+                  f"{fmt(r.get('target_slant_m'))}: error {cm(r.get('target_err_slant_m'))} slant, "
+                  f"{cm(r.get('target_err_horiz_m'))} flat, hit at {fmt(r.get('target_hit_height_m'), ' m', 2)}"
+                  + ("" if r.get("exp_box") in (None, b["id"]) else f"  <- box {r['exp_box']} nearer in the beam"))
+    stats([r.get("target_err_slant_m") for r in log.rows], sum(r["ir_m"] is None for r in log.rows), "aim")
     if start is not None:
-        rig.turn_to(start[2])
+        rig.point(*start)
 
 
 def sweep(rig, a, log):
+    b = nearest_box(rig, a.box)
     body = rig.body_pose()
-    boxes = rig.boxes()
-    if body is None or not boxes:
-        print("no pose or no box")
+    if b is None or body is None:
+        print("no robot pose, no gimbal angles or no box")
         return
-    if a.box is not None:
-        b = next((x for x in boxes if x["id"] == a.box), None)
-        if b is None:
-            raise SystemExit(f"box {a.box} not tracked")
+    yaw0, pitch0 = aim_angles(body, (b["x"], b["y"]), rig.mount)
+    if a.axis == "yaw":
+        steps = [(yaw0 + math.radians(s), pitch0, s) for s in np.arange(-a.span_deg, a.span_deg + 1e-6, a.step_deg)]
     else:
-        b = min(boxes, key=lambda x: abs(wrap_pi(math.atan2(x["y"] - body[1], x["x"] - body[0]) - body[2])))
-    centre = aim_yaw(body, (b["x"], b["y"]), rig.mount)
-    steps = np.arange(-a.span_deg, a.span_deg + 1e-6, a.step_deg)
-    print(f"sweep around box {b['id']}: {len(steps)} steps of {a.step_deg} deg")
-    for s in steps:
+        steps = [(yaw0, math.radians(s), s) for s in np.arange(a.pitch_from_deg, a.pitch_to_deg + 1e-6, a.step_deg)]
+    print(f"{a.axis} sweep on box {b['id']}: {len(steps)} steps of {a.step_deg} deg")
+    for yaw, pitch, s in steps:
         if STOP.is_set():
             break
-        rig.turn_to(wrap_pi(centre + math.radians(s)))
-        time.sleep(a.settle_s)
-        body, o, axis, r, e = rig.sample(a.ir_samples)
-        off = None if o is None else math.degrees(wrap_pi(math.atan2(b["y"] - o[1], b["x"] - o[0]) - axis))
-        face = None if o is None else float(np.hypot(b["x"] - o[0], b["y"] - o[1])) - APOTHEM_M
-        log.add(**row_of(body, o, axis, r, e, target=b["id"], step_deg=float(s), target_off_deg=off,
-                         target_face_m=face, on_target=None if (r["m"] is None or face is None)
-                         else abs(r["m"] - face) <= a.on_target_m and e["exp_box"] in (None, b["id"])))
-        print(f"  axis {fmt(off, ' deg', 1):>9} off box {b['id']}: IR {fmt(r['m'])}  (box face {fmt(face)}"
-              + (f", expected nearest box {e['exp_box']}" if e["exp_box"] not in (None, b["id"]) else "") + ")",
-              flush=True)
-    on = [r["target_off_deg"] for r in log.rows if r.get("on_target")]
+        rig.point(yaw, pitch)
+        r = rig.sample(a.ir_samples)
+        r.update(rig.target_truth(r, b), step_deg=float(s))
+        r["on_target"] = (None if r.get("target_err_slant_m") is None else
+                          abs(r["target_err_slant_m"]) <= a.on_target_m and r.get("exp_box") in (None, b["id"])
+                          and 0.0 <= r.get("target_hit_height_m", -1) <= BOX_HEIGHT_M)
+        log.add(r)
+        print(f"  {a.axis} {s:+6.1f} deg (box {fmt(r.get('target_off_deg'), '', 1)} deg off the axis, beam at "
+              f"{fmt(r.get('target_hit_height_m'), ' m', 2)} on its face): IR {fmt(r['ir_m'])}, box face "
+              f"{fmt(r.get('target_slant_m'))}" + ("  ON THE BOX" if r["on_target"] else "")
+              + (f"  (box {r['exp_box']} nearer)" if r.get("exp_box") not in (None, b["id"]) else ""), flush=True)
+    on = [r["step_deg"] for r in log.rows if r.get("on_target")]
     if on:
-        print(f"the IR reads box {b['id']} (within {a.on_target_m * 100:.0f} cm of its face) from "
-              f"{min(on):+.1f} to {max(on):+.1f} deg off its centre: {max(on) - min(on):.1f} deg in all")
+        print(f"the IR reads box {b['id']} (within {a.on_target_m * 100:.0f} cm) for {a.axis} from {min(on):+.1f} to "
+              f"{max(on):+.1f} deg ({len(on)}/{len(log.rows)} steps)")
     else:
         print(f"the IR never read box {b['id']}")
-    rig.turn_to(centre)
+    rig.point(yaw0, pitch0)
 
 
 def camera(rig, a, log):
@@ -301,13 +313,13 @@ def camera(rig, a, log):
         if STOP.is_set():
             break
         print(f"--- round {rep + 1}/{a.repeats}")
-        got = measure_targets(rays.rays, rig.ir, rig.body_pose, rig.chassis, rig.mount, aim_from_args(a),
+        got = measure_targets(rays.rays, rig.ir, rig.body_pose, rig.gimbal, rig.mount, aim_from_args(a),
                               cancel=STOP.is_set)
         boxes = rig.boxes()
         xy = np.array([[b["x"], b["y"]] for b in boxes], float).reshape(-1, 2)
         for g in got:
             o, u = np.asarray(g["camera_pose"][:2]), unit(g["ray_angle_rad"])
-            k, perr, merr = None, None, None
+            k = perr = merr = err = None
             if len(xy):
                 v = xy - o
                 along = v @ u
@@ -316,18 +328,16 @@ def camera(rig, a, log):
                 if g["position"] is not None:
                     perr = float(np.hypot(*(xy[k] - np.asarray(g["position"]))))
                 merr = float(np.hypot(*(xy[k] - (o + g["mono_m"] * u))))
-            true_face = (None if (k is None or g["ir_origin"] is None)
-                         else float(np.hypot(*(xy[k] - np.asarray(g["ir_origin"])))) - APOTHEM_M)
-            err = None if (g["ir_m"] is None or true_face is None) else g["ir_m"] - true_face
-            log.add(round=rep, target=g["target"], true_box=None if k is None else boxes[k]["id"], ir_m=g["ir_m"],
-                    true_face_m=true_face, err_m=err, centre_err_m=perr, mono_centre_err_m=merr,
-                    aim_residual_deg=g["aim_residual_deg"], aim_lost=g["aim_lost"], consistent=g["consistent"],
-                    ray_angle_deg=math.degrees(g["ray_angle_rad"]), mono_m=g["mono_m"])
+                if g["ir_horiz_m"] is not None:
+                    err = g["ir_horiz_m"] - (float(np.hypot(*(xy[k] - np.asarray(g["ir_origin"])))) - APOTHEM_M)
+            log.add(dict(round=rep, target=g["target"], true_box=None if k is None else boxes[k]["id"],
+                         ir_m=g["ir_m"], ir_horiz_m=g["ir_horiz_m"], ir_hit_height_m=g["ir_hit_height_m"],
+                         err_horiz_m=err, centre_err_m=perr, mono_centre_err_m=merr, on_face=g["on_face"],
+                         aim_residual_deg=g["aim_residual_deg"], aim_lost=g["aim_lost"], consistent=g["consistent"],
+                         gimbal_yaw_deg=g["gimbal_yaw_deg"], gimbal_pitch_deg=g["gimbal_pitch_deg"]))
             print(f"  YOLO box {g['target']} -> true box {None if k is None else boxes[k]['id']}: IR error "
-                  f"{fmt(None if err is None else err * 100, ' cm', 1)}, centre error "
-                  f"{fmt(None if perr is None else perr * 100, ' cm', 1)} (camera alone "
-                  f"{fmt(None if merr is None else merr * 100, ' cm', 1)})")
-    stats(log.rows, "camera (IR range)")
+                  f"{cm(err)} (flat), centre error {cm(perr)} (camera alone {cm(merr)})")
+    stats([r.get("err_horiz_m") for r in log.rows], sum(r["ir_m"] is None for r in log.rows), "camera (IR range)")
     c = [r["centre_err_m"] for r in log.rows if r.get("centre_err_m") is not None]
     m = [r["mono_centre_err_m"] for r in log.rows if r.get("mono_centre_err_m") is not None]
     if c:
@@ -347,23 +357,25 @@ def main():
     ap.add_argument("--regions", default="config/optitrack_regions.json")
     ap.add_argument("--optitrack-server", default="127.0.0.1")
     ap.add_argument("--optitrack-local", default="127.0.0.1")
-    ap.add_argument("--yaw-offset-deg", type=float, default=0.0)
-    ap.add_argument("--camera-offset-forward-m", type=float, default=0.12)
+    ap.add_argument("--yaw-offset-deg", type=float, default=0.0, help="correction of the OptiTrack yaw of the robot")
     ap.add_argument("--camera-calib", default=None)
     ap.add_argument("--camera-resolution", choices=["360", "540", "720"], default="720")
+    ap.add_argument("--yaw-deg", type=float, default=None, help="watch: point the gimbal here first (+ left)")
+    ap.add_argument("--pitch-deg", type=float, default=None, help="watch: point the gimbal here first (+ down)")
     ap.add_argument("--repeats", type=int, default=1, help="aim / camera: rounds")
     ap.add_argument("--boxes", type=int, nargs="+", default=None, help="aim: only these box rigid bodies")
-    ap.add_argument("--box", type=int, default=None, help="sweep: the box rigid body (default: nearest the heading)")
-    ap.add_argument("--span-deg", type=float, default=25.0, help="sweep: from -span to +span around the box")
-    ap.add_argument("--step-deg", type=float, default=2.0, help="sweep: step")
+    ap.add_argument("--box", type=int, default=None, help="sweep: the box rigid body (default: nearest the gimbal)")
+    ap.add_argument("--axis", choices=["yaw", "pitch"], default="yaw", help="sweep: which gimbal axis moves")
+    ap.add_argument("--span-deg", type=float, default=20.0, help="sweep yaw: from -span to +span around the box")
+    ap.add_argument("--pitch-from-deg", type=float, default=-10.0, help="sweep pitch: from (+ down)")
+    ap.add_argument("--pitch-to-deg", type=float, default=25.0, help="sweep pitch: to (+ down)")
+    ap.add_argument("--step-deg", type=float, default=1.0, help="sweep: step")
     ap.add_argument("--on-target-m", type=float, default=0.05, help="sweep: reading within this of the box face")
-    ap.add_argument("--settle-s", type=float, default=0.3, help="wait after turning, before reading")
     ap.add_argument("--out", default="data/ir_live/")
-    ap.add_argument("--sim", action="store_true", help="no hardware: fake robot and IR, boxes of --sim-layout")
+    ap.add_argument("--sim", action="store_true", help="no hardware: fake gimbal and IR, boxes of --sim-layout")
     ap.add_argument("--sim-layout", default="L4")
     ap.add_argument("--ground-truth", default="config/ground_truth_positions.json")
     ap.add_argument("--sim-pose", type=float, nargs=3, default=[-1.6, -0.6, 0.0], metavar=("X", "Y", "YAW_DEG"))
-    ap.add_argument("--sim-speedup", type=float, default=5.0)
     ap.add_argument("--seed", type=int, default=0)
     add_ir_arguments(ap)
     a = ap.parse_args()
@@ -371,11 +383,10 @@ def main():
         ap.error("--rb (OptiTrack rigid body of the robot) is required, or --sim")
     signal.signal(signal.SIGINT, lambda *_: STOP.set())
     rig = Rig(a)
-    log = Log(a, a.mode)
+    log = Log(a, a.mode + (f"_{a.axis}" if a.mode == "sweep" else ""))
     try:
         dict(watch=watch, aim=aim, sweep=sweep, camera=camera)[a.mode](rig, a, log)
     finally:
-        stop(rig.chassis)
         log.write()
         rig.close()
 
