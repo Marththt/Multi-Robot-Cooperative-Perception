@@ -173,7 +173,10 @@ def draw(ax, rows, now, window_s, truth, demo, arena, fusion=None):
                 title += f" | {lab} {len(bx)} box(es), {r.get('verdict')}"
     else:
         title += " | demo page not reachable"
-    if demo or fsr is not None:
+    if not recent_all:
+        title = (f"no reading in the last {window_s:.0f} s: the robots are not ranging yet (or --live-dir is not the "
+                 f"--out of ir_live_robots)")
+    if ax.get_legend_handles_labels()[0]:
         ax.legend(loc="upper right", fontsize=8)
     ax.set_title(title, fontsize=10)
     ax.text(0.01, 0.01, "\n".join(lines), transform=ax.transAxes, fontsize=8, va="bottom",
@@ -227,6 +230,10 @@ def main():
             truth, demo = None, None
         else:
             now = time.time() if not a.png else (rows[-1]["t"] if rows else time.time())
+            if rows and now - rows[-1]["t"] > a.window_s:          # an old log: show its last readings
+                now = rows[-1]["t"]
+                print(f"the log of {a.live_dir} is {time.time() - now:.0f} s old: showing its last {a.window_s:.0f} s",
+                      flush=True)
             b = read_json(os.path.join(a.live_dir, "boxes.json"))
             truth = None if not b else [dict(id=x.get("rb_id"), x=x["x"], y=x["y"]) for x in b.get("boxes", [])]
             demo = demo_results(a.demo)
