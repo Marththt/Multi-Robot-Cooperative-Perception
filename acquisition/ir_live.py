@@ -50,6 +50,11 @@ from yolo_gnn.camera import APOTHEM_M, BOX_HEIGHT_M
 
 STOP = threading.Event()
 
+# gimbal aiming offset per robot [deg], measured with `sweep --axis yaw` (centre of the plateau of a box against
+# where OptiTrack puts it): the gimbal zero is not the forward axis of the rigid body. G1, 2026-11-23: boxes 16, 13,
+# 12 gave +14.0, +13.9, +12.1.
+YAW_OFFSET_DEG = {"G1": 13.3}
+
 
 class Rig:
     """Robot (only its gimbal and IR are used), OptiTrack (robot and boxes); or fakes with fixed boxes (--sim)."""
@@ -247,6 +252,32 @@ def stats(errs, none, label):
         print(f"{label}: no reading to compare; {none} reading(s) without a valid range")
 
 
+def plateaus(angles, readings, flat_m=0.03, min_steps=3):
+    """Runs of consecutive steps whose readings stay within flat_m of their median: the surfaces the beam rests on
+    (the steps across an edge mix two surfaces and give values in between). [(first angle, last angle, median)]."""
+    out, i, n = [], 0, len(angles)
+    while i < n:
+        if readings[i] is None:
+            i += 1
+            continue
+        j = i
+        while j + 1 < n and readings[j + 1] is not None and \
+                max(readings[i:j + 2]) - min(readings[i:j + 2]) <= 2 * flat_m:
+            j += 1
+        if j - i + 1 >= min_steps:
+            out.append((angles[i], angles[j], float(np.median(readings[i:j + 1]))))
+        i = j + 1
+    return out
+
+
+def target_plateau(rows, true_m, rel=0.25):
+    """The plateau of the target box: the flat run whose reading is closest to the true face distance (within rel)."""
+    rows = sorted(rows, key=lambda r: r["gimbal_yaw_deg"])
+    runs = plateaus([r["gimbal_yaw_deg"] for r in rows], [r["ir_m"] for r in rows])
+    runs = [p for p in runs if abs(p[2] - true_m) <= rel * true_m]
+    return min(runs, key=lambda p: abs(p[2] - true_m)) if runs else None
+
+
 def nearest_box(rig, prefer=None):
     body, ang, boxes = rig.body_pose(), rig.gimbal.angles(), rig.boxes()
     if body is None or ang is None or not boxes:
@@ -306,6 +337,15 @@ def aim(rig, a, log):
                   f"{cm(r.get('target_err_horiz_m'))} flat, hit at {fmt(r.get('target_hit_height_m'), ' m', 2)}"
                   + ("" if r.get("exp_box") in (None, b["id"]) else f"  <- box {r['exp_box']} nearer in the beam") + raw_txt(r))
     stats([r.get("target_err_slant_m") for r in log.rows], sum(r["ir_m"] is None for r in log.rows), "aim")
+    pts = [(r["target_slant_m"], r["ir_m"]) for r in log.rows
+           if r.get("ir_m") is not None and r.get("target_slant_m") is not None]
+    if len({round(t, 1) for t, _ in pts}) >= 2:
+        t, m = np.array(pts).T
+        k, q = np.polyfit(t, m, 1)
+        scale = float(np.sum(t * m) / np.sum(t * t))
+        print(f"IR against the true face distance ({len(pts)} readings, {t.min():.2f}-{t.max():.2f} m): "
+              f"IR = {k:.3f} x true {q * 100:+.1f} cm, or IR = {scale:.3f} x true (residual "
+              f"{np.std(m - scale * t) * 100:.1f} cm)")
     if start is not None:
         rig.point(*start)
 
@@ -345,25 +385,22 @@ def sweep(rig, a, log):
               f"{max(on):+.1f} deg ({len(on)}/{len(log.rows)} steps)")
     else:
         print(f"the IR never read box {b['id']} (as the geometry expects it)")
-    # where the IR reads the distance of the box, whatever box the geometry thinks is in the beam: the centre of
-    # that interval is the aiming error of the gimbal (constant offset between the gimbal zero and the rigid body)
-    dist = [r["step_deg"] for r in log.rows if r.get("target_err_slant_m") is not None
-            and abs(r["target_err_slant_m"]) <= a.on_target_m]
-    if dist and a.axis == "yaw":
-        c = 0.5 * (min(dist) + max(dist))
-        o = np.array([log.rows[0]["ir_x"], log.rows[0]["ir_y"]]) if log.rows[0].get("ir_x") is not None else None
-        twins = [] if o is None else [x["id"] for x in rig.boxes() if x["id"] != b["id"] and abs(
-            float(np.hypot(x["x"] - o[0], x["y"] - o[1])) - float(np.hypot(b["x"] - o[0], b["y"] - o[1])))
-            <= 2 * a.on_target_m]
-        if twins:
-            print(f"WARNING: box(es) {twins} stand at about the same distance as box {b['id']}: the interval below may "
-                  f"include them. For the calibration use a box with no other box at its distance (or move them).")
-        print(f"the IR reads the distance of box {b['id']} from {min(dist):+.1f} to {max(dist):+.1f} deg: centre "
-              f"{c:+.1f} deg, i.e. the beam points {abs(c):.1f} deg to the {'LEFT' if c < 0 else 'RIGHT'} of where it "
-              f"should, and is {max(dist) - min(dist) + a.step_deg:.0f} deg wide on this box.\n"
-              f"  -> correction: --yaw-offset-deg {a.yaw_offset_deg - c:+.1f}")
-    elif dist:
-        print(f"the IR reads the distance of box {b['id']} for pitch from {min(dist):+.1f} to {max(dist):+.1f} deg (+ down)")
+    # the plateau of the target (the flat run of readings closest to its face distance), whatever box the geometry
+    # thinks is in the beam: its centre against where the geometry put the box is the aiming error of the gimbal
+    # (constant offset between the gimbal zero and the rigid body); its reading against the true face is the
+    # range error of the IR
+    true = float(np.median([r["target_slant_m"] for r in log.rows if r.get("target_slant_m") is not None] or [0]))
+    p = target_plateau([r for r in log.rows if r.get("gimbal_yaw_deg") is not None], true) if a.axis == "yaw" else None
+    if p is not None:
+        g0 = math.degrees(yaw0)
+        c = 0.5 * (p[0] + p[1])
+        print(f"plateau of box {b['id']}: gimbal {p[0]:+.1f} to {p[1]:+.1f} deg, reading {p[2]:.3f} m against a true face "
+              f"at {true:.3f} m ({(p[2] - true) * 100:+.1f} cm, x{p[2] / true:.3f})\n"
+              f"  centre {c:+.1f} deg, the geometry put the box at {g0:+.1f} deg: the beam points {abs(c - g0):.1f} deg "
+              f"to the {'LEFT' if c < g0 else 'RIGHT'} of where it should\n"
+              f"  -> correction: --yaw-offset-deg {a.yaw_offset_deg - (c - g0):+.1f}")
+    elif a.axis == "yaw":
+        print(f"no flat run of readings near the face distance of box {b['id']} ({true:.2f} m)")
     rig.point(yaw0, pitch0)
 
 
@@ -417,7 +454,9 @@ def main():
     ap.add_argument("--regions", default="config/optitrack_regions.json")
     ap.add_argument("--optitrack-server", default="127.0.0.1")
     ap.add_argument("--optitrack-local", default="127.0.0.1")
-    ap.add_argument("--yaw-offset-deg", type=float, default=0.0, help="correction of the OptiTrack yaw of the robot")
+    ap.add_argument("--yaw-offset-deg", type=float, default=None,
+                    help="correction of the OptiTrack yaw of the robot, i.e. the gimbal aiming offset (default: "
+                         "YAW_OFFSET_DEG of the robot, else 0)")
     ap.add_argument("--camera-calib", default=None)
     ap.add_argument("--camera-resolution", choices=["360", "540", "720"], default="720")
     ap.add_argument("--snap", action="store_true",
@@ -443,6 +482,10 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     add_ir_arguments(ap)
     a = ap.parse_args()
+    if a.yaw_offset_deg is None:
+        a.yaw_offset_deg = YAW_OFFSET_DEG.get(a.robot_id, 0.0) if not a.sim else 0.0
+        if a.yaw_offset_deg:
+            print(f"gimbal aiming offset of {a.robot_id}: {a.yaw_offset_deg:+.1f} deg (YAW_OFFSET_DEG)")
     if not a.sim and a.rb is None:
         ap.error("--rb (OptiTrack rigid body of the robot) is required, or --sim")
     signal.signal(signal.SIGINT, lambda *_: STOP.set())
