@@ -531,7 +531,7 @@ def resolve(a, ap):
 def main():
     ap = make_parser()
     a = resolve(ap.parse_args(), ap)
-    signal(signal.SIGINT, lambda *_: STOP.set())
+    signal.signal(signal.SIGINT, lambda *_: STOP.set())
     rig = Rig(a)
     log = Log(a, a.mode + (f"_{a.axis}" if a.mode == "sweep" else ""))
     try:
