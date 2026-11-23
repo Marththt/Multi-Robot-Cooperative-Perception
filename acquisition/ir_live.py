@@ -64,12 +64,13 @@ class Rig:
                 gt = json.load(f)[a.sim_layout]
             self.fixed = [dict(id=11 + k, x=float(b["x"]), y=float(b["y"])) for k, b in enumerate(gt)]
             x, y, yaw = a.sim_pose
-            body = (x, y, math.radians(yaw))
-            self.body_pose = lambda: body
+            true = (x, y, math.radians(yaw))                          # where the fakes really point from
+            seen = (x, y, wrap_pi(math.radians(yaw - a.sim_yaw_error_deg + (a.yaw_offset_deg or 0.0))))
+            self.body_pose = lambda: seen                             # what the script believes
             self.gimbal = FakeGimbal()
             xy = [[b["x"], b["y"]] for b in self.fixed]
-            self.ir = FakeIR(xy, self.body_pose, self.gimbal, self.mount, rng)
-            self.sim_rays = SimRays(xy, self.body_pose, self.gimbal, self.mount, rng)
+            self.ir = FakeIR(xy, lambda: true, self.gimbal, self.mount, rng)
+            self.sim_rays = SimRays(xy, lambda: true, self.gimbal, self.mount, rng)
             return
         from robomaster_sdk import Robot
         from robomaster_sdk.gimbal import PITCH_SIGN, YAW_SIGN, Gimbal
@@ -343,7 +344,26 @@ def sweep(rig, a, log):
         print(f"the IR reads box {b['id']} (within {a.on_target_m * 100:.0f} cm) for {a.axis} from {min(on):+.1f} to "
               f"{max(on):+.1f} deg ({len(on)}/{len(log.rows)} steps)")
     else:
-        print(f"the IR never read box {b['id']}")
+        print(f"the IR never read box {b['id']} (as the geometry expects it)")
+    # where the IR reads the distance of the box, whatever box the geometry thinks is in the beam: the centre of
+    # that interval is the aiming error of the gimbal (constant offset between the gimbal zero and the rigid body)
+    dist = [r["step_deg"] for r in log.rows if r.get("target_err_slant_m") is not None
+            and abs(r["target_err_slant_m"]) <= a.on_target_m]
+    if dist and a.axis == "yaw":
+        c = 0.5 * (min(dist) + max(dist))
+        o = np.array([log.rows[0]["ir_x"], log.rows[0]["ir_y"]]) if log.rows[0].get("ir_x") is not None else None
+        twins = [] if o is None else [x["id"] for x in rig.boxes() if x["id"] != b["id"] and abs(
+            float(np.hypot(x["x"] - o[0], x["y"] - o[1])) - float(np.hypot(b["x"] - o[0], b["y"] - o[1])))
+            <= 2 * a.on_target_m]
+        if twins:
+            print(f"WARNING: box(es) {twins} stand at about the same distance as box {b['id']}: the interval below may "
+                  f"include them. For the calibration use a box with no other box at its distance (or move them).")
+        print(f"the IR reads the distance of box {b['id']} from {min(dist):+.1f} to {max(dist):+.1f} deg: centre "
+              f"{c:+.1f} deg, i.e. the beam points {abs(c):.1f} deg to the {'LEFT' if c < 0 else 'RIGHT'} of where it "
+              f"should, and is {max(dist) - min(dist) + a.step_deg:.0f} deg wide on this box.\n"
+              f"  -> correction: --yaw-offset-deg {a.yaw_offset_deg - c:+.1f}")
+    elif dist:
+        print(f"the IR reads the distance of box {b['id']} for pitch from {min(dist):+.1f} to {max(dist):+.1f} deg (+ down)")
     rig.point(yaw0, pitch0)
 
 
@@ -418,6 +438,8 @@ def main():
     ap.add_argument("--sim-layout", default="L4")
     ap.add_argument("--ground-truth", default="config/ground_truth_positions.json")
     ap.add_argument("--sim-pose", type=float, nargs=3, default=[-1.6, -0.6, 0.0], metavar=("X", "Y", "YAW_DEG"))
+    ap.add_argument("--sim-yaw-error-deg", type=float, default=0.0,
+                    help="with --sim: the gimbal really points this much more to the left than the script believes")
     ap.add_argument("--seed", type=int, default=0)
     add_ir_arguments(ap)
     a = ap.parse_args()
