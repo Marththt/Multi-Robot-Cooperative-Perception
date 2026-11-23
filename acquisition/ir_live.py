@@ -123,6 +123,31 @@ class Rig:
         return YoloRays(self.camera, YoloSegmenter(self.a.yolo_weights, device=self.a.yolo_device), K, D,
                         self.body_pose, self.gimbal, self.mount)
 
+    def snap(self, name, text=""):
+        """--snap: saves the camera frame (the camera is on the gimbal) with a cross at the centre of the image and
+        `text`, in <out>/snaps_<time>/<name>.jpg: where the gimbal really points."""
+        if not self.a.snap or self.a.sim:
+            return
+        import cv2
+        if self.camera is None:
+            from robomaster_sdk.camera import Camera as CameraSDK
+            self.camera = CameraSDK(self.robot.camera).start(resolution=self.a.camera_resolution)
+            self.cleanup.insert(0, self.camera.stop)
+            self.snap_dir = os.path.join(self.a.out, f"snaps_{time.strftime('%Y%m%d-%H%M%S')}")
+            os.makedirs(self.snap_dir, exist_ok=True)
+            time.sleep(1.0)
+        time.sleep(0.2)
+        img, _ = self.camera.read()
+        if img is None:
+            print(f"  (no camera frame for {name})")
+            return
+        img = img.copy()
+        h, w = img.shape[:2]
+        cv2.line(img, (w // 2 - 40, h // 2), (w // 2 + 40, h // 2), (0, 0, 255), 2)
+        cv2.line(img, (w // 2, h // 2 - 40), (w // 2, h // 2 + 40), (0, 0, 255), 2)
+        cv2.putText(img, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+        cv2.imwrite(os.path.join(self.snap_dir, f"{name}.jpg"), img)
+
     def point(self, yaw, pitch):
         if not STOP.is_set():
             self.gimbal.point(yaw, pitch)
@@ -272,6 +297,8 @@ def aim(rig, a, log):
             r = rig.sample(a.ir_samples)
             r.update(rig.target_truth(r, b), round=rep)
             log.add(r)
+            rig.snap(f"aim_r{rep}_box{b['id']}", f"box {b['id']}: IR {fmt(r['ir_m'])} m, true {fmt(r.get('target_slant_m'))} m, "
+                     f"gimbal {fmt(r.get('gimbal_yaw_deg'), '', 1)}/{fmt(r.get('gimbal_pitch_deg'), '', 1)} deg")
             print(f"  box {b['id']}: gimbal {fmt(r.get('gimbal_yaw_deg'), '', 1)}/{fmt(r.get('gimbal_pitch_deg'), '', 1)}"
                   f" deg, IR {fmt(r['ir_m'])} ({r['ir_n']}/{r['ir_n_total']}, sd {cm(r['ir_sd_m'])}), true "
                   f"{fmt(r.get('target_slant_m'))}: error {cm(r.get('target_err_slant_m'))} slant, "
@@ -300,6 +327,8 @@ def sweep(rig, a, log):
         rig.point(yaw, pitch)
         r = rig.sample(a.ir_samples)
         r.update(rig.target_truth(r, b), step_deg=float(s))
+        rig.snap(f"sweep_{a.axis}_{s:+05.1f}", f"{a.axis} {s:+.1f} deg: IR {fmt(r['ir_m'])} m, box {b['id']} face "
+                 f"{fmt(r.get('target_slant_m'))} m")
         r["on_target"] = (None if r.get("target_err_slant_m") is None else
                           abs(r["target_err_slant_m"]) <= a.on_target_m and r.get("exp_box") in (None, b["id"])
                           and 0.0 <= r.get("target_hit_height_m", -1) <= BOX_HEIGHT_M)
@@ -371,6 +400,8 @@ def main():
     ap.add_argument("--yaw-offset-deg", type=float, default=0.0, help="correction of the OptiTrack yaw of the robot")
     ap.add_argument("--camera-calib", default=None)
     ap.add_argument("--camera-resolution", choices=["360", "540", "720"], default="720")
+    ap.add_argument("--snap", action="store_true",
+                    help="aim / sweep: save the camera frame after every pointing, with a cross at the image centre")
     ap.add_argument("--yaw-deg", type=float, default=None, help="watch: point the gimbal here first (+ left)")
     ap.add_argument("--pitch-deg", type=float, default=None, help="watch: point the gimbal here first (+ down)")
     ap.add_argument("--repeats", type=int, default=1, help="aim / camera: rounds")
