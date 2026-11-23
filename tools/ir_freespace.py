@@ -147,6 +147,21 @@ def simulate_states(rng, a, arena, boxes, robots):
             states[f"S{i}"].append(dict(robot_id=f"S{i}", t=now - 30 + 0.1 * len(states[f"S{i}"]),
                                         pose=[float(o[0]), float(o[1]), float(head)], detections=[],
                                         ir_slant_m=float(t), gimbal=[0.0, 0.0], kind="probe"))
+        # the fan of the gimbal: --probe-fan beams evenly spread over +-probe_fan_deg around the chassis heading
+        # (what the camera sees), pitched down probe_pitch_deg: the beam meets the floor at IR_H / tan(pitch)
+        if a.probe_fan > 0:
+            pitch = math.radians(a.probe_pitch_deg)
+            floor = IR_H / math.tan(pitch) if pitch > 1e-6 else float("inf")
+            for off in np.linspace(-a.probe_fan_deg, a.probe_fan_deg, a.probe_fan):
+                head = body[2] + math.radians(off + rng.normal(0, a.aim_sd_deg))
+                u = np.array([math.cos(head), math.sin(head)])
+                o = body[:2] + 0.10 * u
+                t = min(cast(o, u, boxes, [r[:2] for r in robots], arena, skip_robot=i)[0][0], floor)
+                t += rng.normal(0, a.ir_sd)
+                states[f"S{i}"].append(dict(robot_id=f"S{i}", t=now - 30 + 0.1 * len(states[f"S{i}"]),
+                                            pose=[float(o[0]), float(o[1]), float(head)], detections=[],
+                                            ir_slant_m=float(t / math.cos(pitch)),
+                                            gimbal=[float(off), math.degrees(pitch)], kind="fan"))
     return states
 
 
@@ -374,6 +389,13 @@ def main():
     g.add_argument("--bad-aim-deg", type=float, default=8.0)
     g.add_argument("--ir-sd", type=float, default=0.024, help="range noise [m] (real run: 2.4 cm)")
     g.add_argument("--aim-hidden", action="store_true", help="also aim at boxes hidden behind others")
+    g.add_argument("--probe-fan", type=int, default=0,
+                   help="per robot, a fan of this many beams evenly spread over +-probe-fan-deg around the chassis "
+                        "heading (the field of view of the camera), free space only: a gimbal sweep")
+    g.add_argument("--probe-fan-deg", type=float, default=40.0)
+    g.add_argument("--probe-pitch-deg", type=float, default=4.0,
+                   help="the fan is pitched down this much (the IR is at the height of the box tops): it meets the "
+                        "floor at 0.30 / tan(pitch), 4.3 m at 4 deg")
     g.add_argument("--probe-rays", type=int, default=0,
                    help="per robot, this many extra beams in random directions that only give free space (no "
                         "detection): what a 2D lidar or a gimbal sweep would add")
