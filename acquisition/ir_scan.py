@@ -192,11 +192,35 @@ def fan(rig, a):
         y0, y1 = y1, y0
     a.fan_dir = -a.fan_dir                                    # the next fan goes the other way
     rig.point(y0, pitch)
-    rig.gimbal.start_move(y1, pitch, a.fan_speed_dps)
+    # speed control, not an SDK action: moveto (start_move) stayed "running" in the SDK after the gimbal had
+    # arrived, and every later point() of the robot was refused ("Robot is already performing 1 action(s)")
+    speed = math.copysign(a.fan_speed_dps, y1 - y0)
+    drive = getattr(rig.gimbal, "drive", None)
+    if drive is None:
+        rig.gimbal.start_move(y1, pitch, a.fan_speed_dps)
+    else:
+        drive(speed)
+    try:
+        return _fan_samples(rig, a, y0, y1, pitch, k, q, None if drive is None else lambda: drive(speed))
+    finally:
+        if drive is not None:
+            for _ in range(3):                                # stop: sent a few times, a lost message would
+                drive(0.0)                                    # leave the gimbal turning
+                time.sleep(0.05)
+
+
+def _fan_samples(rig, a, y0, y1, pitch, k, q, keep_driving):
     t_end = time.time() + abs(y1 - y0) / math.radians(a.fan_speed_dps) + 2.0
-    last_t, n, boxes = None, 0, rig.boxes()
+    last_t, n, boxes, t_sent = None, 0, rig.boxes(), time.time()
+    sign = 1.0 if y1 > y0 else -1.0
     while time.time() < t_end and not STOP.is_set():
         time.sleep(0.5 / max(a.ir_freq, 1))
+        if keep_driving is not None and time.time() - t_sent > 0.2:
+            keep_driving()
+            t_sent = time.time()
+        ang_now = rig.gimbal.angles()
+        if ang_now is not None and sign * (ang_now[0] - y1) > -math.radians(0.5):
+            break                                             # reached (or passed) the end of the fan
         got = rig.ir.latest()
         if not got or got[0] == last_t:
             continue

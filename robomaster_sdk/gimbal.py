@@ -111,6 +111,14 @@ class Gimbal:
         sp = max(PITCH_LIMITS_DEG[0], min(PITCH_LIMITS_DEG[1], self.pitch_sign * math.degrees(pitch)))
         return self.g.moveto(pitch=sp, yaw=sy, pitch_speed=speed_deg_s, yaw_speed=speed_deg_s)
 
+    def drive(self, yaw_speed_deg_s, pitch_speed_deg_s=0.0):
+        """Turns the gimbal at constant speed [deg/s, this module's convention: + yaw to the left, + pitch down];
+        drive(0) stops it. Unlike moveto / start_move this is not an SDK action: nothing stays "running" in the
+        SDK, so the next moveto is never refused with "Robot is already performing 1 action(s)" (start_move left
+        its action at ~80% after the gimbal had arrived, and every later point() of the robot was refused).
+        Sent again on every call: the caller repeats it while it turns."""
+        self.g.drive_speed(pitch_speed=self.pitch_sign * pitch_speed_deg_s, yaw_speed=self.yaw_sign * yaw_speed_deg_s)
+
     def recenter(self, timeout_s=4.0):
         self.g.recenter().wait_for_completed(timeout_s)
 

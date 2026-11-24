@@ -267,14 +267,24 @@ class FakeGimbal:
                 self.yaw, self.moving = y1, None
             else:
                 self.yaw = y0 + math.copysign(step, y1 - y0)
+        dv = getattr(self, "driving", None)
+        if dv is not None:                                   # drive: constant speed until drive(0) or point()
+            t0, w = dv
+            now = time.time()
+            self.yaw += w * (now - t0)
+            self.driving = (now, w)
         return self.yaw, self.pitch
 
     def start_move(self, yaw, pitch, speed_deg_s=10.0):
         self.pitch = pitch
         self.moving = (time.time(), self.yaw, yaw, math.radians(speed_deg_s))
 
+    def drive(self, yaw_speed_deg_s, pitch_speed_deg_s=0.0):
+        self.angles()
+        self.driving = (time.time(), math.radians(yaw_speed_deg_s)) if yaw_speed_deg_s else None
+
     def point(self, yaw, pitch, **kw):
-        self.moving = None
+        self.moving = self.driving = None
         self.yaw = yaw
         self.pitch = max(math.radians(-30.0), min(math.radians(25.0), pitch))
         return 0.0, 0.0
