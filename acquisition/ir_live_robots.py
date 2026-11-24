@@ -100,12 +100,22 @@ def coordinator(a, robots, stop, timeout_s=8.0):
             if stop.is_set():
                 return
             seq += 1
-            write_json(os.path.join(a.out, "turn.json"), dict(robot=r["robot_id"], seq=seq, t=time.time()))
-            t0 = time.time()
+            turn = dict(robot=r["robot_id"], seq=seq, t=time.time())
+            turn_path = os.path.join(a.out, "turn.json")
+            write_json(turn_path, turn)
+            t0 = t_check = time.time()
             while not stop.is_set():
                 d = read_json(os.path.join(a.out, f"{r['robot_id']}.done.json"))
                 if d and d.get("seq") == seq:
                     break
+                # write_json gives up when the file stays open by a reader (every robot reads turn.json every
+                # 20 ms; Windows cannot replace an open file): a lost turn would leave the robot waiting until the
+                # timeout. Write it again until it is there (a robot takes a seq once only).
+                if time.time() - t_check > 0.5:
+                    t_check = time.time()
+                    t = read_json(turn_path)
+                    if t is None or t.get("seq") != seq:
+                        write_json(turn_path, turn)
                 if time.time() - t0 > timeout_s:
                     print(f"{r['robot_id']}: no answer to its turn in {timeout_s:.0f} s, next robot", flush=True)
                     break

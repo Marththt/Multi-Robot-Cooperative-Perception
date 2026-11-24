@@ -90,8 +90,13 @@ class Turns:
         return False
 
     def done(self):
+        """The answer is written once per turn, so it must not be lost: write_json gives up (False) when the file
+        stays open by the coordinator, which reads it every 20 ms (Windows cannot replace an open file)."""
         if self.on:
-            write_json(os.path.join(self.dir, f"{self.a.robot_id}.done.json"), dict(seq=self.seq, t=time.time()))
+            path = os.path.join(self.dir, f"{self.a.robot_id}.done.json")
+            t0 = time.time()
+            while not write_json(path, dict(seq=self.seq, t=time.time())) and time.time() - t0 < 5.0:
+                time.sleep(0.01)
 
 
 def other_robots(rig, a):
