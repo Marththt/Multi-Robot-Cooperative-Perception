@@ -1,0 +1,57 @@
+{
+  "hfov_deg": 88.0,
+  "r_min_m": 0.15,
+  "r_max_m": 3.0,
+  "range_fit": [
+    1.0826,
+    -0.1175
+  ],
+  "bearing_fit": [
+    1.0328,
+    -0.00833
+  ],
+  "camera_offset_m": 0.0,
+  "detect_w": [
+    3.5396,
+    2.2794,
+    -2.4359,
+    -1.7356,
+    -7.0474
+  ],
+  "two_face_q": 0.045899999999999996,
+  "view_noise_sd_rad": 0.15405,
+  "along_mean": [
+    0.0451,
+    -0.0003,
+    -0.0572
+  ],
+  "along_sd": [
+    0.01455,
+    0.009899999999999999
+  ],
+  "across_sd": [
+    0.08175,
+    -0.0081
+  ],
+  "bias_sd_along_rel": 0.03285,
+  "bias_sd_across_rel": 0.02685,
+  "false_rate": 0.3062,
+  "false_near_share": 0.284,
+  "false_near_range_m": [
+    1.12,
+    3.5
+  ],
+  "false_far_range_m": [
+    3.55,
+    7.99
+  ],
+  "false_edge_share": 0.557,
+  "false_edge_band_deg": [
+    38.0,
+    44.0
+  ],
+  "source": {
+    "from": "config/sensor_model.json",
+    "mismatch": "noise x1.5 (along, across, per-robot bias, view), false_rate x2, two_face_q x3: the test scenes of tools/grid_tune_thresholds, the MHT keeps the nominal file"
+  }
+}

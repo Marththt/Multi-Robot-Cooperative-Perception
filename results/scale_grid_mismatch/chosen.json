@@ -1,0 +1,32 @@
+{
+  "plan": {
+    "t_false": 0.9,
+    "t_link": 0.5,
+    "tune_f1": 0.8496,
+    "tune_f1_default": 0.8328
+  },
+  "scale": {
+    "t_false": 0.9,
+    "t_link": 0.5,
+    "tune_f1": 0.8732,
+    "tune_f1_default": 0.8613
+  },
+  "tune_set": "/private/tmp/claude-501/-Users-alessiomartinelli-Desktop-Tesi-tesi-codice--Multi-Robot-Cooperative-Perception/acd831b4-4e76-401f-8323-f7b6bcd8f3c2/scratchpad/scale/tune",
+  "t_false_grid": [
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9
+  ],
+  "t_link_grid": [
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7
+  ]
+}
