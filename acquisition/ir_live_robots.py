@@ -90,6 +90,13 @@ def truth_loop(a, robots, stop, hz=30.0):
         hub.close()
 
 
+def activity_files(a, r):
+    """Files a robot writes while it works: its live state (after every box) and its log (every reading and every
+    fan sample)."""
+    rid = r["robot_id"]
+    return [os.path.join(a.out, f"{rid}.json"), os.path.join(a.out, "log", f"{rid}.jsonl")]
+
+
 def coordinator(a, robots, stop, timeout_s=8.0):
     """Turn taking: one robot at a time ranges one box (acquisition/ir_scan.py --turns), round robin, so that the
     beams of two robots never meet on a box (the IR cannot be switched off: the others point theirs upwards)."""
@@ -116,10 +123,20 @@ def coordinator(a, robots, stop, timeout_s=8.0):
                     t = read_json(turn_path)
                     if t is None or t.get("seq") != seq:
                         write_json(turn_path, turn)
-                if time.time() - t0 > timeout_s:
-                    print(f"{r['robot_id']}: no answer to its turn in {timeout_s:.0f} s, next robot", flush=True)
+                # skipped only when idle: no state, reading or fan sample written for timeout_s (a long turn that
+                # is still working, a fan or a YOLO look with many boxes on the real hardware, is waited for);
+                # never more than 5 x timeout_s in all
+                now = time.time()
+                idle = now - max([t0] + [os.path.getmtime(p) for p in activity_files(a, r) if os.path.exists(p)])
+                if idle > timeout_s or now - t0 > 5 * timeout_s:
+                    print(f"{r['robot_id']}: no answer to its turn ({now - t0:.0f} s, idle for {idle:.0f} s), "
+                          f"next robot", flush=True)
                     break
                 time.sleep(0.02)
+            else:
+                continue
+            if d and d.get("seq") == seq and time.time() - t0 > 0.8 * timeout_s:
+                print(f"{r['robot_id']}: its turn took {time.time() - t0:.0f} s", flush=True)
         n += 1
         if n == 1:
             print("first round of turns done", flush=True)
