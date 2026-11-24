@@ -9,4 +9,6 @@
                        confirmed / deleted) and batch objects(); the score against the truth
     fleet/live.py      the live window (python -m fleet.sim --live)
     fleet/sim.py       the simulation (python -m fleet.sim)
+    fleet/lab.py       the same brain on the real robots (python -m fleet.lab), with the tests step by step
+    fleet/robot_node.py  one robot in the lab: chassis, gimbal fan / aim, IR and YOLO reports (started by lab.py)
 """
