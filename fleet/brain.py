@@ -3,6 +3,23 @@
 It runs in one place (the captain's computer) and sees only what the robots report: their poses (OptiTrack) and
 their camera frames (fleet/sensing.Frame). It never sees the true scene.
 
+Sensors "gimbal" (the default; the robots have only the camera and the ToF on the gimbal):
+  - the MAP comes from the gimbal IR alone (add_ir): every reading frees the cells along the beam and marks the
+    end cell occupied (L_HIT_IR, so that beams grazing an edge do not erase it); a beam ending on another robot
+    marks nothing there. Where robots have stood is free (add_footprint). The arena is not known in advance.
+  - the robots move only where the IR has seen free space: unknown cells within unknown_m of a robot centre are
+    blocked like obstacles (no driving into an unseen box);
+  - the CAMERA gives YOLO detections only; where it looked is worked out on the brain's own map (camera_frame),
+    for the coverage (phi) and for the negative evidence of the online fusion;
+  - ONLINE FUSION (fleet/fusion.Tracker): every frame updates the object list (tentative / confirmed /
+    deleted); an object is confirmed only if the IR agrees (an aimed IR range on it, or a box-sized blob of the
+    IR map where it is: occ_near);
+  - ACTIVE PERCEPTION: an idle gimbal is sent to aim the IR at the nearest object not yet ranged (aim_tasks), and
+    tentative objects raise phi around them (revisit_m), so the coverage brings the fleet back to look again;
+  - the captain explores by frontiers (captain_plan "frontier": the largest unexplored blob, a viewpoint it can
+    reach on known free space, or the nearest frontier cell); the mission ends when the coverage goal is reached
+    and nothing is tentative (finished).
+
 Map (fine grid, 5 cm)
   occupancy   log-odds: + on a cell where a camera ray stopped (or the proximity sensor found something), - on a
               cell a ray went through. Occupied cells are closed (binary_fill_holes): the inside of an obstacle is
@@ -35,10 +52,13 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import ndimage
 
+from fleet.fusion import Tracker
+from fleet.sensing import _march
 from fleet.world import ROBOT_R_M, Grid
 from vf.control.goto import wrap_pi
 
 L_HIT, L_FREE, L_MAX = 0.9, -0.4, 4.0
+L_HIT_IR = 1.7                 # one IR echo outweighs a few beams grazing the cell (the edge of an obstacle)
 
 
 @dataclass
@@ -62,6 +82,14 @@ class BrainParams:
     explored_phi: float = 0.1         # a cell with phi below this is covered
     waypoint_tol_m: float = 0.25
     stuck_s: float = 20.0             # a captain goal not approached by 10 cm in this long is dropped
+    sensors: str = "gimbal"           # gimbal: map from the gimbal IR, camera = YOLO only | camera: the camera
+                                      # also gives free space (depth), the first version
+    captain_plan: str = "frontier"    # frontier: next best viewpoint on the map | lanes: boustrophedon first
+    unknown_m: float = 0.22           # gimbal: a robot centre stays this far from space never seen free
+    aim_range_m: float = 2.2          # gimbal: objects the IR is aimed at, at most this far
+    aim_cooldown_s: float = 6.0       # the same object is not aimed at again before this
+    revisit_m: float = 0.3            # tentative objects make phi high within this: the fleet goes back to them
+    box_max_m: float = 0.30           # an occupied blob wider than this is not a box
 
 
 def downsample(a, f, how):
@@ -126,7 +154,12 @@ class Brain:
         self.detections = []                # dict(robot, t, xy, ...) of every frame
         self.goals = {}                     # rid -> dict(target=(x, y), yaw, path=[(x, y)...], final=(x, y))
         self.followers = [r for r in self.robots if r != captain]
-        self.phase, self.wp, self.wp_t = "lanes", 0, None
+        self.phase = "lanes" if p.captain_plan == "lanes" else "explore"
+        self.wp, self.wp_t = 0, None
+        self.trail = np.zeros(self.fine.shape, bool)      # where robots have stood: free space for sure
+        self.tracker = Tracker(cam.sd_range_m, cam.sd_bearing_deg)
+        self.aimed = {}                                   # track id -> time of the last aim
+        self.ir_last = {}                                 # rid -> (origin, end, hit) of the last IR reading
         self.lanes, self.across = None, None
         self.slots = None
         self.mop_blacklist = []
@@ -155,6 +188,145 @@ class Brain:
         for d in fr.detections:
             self.detections.append(dict(robot=fr.robot, t=fr.t, lens=fr.lens, **d))
 
+    def add_footprint(self, pose):
+        g = self.fine
+        m = np.hypot(g.X - pose[0], g.Y - pose[1]) <= ROBOT_R_M
+        self.trail |= m
+        self.logodds[m] = np.minimum(self.logodds[m], -L_MAX / 2)
+
+    def add_ir(self, robot, origin, heading, d, r_max, poses):
+        """One gimbal IR reading: the cells along the beam are free, the end cell occupied (unless the beam ended
+        on another robot: the brain knows where the robots are)."""
+        g = self.fine
+        end_d = r_max if d is None else d
+        hit = d is not None
+        if hit:
+            ex, ey = origin[0] + d * math.cos(heading), origin[1] + d * math.sin(heading)
+            if any(math.hypot(ex - q[0], ey - q[1]) < ROBOT_R_M + 0.08 for rid, q in poses.items() if rid != robot):
+                hit, end_d = False, d - 0.05
+        s = np.arange(g.res / 2, max(end_d - g.res, 0.0), g.res / 2)
+        px, py = origin[0] + np.cos(heading) * s, origin[1] + np.sin(heading) * s
+        ok = (px >= g.x0) & (px < g.x1) & (py >= g.y0) & (py < g.y1)
+        flat = np.unique(((px[ok] - g.x0) / g.res).astype(int) * g.ny + ((py[ok] - g.y0) / g.res).astype(int))
+        lo = self.logodds.ravel()
+        lo[flat] = np.maximum(lo[flat] + L_FREE, -L_MAX)
+        end = (origin[0] + end_d * math.cos(heading), origin[1] + end_d * math.sin(heading))
+        if hit and g.inside(*end):
+            ix, iy = g.index(*end)
+            self.logodds[ix, iy] = min(self.logodds[ix, iy] + L_HIT_IR, L_MAX)
+        self.ir_last[robot] = (tuple(origin), end, hit)
+
+    def camera_frame(self, fr, poses):
+        """A YOLO frame (gimbal sensors): where it looked, from the brain's own map (rays stop on cells known to be
+        occupied and on the other robots; unknown space counts as seen through), then the tracker."""
+        g, cam = self.fine, self.cam
+        half = math.radians(cam.hfov_deg) / 2
+        angles = fr.lens[2] + np.linspace(-half, half, int(round(2 * half / math.radians(2.0))) + 1)
+        occ = (self.logodds > 0.5).astype(int)
+        others = [q[:2] for rid, q in poses.items() if rid != fr.robot]
+        seen, hits = _march(fr.lens[:2], angles, cam.r_max_m, g, occ, others)
+        looked = np.concatenate([seen, hits]).astype(int)
+        if len(looked):
+            d = np.hypot(g.P[looked, 0] - fr.lens[0], g.P[looked, 1] - fr.lens[1])
+            looked = np.unique(looked[(d >= cam.r_min_m) & (d <= cam.r_max_m)])
+            self.views.ravel()[looked] += 1
+            self.looks.ravel()[looked] += 1
+        mask = np.zeros(g.shape, bool)
+        mask.ravel()[looked] = True
+
+        def was_looked(xy):
+            ix, iy = g.index(*xy)
+            return bool(mask[max(0, ix - 1):ix + 2, max(0, iy - 1):iy + 2].any())
+
+        dets = []
+        for d in fr.detections:
+            row = dict(robot=fr.robot, t=fr.t, lens=fr.lens, **d)
+            self.detections.append(row)
+            dets.append(row)
+        self.tracker.camera(fr.robot, fr.t, dets, was_looked, self.occ_near)
+
+    def occ_near(self, xy, r=0.12):
+        """The IR map has a BOX-SIZED blob within r of xy: occupied cells there, in a connected blob no wider
+        than box_max_m (a long blob is an obstacle or a wall, whatever YOLO says is in front of it)."""
+        g = self.fine
+        if not g.inside(*xy):
+            return False
+        ix, iy = g.index(*xy)
+        w = int(math.ceil(0.6 / g.res))
+        x0, y0 = max(0, ix - w), max(0, iy - w)
+        win = self.logodds[x0:ix + w + 1, y0:iy + w + 1] > 0.5
+        if not win.any():
+            return False
+        lab, _ = ndimage.label(win, structure=np.ones((3, 3)))
+        k = int(math.ceil(r / g.res))
+        cx, cy = ix - x0, iy - y0
+        near = lab[max(0, cx - k):cx + k + 1, max(0, cy - k):cy + k + 1]
+        for c in np.unique(near[near > 0]):
+            cells = np.argwhere(lab == c)
+            ext = (cells.max(0) - cells.min(0) + 1) * g.res
+            if ext.max() <= self.p.box_max_m:
+                return True
+        return False
+
+    def ir_measure(self, robot, tid, origin, heading, d, ir):
+        """An aimed IR reading on track tid: the box centre one apothem behind the face the beam hit."""
+        if d is None:
+            k = self.tracker.get(tid)
+            if k is not None and k.state in ("tentative", "confirmed"):
+                k.ir_miss += 1
+                self.tracker.states(self.occ_near)
+            return
+        u = np.array([math.cos(heading), math.sin(heading)])
+        z = np.asarray(origin, float) + (d + ir.apothem_m) * u
+        face = np.asarray(origin, float) + d * u
+        if not self.occ_near(tuple(face), r=0.08):      # the beam hit an obstacle, a wall, or nothing box-like
+            k = self.tracker.get(tid)
+            if k is not None and k.state in ("tentative", "confirmed"):
+                k.ir_miss += 1
+                self.tracker.states(self.occ_near)
+            return
+        sa, sc = ir.sd_m, (d + ir.apothem_m) * math.radians(ir.aim_sd_deg)
+        R = np.outer(u, u) * sa * sa + np.outer([-u[1], u[0]], [-u[1], u[0]]) * sc * sc
+        ok = self.tracker.ir(tid, z, R, self.occ_near)
+        self.detections.append(dict(robot=robot, t=self.t, lens=(origin[0], origin[1], heading), xy=tuple(z),
+                                    range=d + ir.apothem_m, bearing=0.0, true=None, ir=True, sd_along=sa,
+                                    sd_across=sc, ir_ok=ok))
+
+    def aim_tasks(self, poses, idle):
+        """Gimbal IR tasks: every idle robot (gimbal fanning) gets the nearest live object it can aim at (within
+        aim_range_m, in line of sight on the map, not yet ranged by the IR, not aimed at in the last
+        aim_cooldown_s, not given to another robot). Returns {rid: track id}."""
+        out, taken = {}, set()
+        occ = self.logodds > 0.5
+        for r in idle:
+            q = poses[r]
+            best, bd = None, self.p.aim_range_m
+            for k in self.tracker.live():
+                if k.n_ir > 0 or k.id in taken or self.t - self.aimed.get(k.id, -1e9) < self.p.aim_cooldown_s:
+                    continue
+                xy = k.xy
+                d = math.hypot(xy[0] - q[0], xy[1] - q[1])
+                if d < bd and self.fine_line(q[:2], xy, occ, skip_end_m=0.15):
+                    best, bd = k, d
+            if best is not None:
+                out[r] = best.id
+                taken.add(best.id)
+                self.aimed[best.id] = self.t
+        return out
+
+    def fine_line(self, a, b, occ, skip_end_m=0.0):
+        g = self.fine
+        d = math.hypot(b[0] - a[0], b[1] - a[1])
+        for t in np.arange(0.3, max(d - skip_end_m, 0.3), g.res / 2):
+            ix, iy = g.index(a[0] + (b[0] - a[0]) * t / d, a[1] + (b[1] - a[1]) * t / d)
+            if occ[ix, iy]:
+                return False
+        return True
+
+    def finished(self):
+        """Coverage goal reached and nothing tentative left, or nothing left to explore."""
+        return self.done or (self.coverage() >= self.p.coverage_goal and not self.tracker.tentative())
+
     def add_proximity(self, free, occ):
         lo = self.logodds.ravel()
         lo[free] = np.maximum(lo[free] + L_FREE, -L_MAX)
@@ -167,6 +339,11 @@ class Brain:
         """Probability that a target in the cell is still undetected (0 on occupied cells)."""
         ph = (1.0 - self.cam.p_d_near) ** self.views
         ph[self.occupied()] = 0.0
+        g = self.fine
+        for k in self.tracker.tentative():           # an object still to confirm or reject: look there again
+            xy = k.xy
+            m = np.hypot(g.X - xy[0], g.Y - xy[1]) < self.p.revisit_m
+            ph[m] = np.maximum(ph[m], 0.9)
         return ph
 
     def coverage(self):
@@ -185,6 +362,10 @@ class Brain:
                 occ = ndimage.binary_dilation(occ, disk(self.p.inflate_m / self.fine.res))
             c = self.coarse
             b = downsample(occ.astype(float), self.f, "mean")[:c.nx, :c.ny] > 0.5
+            if self.p.sensors == "gimbal":               # only where the IR has seen free space (or a robot stood)
+                unknown = (self.logodds >= 0) & ~self.trail
+                unknown = ndimage.binary_dilation(unknown, disk(self.p.unknown_m / self.fine.res))
+                b |= downsample(unknown.astype(float), self.f, "mean")[:c.nx, :c.ny] > 0.5
             m = int(math.ceil(self.p.inflate_m / c.res))
             b[:m, :] = b[-m:, :] = True
             b[:, :m] = b[:, -m:] = True
@@ -319,6 +500,23 @@ class Brain:
             sc = m.sum() / (1.0 + dcap[i])
             if sc > score:
                 best, score = (vp, ctr), sc
+        if best is None:
+            # no viewpoint within camera range of any blob (e.g. at the start, little is known free): go to the
+            # frontier, the reachable cell nearest to the largest blob, facing it
+            R = np.argwhere(reach)
+            for k in np.argsort([-(lab == k).sum() for k in range(1, n + 1)])[:3] + 1:
+                B = np.argwhere(lab == k)
+                if len(B) < 4 or not len(R):
+                    continue
+                d2 = ((R[:, None, :] - B[None, ::max(1, len(B) // 300), :]) ** 2).sum(-1)
+                i, j = np.unravel_index(np.argmin(d2), d2.shape)
+                vp = c.centre(*R[i])
+                if math.hypot(vp[0] - cap[0], vp[1] - cap[1]) < 0.15 and len(self.mop_blacklist) and \
+                        any(math.hypot(vp[0] - q[0], vp[1] - q[1]) < 0.3 for q in self.mop_blacklist):
+                    continue
+                ctr = (float(c.X[lab == k].mean()), float(c.Y[lab == k].mean()))
+                bq = c.centre(*B[::max(1, len(B) // 300)][j])
+                return vp, bq if math.hypot(bq[0] - vp[0], bq[1] - vp[1]) > 0.05 else ctr
         return best
 
     def captain_goal(self, poses):
@@ -343,7 +541,7 @@ class Brain:
                     self.wp_t, self.best_d = self.t, float("inf")
                     return self.captain_goal(poses)
                 return w, heading
-        if self.phase == "mop":
+        if self.phase in ("mop", "explore"):
             if self.mop is None or self.t - self.wp_t > p.stuck_s or \
                     (math.hypot(self.mop[0][0] - cap[0], self.mop[0][1] - cap[1]) < p.waypoint_tol_m and
                      abs(wrap_pi(math.atan2(self.mop[1][1] - cap[1], self.mop[1][0] - cap[0]) - cap[2])) < 0.2 and

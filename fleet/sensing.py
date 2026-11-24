@@ -79,14 +79,18 @@ def _march(lens_xy, angles, r_max, grid, ids, robots_xy):
     return seen, np.unique(np.asarray(hits, int))
 
 
-def look(cam, world, grid, ids, robot, pose, others_xy, rng, t=0.0):
-    """One camera frame of `robot` at pose (x, y, yaw): what it sees (Frame)."""
+def look(cam, world, grid, ids, robot, pose, others_xy, rng, t=0.0, depth=True):
+    """One camera frame of `robot` at pose (x, y, yaw of the camera): what it sees (Frame). depth=False: the
+    camera gives only its detections (YOLO), not the free space (seen / hits empty)."""
     x, y, yaw = pose
     lens = (x + cam.forward_m * math.cos(yaw), y + cam.forward_m * math.sin(yaw), yaw)
     half = math.radians(cam.hfov_deg) / 2
-    n = int(round(2 * half / math.radians(cam.ray_step_deg))) + 1
-    angles = yaw + np.linspace(-half, half, n)
-    seen, hits = _march(lens[:2], angles, cam.r_max_m, grid, ids, others_xy)
+    if depth:
+        n = int(round(2 * half / math.radians(cam.ray_step_deg))) + 1
+        angles = yaw + np.linspace(-half, half, n)
+        seen, hits = _march(lens[:2], angles, cam.r_max_m, grid, ids, others_xy)
+    else:
+        seen = hits = np.zeros(0, int)
     fr = Frame(robot, t, lens, seen=seen, hits=hits)
     for j, c in enumerate(world.targets):
         v = c - np.asarray(lens[:2])
@@ -103,12 +107,57 @@ def look(cam, world, grid, ids, robot, pose, others_xy, rng, t=0.0):
         fr.detections.append(dict(xy=(lens[0] + dm * math.cos(am), lens[1] + dm * math.sin(am)), range=dm,
                                   bearing=_wrap(am - yaw), true=j))
     free = seen[np.hypot(grid.P[seen, 0] - lens[0], grid.P[seen, 1] - lens[1]) >= cam.r_min_m] if len(seen) else seen
-    for _ in range(rng.poisson(cam.fp_rate) if len(free) else 0):
-        q = grid.P[free[rng.integers(len(free))]] + rng.normal(0, grid.res / 3, 2)
+    for _ in range(rng.poisson(cam.fp_rate)):
+        if len(free):
+            q = grid.P[free[rng.integers(len(free))]] + rng.normal(0, grid.res / 3, 2)
+        else:                                   # anywhere in the field of view
+            b, r = yaw + rng.uniform(-half, half), rng.uniform(cam.r_min_m, cam.r_max_m)
+            q = np.array([lens[0] + r * math.cos(b), lens[1] + r * math.sin(b)])
         d = float(np.hypot(*(q - np.asarray(lens[:2]))))
         fr.detections.append(dict(xy=(float(q[0]), float(q[1])), range=d,
                                   bearing=_wrap(math.atan2(q[1] - lens[1], q[0] - lens[0]) - yaw), true=None))
     return fr
+
+
+@dataclass
+class GimbalIR:
+    """The ToF on the gimbal (acquisition/ir_ranging.py): one beam along the gimbal direction, 20 readings per
+    second, range error 2.4 cm (real run, 3 robots), pitched just enough to stay on the box faces up to r_max_m
+    (beyond: the floor or nothing, no reading). The gimbal fans from -fan_deg to +fan_deg around the chassis
+    heading at fan_dps, or turns to an object at aim_dps, waits settle_s and takes n_aim readings (the median)."""
+    rate_hz: float = 20.0
+    r_max_m: float = 2.5
+    sd_m: float = 0.024
+    sd_dir_deg: float = 0.5           # where the beam really goes vs the gimbal angle read back
+    aim_sd_deg: float = 1.5           # across-beam error of an aimed reading (aim + footprint)
+    arm_m: float = 0.10               # IR ahead of the gimbal axis
+    fan_deg: float = 40.0
+    fan_dps: float = 30.0
+    aim_dps: float = 120.0
+    settle_s: float = 0.3
+    n_aim: int = 5
+    apothem_m: float = 0.068          # face -> box centre
+
+
+def ir_beam(grid, ids, origin, heading, r_max, robots_xy, rng, ir):
+    """One IR reading from origin along heading: (distance [m] or None for no echo within r_max, what it hit:
+    'world' or 'robot' or None). The ray stops on the first occupied cell of the true scene or on a robot."""
+    step = grid.res / 2
+    h = heading + rng.normal(0, math.radians(ir.sd_dir_deg))
+    s = np.arange(step, r_max + 1e-9, step)
+    px, py = origin[0] + math.cos(h) * s, origin[1] + math.sin(h) * s
+    out = (px < grid.x0) | (px >= grid.x1) | (py < grid.y0) | (py >= grid.y1)
+    ix = np.clip(((px - grid.x0) / grid.res).astype(int), 0, grid.nx - 1)
+    iy = np.clip(((py - grid.y0) / grid.res).astype(int), 0, grid.ny - 1)
+    wall = (ids[ix, iy] != 0) | out              # the arena border is a wall too
+    robot = np.zeros_like(wall)
+    for rx, ry in robots_xy:
+        robot |= np.hypot(px - rx, py - ry) < ROBOT_R_M
+    hit = wall | robot
+    if not hit.any():
+        return None, None
+    k = int(hit.argmax())
+    return float(s[k] + rng.normal(0, ir.sd_m)), ("robot" if robot[k] and not wall[k] else "world")
 
 
 def proximity(grid, ids, pose, r):

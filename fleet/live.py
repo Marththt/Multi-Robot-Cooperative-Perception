@@ -1,10 +1,12 @@
 """Live window of the fleet simulation (python -m fleet.sim --live): what the brain knows, while it happens.
 
-  map         white = never seen, blue = seen (darker = more often), black = seen occupied
-  robots      dot + heading, the camera field of view as a wedge, the goal of the brain (+); the captain larger,
-              its planned path dashed
-  targets     green squares = the truth (--hide-truth to hide them), red x = what the fleet would report now
-              (fleet/fusion.objects on the detections so far, every 2 s)
+  map         white = never seen, light grey = seen free by the IR (gimbal sensors), blue = looked at by a
+              camera (darker = more often), black = seen occupied
+  robots      dot + chassis heading, the camera field of view as a wedge (it turns with the gimbal), the IR beam
+              (red when it hit something), the goal of the brain (+); the captain larger, its path dashed; a
+              dotted line from a robot to the object its gimbal is aiming the IR at
+  objects     green squares = the truth (--hide-truth to hide them); online list of the captain: orange o =
+              tentative, red x = confirmed (the report), grey dot = deleted
 """
 
 import math
@@ -41,7 +43,11 @@ class LiveView:
             self.head[r] = self.ax.plot([], [], "-", color=c, lw=2.5)[0]
             self.goal[r] = self.ax.plot([], [], "+", color=c, ms=12, mew=2)[0]
         self.path = self.ax.plot([], [], "--", color="k", lw=1)[0]
-        self.est = self.ax.plot([], [], "x", color="tab:red", ms=10, mew=2.5, label="reported target")[0]
+        self.beam = {r: self.ax.plot([], [], "-", color="tab:red", lw=1, alpha=0.8)[0] for r in robots}
+        self.aim = {r: self.ax.plot([], [], ":", color="k", lw=1.2)[0] for r in robots}
+        self.tent = self.ax.plot([], [], "o", mfc="none", mec="tab:orange", ms=10, mew=2, label="tentative")[0]
+        self.dele = self.ax.plot([], [], ".", color="0.5", ms=6, label="deleted")[0]
+        self.est = self.ax.plot([], [], "x", color="tab:red", ms=10, mew=2.5, label="confirmed / reported")[0]
         self.ax.legend(loc="upper left", fontsize=8, framealpha=0.85)
         self.ax.set_xlim(a[0], a[1])
         self.ax.set_ylim(a[2], a[3])
@@ -49,18 +55,36 @@ class LiveView:
         self.mode = mode
         self.fig.tight_layout()
 
-    def update(self, t, pose, brain, est):
+    def update(self, t, pose, brain, est, gim=None):
         cam = self.cam
-        self.im.set_data((1 - (1 - cam.p_d_near) ** brain.views).T)
+        cov = 1 - (1 - cam.p_d_near) ** brain.views
+        if brain.p.sensors == "gimbal":
+            free = (brain.logodds < 0) | brain.trail
+            cov = np.where(free & (cov < 0.15), 0.15, cov)
+        self.im.set_data(cov.T)
         occ = brain.logodds > 0.5
         self.occ.set_data(np.ma.masked_where(~occ, np.ones(occ.shape)).T)
         half = math.radians(cam.hfov_deg) / 2
         for r in self.robots:
             x, y, yaw = pose[r]
+            if gim is not None and brain.p.sensors == "gimbal":
+                cy = yaw + gim[r]["gy"]
+                last = brain.ir_last.get(r)
+                if last:
+                    (ox, oy), (ex, ey), hit = last
+                    self.beam[r].set_data([ox, ex], [oy, ey])
+                    self.beam[r].set_color("tab:red" if hit else "0.6")
+                k = brain.tracker.get(gim[r]["task"]) if gim[r]["task"] is not None else None
+                if k is not None:
+                    self.aim[r].set_data([x, k.xy[0]], [y, k.xy[1]])
+                else:
+                    self.aim[r].set_data([], [])
+            else:
+                cy = yaw
             self.dot[r].set_data([x], [y])
             self.head[r].set_data([x, x + 0.3 * math.cos(yaw)], [y, y + 0.3 * math.sin(yaw)])
-            arc = yaw + np.linspace(-half, half, 15)
-            lx, ly = x + cam.forward_m * math.cos(yaw), y + cam.forward_m * math.sin(yaw)
+            arc = cy + np.linspace(-half, half, 15)
+            lx, ly = x + cam.forward_m * math.cos(cy), y + cam.forward_m * math.sin(cy)
             pts = [(lx, ly)] + [(lx + cam.r_max_m * math.cos(b), ly + cam.r_max_m * math.sin(b)) for b in arc]
             self.fov[r].set_xy(pts)
             g = brain.goals.get(r)
@@ -72,8 +96,16 @@ class LiveView:
         if est:
             e = np.array(est)
             self.est.set_data(e[:, 0], e[:, 1])
+        else:
+            self.est.set_data([], [])
+        if brain.p.sensors == "gimbal":
+            for line, ks in ((self.tent, brain.tracker.tentative()),
+                             (self.dele, [k for k in brain.tracker.tracks if k.state == "deleted"])):
+                xy = np.array([k.xy for k in ks]).reshape(-1, 2)
+                line.set_data(xy[:, 0], xy[:, 1])
+        n_t = len(brain.tracker.tentative()) if brain.p.sensors == "gimbal" else 0
         self.ax.set_title(f"{self.mode}   t = {t:5.1f} s   {brain.phase}   coverage {100 * brain.coverage():.0f}%   "
-                          f"targets reported: {len(est)}", fontsize=10)
+                          f"confirmed: {len(est)}   tentative: {n_t}", fontsize=10)
         self.fig.canvas.draw_idle()
         self.plt.pause(0.001)
 
