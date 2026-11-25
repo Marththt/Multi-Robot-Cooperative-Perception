@@ -11,4 +11,6 @@
     fleet/sim.py       the simulation (python -m fleet.sim)
     fleet/lab.py       the same brain on the real robots (python -m fleet.lab), with the tests step by step
     fleet/robot_node.py  one robot in the lab: chassis, gimbal fan / aim, IR and YOLO reports (started by lab.py)
+    fleet/calib.py     the gimbal heading of every robot, measured at the start of a lab run against the boxes
+    fleet/replay.py    a lab run replayed offline through the brain (python -m fleet.replay <result folder>)
 """

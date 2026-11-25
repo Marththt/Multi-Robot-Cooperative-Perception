@@ -29,6 +29,7 @@ import argparse
 import json
 import math
 import os
+import sys
 import time
 
 import numpy as np
@@ -252,7 +253,10 @@ def run(a, mode, seed, pictures=True):
     sc = fusion.score(est, world.targets)
     phi = (1.0 - cam.p_d_near) ** brain.views
     true_free = true_ids == 0
-    summary = dict(mode=mode, seed=seed, robots=a.robots, captain=captain, t_s=round(t, 1),
+    summary = dict(run=dict(what="simulation (python -m fleet.sim): simulated robots, scene of the seed",
+                            command="python -m fleet.sim " + " ".join(sys.argv[1:]),
+                            date=time.strftime("%Y-%m-%d %H:%M:%S"), sensors=a.sensors),
+                   mode=mode, seed=seed, robots=a.robots, captain=captain, t_s=round(t, 1),
                    wall_s=round(time.time() - wall, 1), phase=brain.phase, done=brain.done,
                    coverage_true=float(np.mean(phi[true_free] <= p.explored_phi)),
                    coverage_brain=brain.coverage(), frames=frames, detections=len(brain.detections),

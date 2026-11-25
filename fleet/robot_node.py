@@ -5,13 +5,16 @@ one process at a time can use). It talks to the brain through files in --dir:
 
   goals/<robot>.json      written by the brain (atomic), read here every 0.1 s:
                           {"seq", "t", "target": [x, y] or null, "yaw": rad or null, "v_max": m/s or null,
-                           "gimbal": {"mode": "fan"} or {"mode": "aim", "task": id, "xy": [x, y]}}
+                           "gimbal": {"mode": "fan"[, "fan_deg", "fan_dps"]} or
+                                     {"mode": "aim", "task": id, "xy": [x, y]},
+                           "yaw_fix": gimbal heading correction [deg] (fleet/calib.py) or absent}
   reports/<robot>.jsonl   appended here, one JSON per line, read by the brain:
                           {"type": "status", "t", "pose": [x, y, yaw], "gy": gimbal yaw [rad], "mode", "task"}
                           {"type": "ir", "t", "o": [x, y], "h": heading, "d": horizontal range [m] or null}
                                 d null = the beam went beyond --ir-max-m (free space up to there)
                           {"type": "cam", "t", "lens": [x, y, yaw], "rays": [[world angle, monocular range], ...]}
-                          {"type": "aim", "t", "task", "o", "h", "d"}   the aimed reading (median of --aim-samples)
+                          {"type": "aim", "t", "task", "o", "h", "d", "miss"}   the aimed reading (see gimbal)
+                          every row also carries "yf": the heading correction in use [deg]
   STOP                    the node stops the chassis, stops and re-centres the gimbal, and exits
 
 Every loop (20 Hz):
@@ -22,15 +25,18 @@ Every loop (20 Hz):
             direction it moves stops the translation; so does leaving the arena (--regions) by more than 0.1 m.
   gimbal    fan: speed control (Gimbal.drive, never an SDK action) back and forth between -fan and +fan around
             the chassis heading, beam pitched --fan-pitch-deg down; aim: the chassis stops, the gimbal points the
-            IR at the box (acquisition/ir_ranging.aim_angles, mid-face), waits --settle-s, reads --aim-samples
-            samples, reports their median, and the fan goes on.
+            IR at the box (acquisition/ir_ranging.aim_angles, mid-face) and around it (0, -+4, -+8 deg:
+            --aim-sweep-deg, --aim-step-deg), reads --aim-samples samples at each, reports the reading whose box
+            centre falls nearest to the object ("miss" [m]), and the fan goes on.
   IR        the newest sample of the IR (with the gimbal angles and the pose at that moment) as a beam: range
             corrected (acquisition/ir_live.IR_FIT), turned into a horizontal range with the beam pitch; a beam
             that meets the floor or reads beyond --ir-max-m reports free space only.
   camera    a thread: frame -> YOLO -> one ray per box (acquisition/ir_ranging.YoloRays), --no-camera to leave it out.
 
 The gimbal aiming offset of the robot (acquisition/ir_live.YAW_OFFSET_DEG) is applied to the gimbal angles, not
-to the chassis heading; --calibrate measures it at start with a yaw sweep around one box (about 40 s).
+to the chassis heading; on top of it the correction the brain measures at the start of the run (yaw_fix of the
+goal: the offset changes from one session to the next, fleet/calib.py) is applied to every gimbal angle, read or
+commanded, and to the camera rays. --calibrate measures the offset at start with a yaw sweep around one box.
 
 Without hardware (--sim --sim-world <world.json> --sim-pose X Y YAW_DEG): the chassis integrates its commands
 (vf/control/goto.FakeRobot), the gimbal is acquisition/ir_ranging.FakeGimbal, the IR and the camera see the scene
@@ -73,14 +79,18 @@ class Reports:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         self.f = open(path, "a", buffering=1)
         self.lock = threading.Lock()
+        self.extra = {}                          # added to every row (yf: the gimbal heading correction in use)
 
     def put(self, **row):
         row.setdefault("t", time.time())
+        row.update(self.extra)
         with self.lock:
-            self.f.write(json.dumps(row) + "\n")
+            if not self.f.closed:                # the camera thread may still report while the node closes
+                self.f.write(json.dumps(row) + "\n")
 
     def close(self):
-        self.f.close()
+        with self.lock:
+            self.f.close()
 
 
 # ---------------------------------------------------------------------------------------------- hardware
@@ -176,6 +186,9 @@ class SimRobot:
         self.yolo = None if a.no_camera else True
         self.last_ir_t = 0.0
         self.contacts = 0
+        # --sim-yaw-error-deg: the gimbal yaw read back is off by this (as the real robots' was): the IR and the
+        # camera see with the true angle, the angles and the rays are reported with the read one
+        self.err = math.radians(getattr(a, "sim_yaw_error_deg", 0.0) or 0.0)
 
     def body(self):
         # a stalled process must not make the chassis jump (FakeRobot integrates over the wall clock): at most
@@ -190,10 +203,11 @@ class SimRobot:
         return (c.x, c.y, c.yaw)
 
     def gimbal_angles(self):
-        return self.gimbal.angles()
+        gy, gp = self.gimbal.angles()
+        return wrap_pi(gy + self.err), gp
 
     def point(self, yaw, pitch):
-        self.gimbal.point(yaw, pitch)
+        self.gimbal.point(wrap_pi(yaw - self.err), pitch)
 
     def _beam(self):
         from fleet.sensing import ir_beam
@@ -224,13 +238,27 @@ class SimRobot:
         lens, _ = camera_pose(body, gy, gp, self.mount)
         fr = look(self.cam, self.world, self.grid, self.ids, self.a.robot_id, (body[0], body[1], lens[2]), [],
                   self.rng, depth=False)
-        return lens, [(wrap_pi(lens[2] + d["bearing"]), d["range"]) for d in fr.detections]
+        e = self.err
+        return (lens[0], lens[1], lens[2] + e), [(wrap_pi(lens[2] + e + d["bearing"]), d["range"]) for d in fr.detections]
 
     def drive(self, vx, vy, wz):
         self.chassis.drive_speed(x=SIGN_X * vx, y=SIGN_Y * vy, z=SIGN_Z * math.degrees(wz))
 
     def close(self):
         self.drive(0.0, 0.0, 0.0)
+
+
+APOTHEM_M = 0.068                                       # box face -> centre
+
+
+def aim_offsets(sweep_deg, step_deg):
+    """0, -step, +step, -2 step, ... up to +-sweep_deg [deg]."""
+    out = [0.0]
+    k = 1
+    while step_deg > 0 and k * step_deg <= sweep_deg + 1e-9:
+        out += [-k * step_deg, k * step_deg]
+        k += 1
+    return out
 
 
 # ---------------------------------------------------------------------------------------------- node
@@ -248,6 +276,8 @@ class Node:
             from vf.fusion.sensor_model import arena_from_regions
             self.arena = arena_from_regions(a.regions)
         self.bump_said = 0.0
+        self.yaw_fix = 0.0          # gimbal heading correction [rad], measured by fleet/lab.py (fleet/calib.py)
+        self.rep.extra["yf"] = 0.0
 
     def stopped(self):
         return STOP.is_set() or os.path.exists(self.stop_path)
@@ -256,6 +286,19 @@ class Node:
         g = read_json(self.goal_path)
         if g and g.get("seq") != self.goal_seq:
             self.goal, self.goal_seq = g, g.get("seq")
+            fix = g.get("yaw_fix")
+            if fix is not None and abs(math.radians(fix) - self.yaw_fix) > 1e-6:
+                self.yaw_fix = math.radians(fix)
+                self.rep.extra["yf"] = float(fix)
+                print(f"gimbal heading correction {fix:+.2f} deg", flush=True)
+
+    def angles(self):
+        """Gimbal (yaw, pitch) relative to the chassis as the IR and the camera really point, or None."""
+        ang = self.hw.gimbal_angles()
+        return None if ang is None else (wrap_pi(ang[0] + self.yaw_fix), ang[1])
+
+    def point(self, yaw, pitch):
+        self.hw.point(wrap_pi(yaw - self.yaw_fix), pitch)
 
     # ---------------------------------------------------------------- chassis
     def drive_step(self, body):
@@ -294,12 +337,14 @@ class Node:
 
     # ---------------------------------------------------------------- gimbal
     def fan_step(self, ang):
-        lim = math.radians(self.a.fan_deg)
+        g = (self.goal or {}).get("gimbal") or {}
+        lim = math.radians(g.get("fan_deg") or self.a.fan_deg)        # the brain widens it to calibrate
+        dps = g.get("fan_dps") or self.a.fan_dps
         if ang is not None and ((ang[0] > lim and self.fan_dir > 0) or (ang[0] < -lim and self.fan_dir < 0)):
             self.fan_dir = -self.fan_dir
             self.fan_sent = 0.0
         if time.time() - self.fan_sent > 0.2:                   # re-sent: a lost message must not stop the fan
-            self.hw.gimbal.drive(self.fan_dir * self.a.fan_dps)
+            self.hw.gimbal.drive(self.fan_dir * dps)
             self.fan_sent = time.time()
 
     def aim(self, task, xy):
@@ -314,22 +359,37 @@ class Node:
             return
         yaw, pitch = aim_angles(body, xy, self.hw.mount)
         self.status(body)
-        self.hw.point(yaw, pitch)
-        time.sleep(self.a.settle_s)
-        body, ang = self.hw.body(), self.hw.gimbal_angles()
-        d = self.hw.ir_measure(self.a.aim_samples)
+        # a small sweep around the direction of the object (its position is the camera's, a few cm off): the
+        # reading whose box centre falls nearest to the object is reported
         row = dict(type="aim", task=task, o=None, h=None, d=None)
-        if body is not None and ang is not None:
+        best = None
+        for k, off in enumerate(aim_offsets(self.a.aim_sweep_deg, self.a.aim_step_deg)):
+            self.point(yaw + math.radians(off), pitch)
+            time.sleep(self.a.settle_s if k == 0 else self.a.settle_s / 2)
+            body, ang = self.hw.body(), self.angles()
+            d = self.hw.ir_measure(self.a.aim_samples)
+            if body is None or ang is None:
+                continue
             o, h, p = ir_pose(body, ang[0], ang[1], self.hw.mount)
-            row.update(o=[float(o[0]), float(o[1])], h=float(h))
-            if d is not None:
-                horiz, height = slant_to_floor(d, p, self.hw.mount.ir_height_m)
-                row["d"] = float(horiz) if height > 0.02 else None
+            if row["o"] is None:
+                row.update(o=[float(o[0]), float(o[1])], h=float(h))
+            if d is None:
+                continue
+            horiz, height = slant_to_floor(d, p, self.hw.mount.ir_height_m)
+            if height <= 0.02:
+                continue
+            c = horiz + APOTHEM_M
+            miss = math.hypot(o[0] + c * math.cos(h) - xy[0], o[1] + c * math.sin(h) - xy[1])
+            if best is None or miss < best[0]:
+                best = (miss, o, h, horiz)
+        if best is not None:
+            _, o, h, horiz = best
+            row.update(o=[float(o[0]), float(o[1])], h=float(h), d=float(horiz), miss=round(best[0], 3))
         self.rep.put(**row)
         if self.a.verbose:
             print(f"aim task {task}: {row['d']}", flush=True)
         self.done_tasks.add(task)
-        self.hw.point(yaw, math.radians(self.a.fan_pitch_deg))
+        self.point(yaw, math.radians(self.a.fan_pitch_deg))
         self.mode, self.task, self.fan_sent = "fan", None, 0.0
 
     # ---------------------------------------------------------------- reports
@@ -347,7 +407,7 @@ class Node:
         self.rep.put(type="ir", o=[float(o[0]), float(o[1])], h=float(h), d=horiz)
 
     def status(self, body):
-        ang = self.hw.gimbal_angles()
+        ang = self.angles()
         self.rep.put(type="status", pose=None if body is None else [float(v) for v in body],
                      gy=None if ang is None else float(ang[0]), mode=self.mode, task=self.task)
 
@@ -360,12 +420,13 @@ class Node:
                 time.sleep(0.5)
                 continue
             if lens is not None:
-                self.rep.put(type="cam", lens=[float(v) for v in lens],
-                             rays=[[float(a), float(d)] for a, d in rays])
+                c = self.yaw_fix                     # the camera is on the gimbal: the same heading correction
+                self.rep.put(type="cam", lens=[float(lens[0]), float(lens[1]), float(lens[2] + c)],
+                             rays=[[float(a + c), float(d)] for a, d in rays])
 
     # ---------------------------------------------------------------- main loop
     def run(self):
-        self.hw.point(0.0, math.radians(self.a.fan_pitch_deg))
+        self.point(0.0, math.radians(self.a.fan_pitch_deg))
         if self.hw.yolo is not None:
             threading.Thread(target=self.camera_loop, daemon=True).start()
         print(CONNECTED_MSG, flush=True)
@@ -379,7 +440,7 @@ class Node:
             if g.get("mode") == "aim" and g.get("task") not in self.done_tasks:
                 self.aim(g["task"], g["xy"])
                 continue
-            body, ang = self.hw.body(), self.hw.gimbal_angles()
+            body, ang = self.hw.body(), self.angles()
             self.drive_step(body)
             self.fan_step(ang)
             self.ir_step(body, ang)
@@ -416,6 +477,9 @@ def main():
                     help="beam pitched down this much while fanning (meets the floor at 0.30 / tan: 4.3 m at 4 deg)")
     ap.add_argument("--ir-max-m", type=float, default=2.5, help="horizontal range of the IR used for the map")
     ap.add_argument("--aim-samples", type=int, default=5)
+    ap.add_argument("--aim-sweep-deg", type=float, default=8.0,
+                    help="an aim reads the IR from -this to +this around the object direction (0 = one reading)")
+    ap.add_argument("--aim-step-deg", type=float, default=4.0)
     ap.add_argument("--sim-world", default=None, help="--sim: the scene (fleet/world.World JSON)")
     ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args()

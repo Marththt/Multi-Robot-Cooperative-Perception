@@ -6,8 +6,13 @@ second writes every robot's goal (--dir/goals/<robot>.json: where to go, where t
 The live window (fleet/live.py) shows the map, the robots, the beams and the objects; the boxes OptiTrack tracks
 are drawn as the truth (they are used for nothing else, except the robots' bumper). At the end (coverage goal
 reached and nothing tentative, --t-max-s, Ctrl+C or the window closed) every robot stops and re-centres its
-gimbal, and --dir/result/ gets summary.json (the objects, scored against the OptiTrack boxes), map.png and the
+gimbal, and --dir/result_<date>_<time>/ (one per run) gets summary.json (the objects, scored against the OptiTrack boxes), map.png and the
 reports.
+
+First, every run calibrates (--calib-s, 20 s): the robots stand with the gimbal fanning all around, and the
+heading of every gimbal is measured against the OptiTrack boxes (fleet/calib.py: the SDK's gimbal yaw moved by
+10-17 deg between two sessions); the correction goes to the robot (yaw_fix of its goal) and is in summary.json.
+A robot without a clear heading tries again every 5 s and goes on without one after 15 s more (it says so).
 
 The tests, one step at a time (same command, fewer robots / more freedom):
 
@@ -27,7 +32,10 @@ Every test runs here without hardware first: --sim (the robots of --robot ID:_:X
 --sim-world or a random one of --seed):
         python -m fleet.lab --sim --robot S1::-2.2,-0.6,0 --robot S2::-2.2,0.1,0 --robot S3::-2.2,-1.3,0
 
-Options not listed here go to every robot node (e.g. --v-max 0.1, --fan-dps 20, --ir-index 2).
+Options not listed here go to every robot node (e.g. --v-max 0.1, --fan-dps 20, --ir-index 2; --sim with
+--sim-yaw-error-deg 14 gives the simulated gimbals the error the calibration has to find).
+
+A run can be replayed offline through the brain (python -m fleet.replay data/fleet_lab/result_<date>_<time>).
 """
 
 import argparse
@@ -43,6 +51,7 @@ import time
 
 import numpy as np
 
+from fleet import calib
 from fleet.brain import Brain, BrainParams
 from fleet.robot_node import CONNECTED_MSG
 from fleet.sensing import CameraModel, Frame, GimbalIR
@@ -50,6 +59,38 @@ from fleet.world import World, lab_arena
 from vf.control.goto import wrap_pi
 
 CONNECT_TIMEOUT_S = 120.0
+
+# The monocular range of YOLO (yolo_gnn/hybrid.frame_rays) is divided by this. Lab test of 2026-11-25, once the
+# gimbal heading was corrected (fleet/calib.py): 0.92-0.96 x the distance of the box centre: left as it comes.
+CAM_RANGE_SCALE = 1.0
+# Calibration at the start (fleet/calib.py): the robots stand and fan the gimbal all around, so that each sees the
+# boxes near it whatever its heading; one that has no clear heading after CALIB_EXTRA_S more goes on without.
+CALIB_FAN_DEG = 170.0
+CALIB_FAN_DPS = 40.0
+CALIB_EXTRA_S = 15.0
+# The rays of one robot share a bias (heading residual, monocular range): an object's camera position is never
+# trusted below this, so that an aimed IR reading 10-20 cm away is still accepted and then dominates.
+CAM_FLOOR_M = 0.08
+# An aimed reading gives the box centre one apothem behind the point the beam hit: right along the beam, up to half
+# a box off across it (the sweep of the aim picks the beam nearest the object, not the face centre).
+IR_ACROSS_M = 0.04
+
+
+def lab_camera():
+    """The camera model of the brain in the lab: a wider monocular range error than in the simulation (the
+    residual after CAM_RANGE_SCALE was 0.1-0.3 x the range)."""
+    return CameraModel(sd_range_m=(0.05, 0.25), sd_bearing_deg=2.0, p_d_near=0.85, p_d_far=0.57, fp_rate=0.1)
+
+
+def cam_detections(row, scale=CAM_RANGE_SCALE):
+    """A 'cam' report -> detections for the brain: the rays from the lens, the range divided by scale."""
+    lens = row["lens"]
+    out = []
+    for ang, d in row["rays"]:
+        d = d / scale
+        out.append(dict(xy=(lens[0] + d * math.cos(ang), lens[1] + d * math.sin(ang)), range=d,
+                        bearing=wrap_pi(ang - lens[2]), true=None))
+    return out
 
 
 def write_json(path, data):
@@ -140,6 +181,11 @@ def main():
     ap.add_argument("--no-aim", action="store_true", help="never aim the IR at objects (fan only)")
     ap.add_argument("--ir-check", action="store_true", help="print where the IR readings end, every 5 s")
     ap.add_argument("--t-max-s", type=float, default=600.0)
+    ap.add_argument("--calib-s", type=float, default=20.0,
+                    help="seconds standing and fanning at the start to measure the gimbal heading of every robot "
+                         "against the OptiTrack boxes (fleet/calib.py; 0 = none; --sim: against its world)")
+    ap.add_argument("--cam-range-scale", type=float, default=CAM_RANGE_SCALE,
+                    help="the monocular YOLO range is divided by this (1 = as it comes)")
     ap.add_argument("--tick-s", type=float, default=0.5)
     ap.add_argument("--coverage-goal", type=float, default=0.98)
     ap.add_argument("--no-live", action="store_true", help="no window")
@@ -248,24 +294,67 @@ def main():
 
 
 def run(a, robots, ids, captain, arena, world, truth, procs, stop):
-    cam = CameraModel(sd_range_m=(0.02, 0.15), sd_bearing_deg=1.0, p_d_near=0.85, p_d_far=0.57, fp_rate=0.1)
+    cam = lab_camera() if not a.sim else CameraModel(sd_range_m=(0.02, 0.15), sd_bearing_deg=1.0, p_d_near=0.85,
+                                                      p_d_far=0.57, fp_rate=0.1)
+    scale = a.cam_range_scale if not a.sim else 1.0        # the simulated camera has no such bias
     irm = GimbalIR()
-    p = BrainParams(mode=a.mode, sensors="gimbal", captain_plan="frontier", coverage_goal=a.coverage_goal)
-    brain = Brain(arena, ids, captain, cam, p)
+    p = BrainParams(mode=a.mode, sensors="gimbal", captain_plan="frontier", coverage_goal=a.coverage_goal,
+                    cam_floor_m=0.0 if a.sim else CAM_FLOOR_M, ir_across_m=0.0 if a.sim else IR_ACROSS_M)
     tails = {r: Tail(os.path.join(a.dir, "reports", f"{r}.jsonl")) for r in ids}
     pose = {r: None for r in ids}
     gim = {r: dict(gy=0.0, task=None, sent=0.0) for r in ids}
     check = IRCheck(ids) if a.ir_check else None
-    view = None
-    if not a.no_live:
-        from fleet.live import LiveView
-        view = LiveView(world, brain.fine, cam, ids, captain, a.mode)
-    t0 = time.time()
-    seq, next_tick, next_view, next_check, next_foot = 0, 0.0, 0.0, 5.0, 0.0
     counts = dict(ir=0, cam=0, aim=0)
     traj = {r: [] for r in ids}
     boxes_now = truth()
+
+    # Gimbal heading of every robot (fleet/calib.py). state: "calib" = standing, gimbal fanning all around,
+    # nothing to the brain; "late" = no clear heading after CALIB_EXTRA_S more: it goes on without correction and
+    # its heading is estimated again every 5 s; "ok" = it has its correction. Every reading is logged: when a late
+    # robot gets its correction, the map and the objects are rebuilt from the log with the right headings.
+    fix = {r: 0.0 for r in ids}
+    a.yaw_fix = fix
+    state = {r: "calib" if a.calib_s > 0 else "ok" for r in ids}
+    raw = {r: dict(ir=[], cam=[]) for r in ids}      # readings without correction, for the estimate
+    log = []                                         # (kind, robot, t, row, poses) for a rebuild
+    started = False
+    brain = None
+
+    def feed(kind, r, t, row, poses):
+        """One reading into the brain, turned by the correction the robot did not apply itself yet."""
+        if kind == "foot":
+            for q in ids:
+                brain.add_footprint(poses[q])
+            return
+        row = calib.rotate_row(row, fix[r] - float(row.get("yf", 0.0)))
+        brain.t = t
+        if kind == "ir":
+            brain.add_ir(r, row["o"], row["h"], row["d"], irm.r_max_m, poses)
+        elif kind == "cam":
+            brain.camera_frame(Frame(r, t, tuple(row["lens"]), detections=cam_detections(row, scale)), poses)
+        elif kind == "aim" and row.get("o") is not None:
+            brain.ir_measure(r, row["task"], row["o"], row["h"], row["d"], irm)
+
+    def rebuild(t):
+        nonlocal brain
+        brain = Brain(arena, ids, captain, cam, p)
+        for kind, r, tr, row, poses in log:
+            feed(kind, r, tr, row, poses)
+        brain.t = t
+        for r in ids:
+            gim[r]["task"] = None
+
+    view = None
+    if not a.no_live:
+        from fleet.live import LiveView
+        view = LiveView(world, Brain(arena, ids, captain, cam, p).fine, cam, ids, captain, a.mode)
+    t0 = time.time()
+    seq, next_tick, next_view, next_check, next_foot = 0, 0.0, 0.0, 5.0, 0.0
+    next_calib, next_wide = a.calib_s, 0.0
     why = "time limit"
+    if a.calib_s > 0:
+        print(f"calibration: {a.calib_s:.0f} s standing, the gimbal fanning all around, then the heading of every "
+              f"robot from the OptiTrack boxes", flush=True)
     while not stop.is_set():
         t = time.time() - t0
         if t > a.t_max_s:
@@ -273,6 +362,38 @@ def run(a, robots, ids, captain, arena, world, truth, procs, stop):
         if all(pr.poll() is not None for pr in procs):
             why = "every robot node exited"
             break
+        if any(v == "calib" for v in state.values()) and t >= next_wide:
+            for r in ids:                            # still calibrating: standing, gimbal fanning all around
+                if state[r] == "calib":
+                    write_json(os.path.join(a.dir, "goals", f"{r}.json"), dict(
+                        seq=-int(t * 10), t=time.time(), target=None, yaw=None, v_max=None,
+                        gimbal={"mode": "fan", "fan_deg": CALIB_FAN_DEG, "fan_dps": CALIB_FAN_DPS}))
+            next_wide = t + 0.5
+        if any(v != "ok" for v in state.values()) and t >= next_calib:
+            boxes_now = truth()
+            late_fixed = False
+            for r in ids:
+                if state[r] == "ok":
+                    continue
+                e = calib.estimate(raw[r]["ir"], raw[r]["cam"], boxes_now)
+                if e is None:
+                    if state[r] == "calib" and t >= a.calib_s + CALIB_EXTRA_S:
+                        state[r] = "late"
+                        print(f"calibration {r}: no clear heading after {t:.0f} s ({len(raw[r]['ir'])} beams, "
+                              f"{len(raw[r]['cam'])} frames): it goes on WITHOUT correction for now, and tries "
+                              f"again every 5 s on what it sees (boxes nearer than ~1.5 m help)", flush=True)
+                    elif state[r] == "calib" and t < a.calib_s + 1:
+                        print(f"calibration {r}: no clear heading yet ({len(raw[r]['ir'])} beams, "
+                              f"{len(raw[r]['cam'])} frames), trying again every 5 s", flush=True)
+                    continue
+                late_fixed |= state[r] == "late"
+                fix[r], state[r] = round(e[0], 2), "ok"
+                print(f"calibration {r} at {t:.0f} s: gimbal heading correction {fix[r]:+.2f} deg "
+                      f"({e[1]} IR beams and {e[2]} YOLO rays agree with the boxes)", flush=True)
+            if started and late_fixed:
+                rebuild(t)
+                print(f"map and objects rebuilt with the new correction ({len(log)} readings)", flush=True)
+            next_calib = t + 5.0
         poses = {r: pose[r] for r in ids}
         for r in ids:
             for row in tails[r].lines():
@@ -281,29 +402,29 @@ def run(a, robots, ids, captain, arena, world, truth, procs, stop):
                     if row.get("pose") is not None:
                         pose[r] = tuple(row["pose"])
                     gim[r]["gy"] = row.get("gy") or 0.0
-                elif k == "ir" and all(q is not None for q in poses.values()):
-                    brain.add_ir(r, row["o"], row["h"], row["d"], irm.r_max_m, poses)
-                    counts["ir"] += 1
-                    if check:
-                        check.add(r, row, boxes_now, arena)
-                elif k == "cam" and all(q is not None for q in poses.values()):
-                    lens = tuple(row["lens"])
-                    dets = [dict(xy=(lens[0] + d * math.cos(ang), lens[1] + d * math.sin(ang)), range=d,
-                                 bearing=wrap_pi(ang - lens[2]), true=None) for ang, d in row["rays"]]
-                    brain.t = t
-                    brain.camera_frame(Frame(r, t, lens, detections=dets), poses)
-                    counts["cam"] += 1
-                elif k == "aim":
-                    if row.get("o") is not None:
-                        brain.t = t
-                        brain.ir_measure(r, row["task"], row["o"], row["h"], row["d"], irm)
-                    if gim[r]["task"] == row["task"]:
-                        gim[r]["task"] = None
-                    counts["aim"] += 1
-        known = all(q is not None for q in pose.values())
+                    continue
+                if k not in ("ir", "cam", "aim") or any(q is None for q in poses.values()):
+                    continue
+                if state[r] != "ok" and k in ("ir", "cam") and not row.get("yf"):
+                    raw[r][k].append(row)
+                entry = (k, r, t, row, dict(poses))
+                log.append(entry)
+                if started:
+                    feed(*entry)
+                counts[k] += 1
+                if k == "ir" and check:
+                    check.add(r, calib.rotate_row(row, fix[r] - float(row.get("yf", 0.0))), boxes_now, arena)
+                if k == "aim" and gim[r]["task"] == row["task"]:
+                    gim[r]["task"] = None
+        if not started and all(v != "calib" for v in state.values()) and all(q is not None for q in pose.values()):
+            started = True                           # the brain starts: everything seen so far, corrected
+            rebuild(t)
+            next_tick = t
+        known = started and all(q is not None for q in pose.values())
         if known and t >= next_foot:
+            log.append(("foot", None, t, None, dict(pose)))
+            feed("foot", None, t, None, dict(pose))
             for r in ids:
-                brain.add_footprint(pose[r])
                 traj[r].append(pose[r])
             next_foot = t + 0.25
         if known and t >= next_tick:
@@ -313,7 +434,8 @@ def run(a, robots, ids, captain, arena, world, truth, procs, stop):
                 if gim[r]["task"] is not None and t - gim[r]["sent"] > 10.0:
                     gim[r]["task"] = None
             if not a.no_aim:
-                for r, tid in brain.aim_tasks(poses, [r for r in ids if gim[r]["task"] is None]).items():
+                idle = [r for r in ids if gim[r]["task"] is None and state[r] == "ok"]
+                for r, tid in brain.aim_tasks(poses, idle).items():
                     gim[r].update(task=tid, sent=t)
             seq += 1
             for r in ids:
@@ -323,9 +445,9 @@ def run(a, robots, ids, captain, arena, world, truth, procs, stop):
                                                             "xy": [float(v) for v in k.xy]}
                 write_json(os.path.join(a.dir, "goals", f"{r}.json"), dict(
                     seq=seq, t=time.time(), target=None if a.no_drive else (list(g["target"]) if g else None),
-                    yaw=g.get("yaw"), v_max=g.get("v_max"), gimbal=gimbal))
+                    yaw=g.get("yaw"), v_max=g.get("v_max"), gimbal=gimbal, yaw_fix=fix[r]))
             next_tick = t + a.tick_s
-            if brain.finished() and not a.no_drive:
+            if brain.finished() and not a.no_drive and all(v == "ok" for v in state.values()):
                 why = "coverage goal reached, nothing tentative"
                 break
         if check and t >= next_check:
@@ -341,7 +463,23 @@ def run(a, robots, ids, captain, arena, world, truth, procs, stop):
         time.sleep(0.02)
     else:
         why = "Ctrl+C"
+    if brain is None:
+        rebuild(time.time() - t0)
     return finish(a, brain, world, truth, traj, counts, captain, why, time.time() - t0, view)
+
+
+def describe(a, robots):
+    """What the run was, in words, for summary.json."""
+    where = "simulated robots (--sim)" if a.sim else "real robots"
+    n = len(robots)
+    if a.no_drive:
+        what = f"{n} robot(s) standing (--no-drive)"
+    else:
+        what = "one robot exploring alone" if n == 1 else f"the fleet: {n} robots, captain + followers"
+    sensors = "IR fan only (--no-camera)" if a.no_camera else "IR fan + camera (YOLO)"
+    extra = [x for x, on in (("no aiming (--no-aim)", a.no_aim), ("IR interference check (--ir-check)", a.ir_check))
+             if on]
+    return ", ".join([what, sensors, where] + extra)
 
 
 def finish(a, brain, world, truth, traj, counts, captain, why, t, view):
@@ -354,12 +492,14 @@ def finish(a, brain, world, truth, traj, counts, captain, why, t, view):
     est = [o["xy"] for o in objs if o["kept"]]
     boxes = truth()
     sc = fusion.score(est, boxes)
-    s = dict(why=why, t_s=round(t, 1), robots=list(traj), captain=captain, mode=a.mode, seed=a.seed,
+    s = dict(yaw_fix=getattr(a, "yaw_fix", None), run=dict(what=describe(a, traj), command="python -m fleet.lab " + " ".join(sys.argv[1:]),
+                      date=time.strftime("%Y-%m-%d %H:%M:%S")),
+             why=why, t_s=round(t, 1), robots=list(traj), captain=captain, mode=a.mode, seed=a.seed,
              coverage_brain=brain.coverage(), coverage_true=brain.coverage(), reports=counts,
              contacts=0, **{k: v for k, v in sc.items() if k != "matches"},
              estimates=est, tentative=[o["xy"] for o in objs if o["state"] == "tentative"], objects=objs,
              truth=[list(b) for b in boxes])
-    out = os.path.join(a.dir, "result")
+    out = os.path.join(a.dir, "result_" + time.strftime("%Y%m%d_%H%M%S"))     # one folder per run, never overwritten
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "summary.json"), "w") as f:
         json.dump(s, f, indent=1)

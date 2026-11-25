@@ -132,28 +132,59 @@ def score(est, truth, gate_m=0.3, c=0.5):
 class Track:
     _next = 0
 
-    def __init__(self, z, R, t, robot):
+    def __init__(self, z, R, t, robot, cam_floor_m=0.0):
         Track._next += 1
+        self.cam_floor_m = cam_floor_m
         self.id = Track._next
-        self.L = np.linalg.inv(R)
+        self.L = np.linalg.inv(R)                     # camera information (hundreds of rays, one bias)
         self.v = self.L @ z
+        self.Li, self.vi = np.zeros((2, 2)), np.zeros(2)   # IR information (aimed readings)
         self.n_cam, self.looks, self.n_ir, self.ir_miss = 1, 1, 0, 0
         self.robots = {robot}
         self.state = "tentative"
         self.t0 = self.t_last = t
 
+    def _cam(self):
+        """The camera information with its covariance floored at cam_floor_m: on the real robots the rays share a
+        bias (gimbal heading, monocular range) that more rays do not average out (0 = no floor: the simulation)."""
+        f2 = self.cam_floor_m ** 2
+        if f2 <= 0:
+            return self.L, self.v
+        P = np.linalg.inv(self.L)
+        w, V = np.linalg.eigh(P)
+        if w.min() >= f2:
+            return self.L, self.v
+        Lc = V @ np.diag(1.0 / np.maximum(w, f2)) @ V.T
+        return Lc, Lc @ (P @ self.v)
+
     @property
     def xy(self):
-        return np.linalg.solve(self.L, self.v)
+        """Camera only: the information-weighted mean of its rays. With IR readings: the camera part floored
+        (_cam), so that the precise IR range is not outweighed by hundreds of rays that share one bias."""
+        if self.n_ir == 0:
+            return np.linalg.solve(self.L, self.v)
+        Lc, vc = self._cam()
+        return np.linalg.solve(Lc + self.Li, vc + self.vi)
 
     @property
     def P(self):
-        return np.linalg.inv(self.L)
+        """Covariance of xy, used to associate the camera detections (not floored: as the rays say)."""
+        return np.linalg.inv(self.L + self.Li)
+
+    @property
+    def P_floor(self):
+        """Covariance with the camera part floored: the gate of an aimed IR reading."""
+        return np.linalg.inv(self._cam()[0] + self.Li)
 
     def add(self, z, R):
         Ri = np.linalg.inv(R)
         self.L = self.L + Ri
         self.v = self.v + Ri @ z
+
+    def add_ir(self, z, R):
+        Ri = np.linalg.inv(R)
+        self.Li = self.Li + Ri
+        self.vi = self.vi + Ri @ z
 
     @property
     def ratio(self):
@@ -171,8 +202,8 @@ class Tracker:
     IR report (the gimbal aimed the IR at one object): a precise range along the beam; within the gate it updates
       the object (n_ir), otherwise the object counts an IR miss (the beam found something else, or nothing).
     State of an object, after every report:
-      confirmed   n_cam >= min_det, n_cam / looks >= confirm_ratio, and the IR agrees: an IR range on it, or the
-                  IR map is occupied where it is (the shape is there) ; stays confirmed unless deleted
+      confirmed   n_cam >= min_det, n_cam / looks >= confirm_ratio, and the IR agrees: an IR range on it, or a
+                  box-sized blob of the IR map where it is (the shape is there); stays confirmed unless deleted
       deleted     looked at >= delete_looks times and detected in < delete_ratio of them, or IR missed twice and
                   never hit
       tentative   otherwise
@@ -180,12 +211,13 @@ class Tracker:
     """
 
     def __init__(self, sd_range=(0.02, 0.15), sd_bearing_deg=1.0, gate=GATE_CHI2, merge_m=MERGE_M, min_det=3,
-                 confirm_ratio=0.4, delete_looks=6, delete_ratio=0.15):
+                 confirm_ratio=0.4, delete_looks=6, delete_ratio=0.15, cam_floor_m=0.0):
         self.sd_range, self.sb = sd_range, math.radians(sd_bearing_deg)
         self.gate, self.merge_m = gate, merge_m
         self.min_det, self.confirm_ratio = min_det, confirm_ratio
         self.delete_looks, self.delete_ratio = delete_looks, delete_ratio
         self.tracks = []
+        self.cam_floor_m = cam_floor_m          # Track._cam: the lab sets it (fleet/lab.CAM_FLOOR_M)
 
     def live(self):
         return [k for k in self.tracks if k.state in ("tentative", "confirmed")]
@@ -233,7 +265,7 @@ class Tracker:
                         used.add(i)
             for i in range(len(dets)):
                 if i not in used:
-                    self.tracks.append(Track(Z[i], Rs[i], t, robot))
+                    self.tracks.append(Track(Z[i], Rs[i], t, robot, self.cam_floor_m))
         self.merge()
         self.states(occ_near)
 
@@ -242,8 +274,8 @@ class Tracker:
         if k is None or k.state not in ("tentative", "confirmed"):
             return False
         e = z - k.xy
-        if float(e @ np.linalg.solve(R + k.P, e)) < self.gate:
-            k.add(z, R)
+        if float(e @ np.linalg.solve(R + k.P_floor, e)) < self.gate:
+            k.add_ir(z, R)
             k.n_ir += 1
             ok = True
         else:
@@ -272,6 +304,7 @@ class Tracker:
                 if float(np.hypot(*e)) < self.merge_m or float(e @ np.linalg.solve(A.P + B.P, e)) < self.gate:
                     keep, drop = (A, B) if A.n_cam + 3 * A.n_ir >= B.n_cam + 3 * B.n_ir else (B, A)
                     keep.L, keep.v = keep.L + drop.L, keep.v + drop.v
+                    keep.Li, keep.vi = keep.Li + drop.Li, keep.vi + drop.vi
                     keep.n_cam += drop.n_cam
                     keep.looks = max(keep.looks, drop.looks)
                     keep.n_ir += drop.n_ir

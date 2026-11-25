@@ -82,6 +82,8 @@ class BrainParams:
     explored_phi: float = 0.1         # a cell with phi below this is covered
     waypoint_tol_m: float = 0.25
     stuck_s: float = 20.0             # a captain goal not approached by 10 cm in this long is dropped
+    ir_across_m: float = 0.0          # extra sd across the beam of an aimed IR reading (where it hit the face; lab: 0.04)
+    cam_floor_m: float = 0.0          # floor of an object's camera position error (fusion.Track._cam; lab: 0.08)
     boxed_cells: int = 30             # captain reaches fewer coarse cells than this: it turns on the spot first
     sensors: str = "gimbal"           # gimbal: map from the gimbal IR, camera = YOLO only | camera: the camera
                                       # also gives free space (depth), the first version
@@ -158,13 +160,14 @@ class Brain:
         self.phase = "lanes" if p.captain_plan == "lanes" else "explore"
         self.wp, self.wp_t = 0, None
         self.trail = np.zeros(self.fine.shape, bool)      # where robots have stood: free space for sure
-        self.tracker = Tracker(cam.sd_range_m, cam.sd_bearing_deg)
+        self.tracker = Tracker(cam.sd_range_m, cam.sd_bearing_deg, cam_floor_m=p.cam_floor_m)
         self.aimed = {}                                   # track id -> time of the last aim
         self.ir_last = {}                                 # rid -> (origin, end, hit) of the last IR reading
         self.lanes, self.across = None, None
         self.slots = None
         self.mop_blacklist = []
         self.done = False
+        self.retries = 0                                  # blacklist resets while coverage is low
         self.spins, self.spin_pts = 0, []           # turns on the spot while boxed in by unknown space
         self.t = 0.0
         self.unreachable = 0
@@ -249,7 +252,8 @@ class Brain:
 
     def occ_near(self, xy, r=0.12):
         """The IR map has a BOX-SIZED blob within r of xy: occupied cells there, in a connected blob no wider
-        than box_max_m (a long blob is an obstacle or a wall, whatever YOLO says is in front of it)."""
+        than box_max_m (a long blob is an obstacle or a wall, whatever YOLO says is in front of it). Returns the
+        centre (x, y) of that blob (one blob confirms one object only: fusion.Tracker.states), or None."""
         g = self.fine
         if not g.inside(*xy):
             return False
@@ -267,8 +271,9 @@ class Brain:
             cells = np.argwhere(lab == c)
             ext = (cells.max(0) - cells.min(0) + 1) * g.res
             if ext.max() <= self.p.box_max_m:
-                return True
-        return False
+                c = cells.mean(0) + (x0, y0)
+                return (g.x0 + (c[0] + 0.5) * g.res, g.y0 + (c[1] + 0.5) * g.res)
+        return None
 
     def ir_measure(self, robot, tid, origin, heading, d, ir):
         """An aimed IR reading on track tid: the box centre one apothem behind the face the beam hit."""
@@ -287,7 +292,10 @@ class Brain:
                 k.ir_miss += 1
                 self.tracker.states(self.occ_near)
             return
-        sa, sc = ir.sd_m, (d + ir.apothem_m) * math.radians(ir.aim_sd_deg)
+        # along the beam: the IR error; across: the aim error and where on the face the beam hit (up to half a
+        # box off the centre line: the centre one apothem behind the hit point is right along the beam only)
+        sa = ir.sd_m
+        sc = math.hypot((d + ir.apothem_m) * math.radians(ir.aim_sd_deg), self.p.ir_across_m)
         R = np.outer(u, u) * sa * sa + np.outer([-u[1], u[0]], [-u[1], u[0]]) * sc * sc
         ok = self.tracker.ir(tid, z, R, self.occ_near)
         self.detections.append(dict(robot=robot, t=self.t, lens=(origin[0], origin[1], heading), xy=tuple(z),
@@ -562,6 +570,12 @@ class Brain:
                 if self.mop is not None and self.mop[1] not in self.spin_pts:
                     self.mop_blacklist.append(self.mop[1])        # looked at it: whatever is left is hidden
                 blob = self.mop_goal(poses)
+                if blob is None and self.coverage() < p.coverage_goal and self.retries < 3:
+                    # every place left was tried once (blacklisted) but much is still unseen: the map has grown
+                    # since, try them again rather than stop
+                    self.retries += 1
+                    self.mop_blacklist = []
+                    blob = self.mop_goal(poses)
                 if blob is None:
                     self.done = True
                     return (cap[0], cap[1]), cap[2]
