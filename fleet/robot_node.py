@@ -52,6 +52,7 @@ import numpy as np
 
 from acquisition.ir_live import STOP, make_parser, resolve
 from acquisition.ir_ranging import aim_angles, camera_pose, ir_pose, mount_from_args, slant_to_floor
+from fleet.world import ROBOT_R_M
 from vf.control.goto import SIGN_X, SIGN_Y, SIGN_Z, compute_command, wrap_pi
 
 CONNECTED_MSG = "fleet node running"       # fleet/lab.py waits for this before it starts the next robot
@@ -174,9 +175,19 @@ class SimRobot:
         self.cam = CameraModel(sd_range_m=(0.02, 0.15), fp_rate=0.1, p_d_near=0.85, p_d_far=0.57)
         self.yolo = None if a.no_camera else True
         self.last_ir_t = 0.0
+        self.contacts = 0
 
     def body(self):
-        return self.chassis.pose()
+        # a stalled process must not make the chassis jump (FakeRobot integrates over the wall clock): at most
+        # 0.1 s per step; and it does not drive through walls, boxes or the arena border, it stops at them
+        c = self.chassis
+        c._t = max(c._t, time.time() - 0.1)
+        x, y = c.x, c.y
+        c.pose()
+        if self.world.collides(c.x, c.y, ROBOT_R_M - 0.02) and not self.world.collides(x, y, ROBOT_R_M - 0.02):
+            c.x, c.y = x, y
+            self.contacts += 1
+        return (c.x, c.y, c.yaw)
 
     def gimbal_angles(self):
         return self.gimbal.angles()
@@ -208,7 +219,7 @@ class SimRobot:
 
     def rays(self):
         from fleet.sensing import look
-        time.sleep(0.15)
+        time.sleep(0.5)                                          # 2 frames a second, as fleet/sim.py (--fps)
         body, (gy, gp) = self.body(), self.gimbal.angles()
         lens, _ = camera_pose(body, gy, gp, self.mount)
         fr = look(self.cam, self.world, self.grid, self.ids, self.a.robot_id, (body[0], body[1], lens[2]), [],

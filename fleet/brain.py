@@ -82,6 +82,7 @@ class BrainParams:
     explored_phi: float = 0.1         # a cell with phi below this is covered
     waypoint_tol_m: float = 0.25
     stuck_s: float = 20.0             # a captain goal not approached by 10 cm in this long is dropped
+    boxed_cells: int = 30             # captain reaches fewer coarse cells than this: it turns on the spot first
     sensors: str = "gimbal"           # gimbal: map from the gimbal IR, camera = YOLO only | camera: the camera
                                       # also gives free space (depth), the first version
     captain_plan: str = "frontier"    # frontier: next best viewpoint on the map | lanes: boustrophedon first
@@ -164,6 +165,7 @@ class Brain:
         self.slots = None
         self.mop_blacklist = []
         self.done = False
+        self.spins, self.spin_pts = 0, []           # turns on the spot while boxed in by unknown space
         self.t = 0.0
         self.unreachable = 0
         self.best_d = float("inf")
@@ -474,6 +476,9 @@ class Brain:
         b[s] = False
         reach_lab, _ = ndimage.label(~b, structure=np.ones((3, 3)))
         reach = reach_lab == reach_lab[s]
+        boxed = reach.sum() < self.p.boxed_cells
+        if not boxed:
+            self.spins = 0
         occ = downsample(self.occupied().astype(float), self.f, "mean")[:c.nx, :c.ny] > 0.25
         best, score = None, -1.0
         for k in range(1, n + 1):
@@ -517,6 +522,14 @@ class Brain:
                 ctr = (float(c.X[lab == k].mean()), float(c.Y[lab == k].mean()))
                 bq = c.centre(*B[::max(1, len(B) // 300)][j])
                 return vp, bq if math.hypot(bq[0] - vp[0], bq[1] - vp[1]) > 0.05 else ctr
+        if best is None and boxed and self.spins < 4:
+            # nothing reachable, but the captain is boxed in by space the IR has not seen yet (at the start, beside
+            # the robot: the fan covers +-fan_deg ahead only): turn on the spot, a quarter at a time, before giving up
+            self.spins += 1
+            a = cap[2] + math.pi / 2
+            q = (cap[0] + math.cos(a), cap[1] + math.sin(a))
+            self.spin_pts.append(q)
+            return (cap[0], cap[1]), q
         return best
 
     def captain_goal(self, poses):
@@ -546,7 +559,7 @@ class Brain:
                     (math.hypot(self.mop[0][0] - cap[0], self.mop[0][1] - cap[1]) < p.waypoint_tol_m and
                      abs(wrap_pi(math.atan2(self.mop[1][1] - cap[1], self.mop[1][0] - cap[0]) - cap[2])) < 0.2 and
                      self.t - self.mop_at > 2.0):
-                if self.mop is not None:
+                if self.mop is not None and self.mop[1] not in self.spin_pts:
                     self.mop_blacklist.append(self.mop[1])        # looked at it: whatever is left is hidden
                 blob = self.mop_goal(poses)
                 if blob is None:

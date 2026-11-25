@@ -367,7 +367,10 @@ def finish(a, brain, world, truth, traj, counts, captain, why, t, view):
     phi = (1.0 - brain.cam.p_d_near) ** brain.views
     tj = {r: v if v else [(0.0, 0.0, 0.0)] for r, v in traj.items()}
     draw(os.path.join(out, "map.png"), w, brain.fine, phi, tj, objs, s, brain)
-    shutil.copytree(os.path.join(a.dir, "reports"), os.path.join(out, "reports"), dirs_exist_ok=True)
+    src, dst = os.path.join(a.dir, "reports"), os.path.join(out, "reports")
+    os.makedirs(dst, exist_ok=True)                  # not copytree(dirs_exist_ok=...): the lab PC has Python 3.7
+    for name in os.listdir(src) if os.path.isdir(src) else []:
+        shutil.copy2(os.path.join(src, name), os.path.join(dst, name))
     print(f"\n{why} after {t:.0f} s: {len(est)} boxes reported, {len(s['tentative'])} still tentative; "
           f"OptiTrack tracks {len(boxes)} (TP {sc['tp']} FP {sc['fp']} FN {sc['fn']}"
           + (f", mean error {100 * sc['mean_err_m']:.1f} cm" if sc.get("mean_err_m") is not None else "") + ")")
